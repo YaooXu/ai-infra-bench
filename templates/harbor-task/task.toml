@@ -1,0 +1,48 @@
+# Harbor-compatible task template. Copy this directory to tasks/<task-id>/
+# and replace every angle-bracket placeholder before validation.
+schema_version = "1.3"
+
+[task]
+name = "ai-infra-bench/<task-id>"
+description = "<observable failure or requested capability; do not include the solution>"
+authors = [{ name = "<curator>" }]
+keywords = ["ai-inference", "vllm", "<workload-type>", "<subsystem>"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["<source-id>"]
+track = "<representative-or-memorable>"
+workload_type = "<bug_fix|feature|performance|refactor|test|ci_build|docs_api|chore>"
+subsystems = ["<scheduler|memory_kv|distributed|kernel_operator|model|frontend_api|backend_hardware>"]
+difficulty = "<easy|medium|hard|expert>"
+repository = "<owner/repo>"
+base_commit = "<40-char-sha>"
+# Keep the reference/gold commit in curator-only metadata until release. Do not
+# expose it to an evaluated agent through task metadata.
+source_cutoff = "<YYYY-MM-DD>"
+accelerator_vendor = "<cpu|nvidia|amd|intel|ascend|cambricon>"
+accelerator_type = "<sku>"
+accelerator_count = 1
+checkpoint_digests = ["sha256:<digest>"]
+image_digest = "sha256:<digest>"
+grader_kind = "<correctness|correctness_and_performance>"
+
+[agent]
+timeout_sec = 3600.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+# Prefer "separate" for tamper-sensitive and performance tasks. When enabled,
+# add a verifier image as documented by Harbor.
+environment_mode = "shared"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 8
+memory_mb = 65536
+storage_mb = 102400
+gpus = 1
+gpu_types = ["<canonical-gpu-type>"]
