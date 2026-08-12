@@ -8,7 +8,7 @@ The unit of evaluation is an independently verifiable engineering task. It is no
 
 ## 2. Research questions
 
-### RQ1: What is the real maintenance workload in vLLM?
+### RQ1: How has vLLM's observable public maintenance workload evolved?
 
 This is an observational study of the community, separate from the agent benchmark score.
 
@@ -25,9 +25,11 @@ GitHub activity is only an observable proxy for human effort. We will not equate
 
 Because vLLM emerged in 2023, the proposed reporting windows are launch through 2024, calendar year 2025, and 2026 through the frozen snapshot date. Monthly time series remain the primary view.
 
-### RQ2: How much of that workload can agents solve?
+The detailed definitions, sampling logic, and analysis plan are specified in the [RQ1 empirical study protocol](RQ1_EMPIRICAL_STUDY.md).
 
-We will report overall and stratified success rates by workload, subsystem, hardware tier, patch size, estimated expert effort, and benchmark track. Any headline coverage estimate must include its task composition and confidence interval.
+### RQ2: How much benchmark-eligible workload can agents solve?
+
+We will report overall and stratified success rates by workload, subsystem, hardware tier, patch size, estimated expert effort, and benchmark track. Any headline coverage estimate must name its target population and include its task composition and confidence interval; PR-derived tasks do not estimate coverage of all issues or all maintainer labor.
 
 ### RQ3: Why does test-time scaling saturate?
 
@@ -207,4 +209,3 @@ Every release freezes a dataset version, image digest, task hash, and run protoc
 - **Week of August 29:** begin pilot evaluation on the frozen validated subset before scaling to the full release.
 
 The number of source records is never used as a proxy for benchmark readiness.
-
