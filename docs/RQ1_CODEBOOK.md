@@ -13,10 +13,25 @@ This codebook defines the variables used in the RQ1 vLLM workload census. It mak
 - **Human:** an actor whose GitHub `user.type` is `User`.
 - **Bot:** an actor whose GitHub `user.type` is `Bot`.
 - **Snapshot collaborator:** a non-deleted `repo_collaborator` row with triage permission or higher at snapshot time.
+- **Snapshot triage-only:** a snapshot collaborator with triage permission but not write permission at snapshot time.
+- **Snapshot write+:** a snapshot collaborator with write, maintain, or admin permission at snapshot time.
 - **External human:** a human PR author not in the snapshot collaborator roster.
 - **Benchmark source frame:** merged, human-authored PRs with at least one recoverable commit/file record.
 
 The collaborator definition is not projected backward as historical membership. Results therefore say “snapshot collaborator,” not “maintainer at event time.”
+
+## Engineering, integration, and contributor identity
+
+- **Engineering owner:** the PR author. This is an artifact-level construct and does not claim sole authorship of every changed line.
+- **Merge actor:** the user attached to the merge record. This measures final integration action, not the full review decision or authorship.
+- **Git author/committer:** commit-level metadata. Squash, merge, bot, and release mechanics make the `committer` field unsuitable as a generic engineering-owner measure; it is used only for a data-quality audit.
+- **Author permission:** bot, external human, snapshot triage-only, or snapshot write+, based on actor type and the current collaborator roster.
+- **Observed PR number:** an author's PR sequence number ordered by creation time in the supplied repository snapshot.
+- **Contributor experience:** first observed PR, second through fifth observed PR, or sixth-and-later observed PR.
+- **Return rate:** among first-time external authors old enough for a complete fixed horizon, the share with a second observed PR within 90, 180, or 365 days.
+- **Within-period frequency:** external authors grouped by one, two-to-four, or five-plus PRs created in a reporting window.
+
+Contributor experience is not tenure, employment, expertise, or historical permission. Return and PR-outcome differences are descriptive and confounded by task selection, scope, prior experience, and current-roster misclassification.
 
 ## Time and state
 
@@ -127,6 +142,7 @@ Topic signals are intended for coverage design and hotspot discovery. They are n
 - **Outstanding review request:** latest add/remove event for a PR–requested-user pair has `removed = 0`.
 - **Latest approval/change request:** the last submitted state per PR–collaborator pair. It is not guaranteed to apply to the current head.
 - **Assigned issue:** at least one current row in `issue_assignee`.
+- **Review-event period:** the reporting window containing the review submission time. Review-ownership results use this clock; PR-burden results use the PR creation cohort and must be labeled accordingly.
 
 Review-intensive is a sampling proxy, not an effort score. No event count is converted into hours.
 
@@ -142,6 +158,18 @@ Review-intensive is a sampling proxy, not an effort score. No event count is con
 Test and benchmark paths indicate possible verifier assets; they do not establish sufficiency, determinism, offline executability, or absence of reference-solution leakage.
 
 Patch variables are used only where commit data is available. They are not used to estimate merge probability because commit coverage is much higher for merged PRs than for open heads.
+
+## Ownership and path-area variables
+
+- **Active people:** distinct artifact authors, reviewers, or merge actors in the stated population and period.
+- **Top-one/top-five share:** share of the stated action count performed by the one or five most active anonymized actors.
+- **Contributors for 50%/80%:** smallest number of actors whose descending activity counts reach the stated cumulative share.
+- **HHI:** sum of squared actor activity shares.
+- **Gini:** inequality of actor activity counts, reported only with the population size and activity unit.
+- **Collaborator portfolio:** engineering only, gatekeeping only, both, or no observed public action, where gatekeeping includes non-author submitted review, issue response, or merge.
+- **Path area:** a single deterministic category per changed file; a PR can touch multiple areas. Areas distinguish V1 runtime, model support, distributed executors, frontend, kernels/native code, platforms/backends, compilation, legacy runtime, tests, benchmarks/evals, documentation, CI/build/packaging, examples, other vLLM Python, and other repository files.
+
+Ownership counts are dependency and benchmark-review signals, not individual performance evaluations. Public outputs contain no actor-level rows or rankings.
 
 ## Validation release gate
 

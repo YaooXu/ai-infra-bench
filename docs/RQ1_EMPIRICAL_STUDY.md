@@ -60,6 +60,17 @@ How did work type, subsystem, and accelerator coverage change?
 
 Issue intent and PR work type are separate, single-label dimensions. Subsystem and hardware are shared, multi-label dimensions. Declared agent assistance is a process-origin flag, not a work type.
 
+### RQ1e: Engineering ownership and contributor lifecycle
+
+Who implements, integrates, and reviews each kind of work, and how much contributor onboarding does the project absorb?
+
+- Separate PR authorship, non-author review, issue response, and merge actions; never use git committer metadata as a generic developer measure.
+- Compare external humans, current triage-only collaborators, and current write-capable collaborators as snapshot-role sensitivity groups.
+- Report engineering and review ownership by work type, technical topic, hardware, subsystem, and concrete changed-path area.
+- Report top-one/top-five shares, contributors needed for 50% and 80% of activity, HHI, and Gini; suppress individual identities and rankings.
+- Measure first-time external authors, within-period contribution frequency, PR-sequence experience, and fixed-horizon return to a second PR.
+- Treat experience/outcome differences as descriptive selection patterns, not contributor-quality or maintainer-bias estimates.
+
 ## 3. Study population and time
 
 The census includes every public issue and PR created in `vllm-project/vllm` from repository launch on 2023-02-09 through the cutoff. Events after the cutoff are ignored, even when the current GitHub state includes them. Artifacts still awaiting a response, closure, review, or merge at the cutoff are right-censored rather than dropped.
@@ -126,7 +137,7 @@ Exclude bots from human responsiveness and maintainer-capacity metrics. The impl
 
 ### 5.2 Maintainers
 
-The snapshot contains 103 active collaborators with triage permission or higher, including 70 with write permission or higher. Because it does not contain membership start and end dates, the implemented analysis calls these users **snapshot collaborators**, not historical maintainers. An actor is an **active snapshot collaborator in month m** when the actor performs at least one qualifying human maintenance action.
+The snapshot contains 103 current collaborator rows with triage permission or higher, including 70 with write permission or higher. Because it does not contain membership start and end dates, the implemented analysis calls these users **snapshot collaborators**, not historical maintainers. An actor is an **active snapshot collaborator in month m** when the actor performs at least one qualifying human maintenance action.
 
 Qualifying actions include a human comment or review on another person's artifact, merge, label/assignment/milestone change, or closure decision. Report sensitivity analyses using thresholds of at least one action, at least three active days, and at least five actions in a month.
 
@@ -185,7 +196,8 @@ The main figures should be:
 3. first-human and first-maintainer response curves;
 4. active maintainers/reviewers and demand-per-maintainer;
 5. workload, subsystem, and hardware composition over time;
-6. review-round and review-concentration distributions.
+6. review-round and review-concentration distributions;
+7. author-role, engineering-ownership, changed-path, reviewer-specialization, and contributor-lifecycle results.
 
 Report medians, interquartile ranges, proportions, and denominators. Use Wilson intervals for fixed-horizon response proportions. Because the snapshot is a table census rather than a random artifact sample, do not attach artificial sampling-error intervals to raw counts; use design-aware bootstrap intervals for manually coded probability samples and cluster-by-month uncertainty for fitted trend models. Counts with heavy tails should not be summarized by means alone.
 
@@ -213,6 +225,8 @@ The PR-derived implementation frame requires sources that are:
 - not a pure revert, duplicate, or dependent slice that would double-count one root cause.
 
 The snapshot yields 16,627 merged, human-authored PRs with commit data before task-feasibility screening. Sample from this or another explicitly declared frame using frozen probabilities, cluster dependent PR series, and record feasibility attrition. Diagnosis and review tasks need their own frames; they cannot inherit implementation-task weights.
+
+Preserve author role and contributor experience as secondary implementation strata. Community-facing bugs and features, first-time-contributor patches, core runtime/refactor work, and specialist hardware/integration work expose different repository knowledge and verifier requirements. These strata inform coverage and expert-review allocation; current roster status must not be presented as historical membership.
 
 Any intermediate candidate count is a project-management artifact. It is not an RQ1 result and should not dominate the empirical study.
 
@@ -246,7 +260,7 @@ The existing memorable-task survey is valuable for task discovery but is a conve
 - reconciled monthly demand, throughput, backlog, response, and competing PR outcomes;
 - human/bot separation and explicit snapshot-collaborator terminology;
 - current operational queues and non-author review/action decomposition;
-- workload, inference-topic, subsystem, hardware, contributor, review, and task-shape results;
+- workload, inference-topic, subsystem, hardware, author-role, contributor-lifecycle, engineering/review ownership, concrete path-area, and task-shape results;
 - an auditable operational codebook and explicit classification provenance;
 - reproducible aggregate pipeline and findings report.
 
