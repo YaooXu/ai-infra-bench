@@ -29,7 +29,8 @@ The pipeline produces aggregate tables for:
 - issue intent, PR work type, inference topic, subsystem, and hardware composition;
 - observable snapshot-collaborator action volume and concentration;
 - review burden by PR outcome, work type, subsystem, hardware, and topic;
-- contributor intake, first-time external authors, and review-capacity sensitivity;
+- author-role work composition, engineering/review/merge concentration, and changed-path ownership;
+- contributor intake, first-time and repeat-author lifecycle, return, and review-capacity sensitivity;
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
 The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the current collaborator roster as a historical maintainer roster. See [the findings report](../../docs/RQ1_FINDINGS.md) for estimands and limitations.

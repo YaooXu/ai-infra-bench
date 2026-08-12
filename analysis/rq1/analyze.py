@@ -61,11 +61,10 @@ def dates(frame: pd.DataFrame, *columns: str) -> None:
 
 
 def period(series: pd.Series) -> pd.Categorical:
-    values = np.select(
-        [series < pd.Timestamp("2025-01-01"), series < pd.Timestamp("2026-01-01")],
-        PERIOD_ORDER[:2],
-        default=PERIOD_ORDER[2],
-    )
+    values = np.full(len(series), None, dtype=object)
+    values[series.notna() & (series < pd.Timestamp("2025-01-01"))] = PERIOD_ORDER[0]
+    values[series.notna() & (series >= pd.Timestamp("2025-01-01")) & (series < pd.Timestamp("2026-01-01"))] = PERIOD_ORDER[1]
+    values[series.notna() & (series >= pd.Timestamp("2026-01-01")) & (series <= CUTOFF)] = PERIOD_ORDER[2]
     return pd.Categorical(values, categories=PERIOD_ORDER, ordered=True)
 
 
@@ -85,6 +84,56 @@ def gini(values: pd.Series) -> float:
     if len(array) == 0 or array.sum() == 0:
         return float("nan")
     return float((2 * np.arange(1, len(array) + 1) - len(array) - 1) @ array / (len(array) * array.sum()))
+
+
+def concentration(values: pd.Series) -> dict[str, float | int]:
+    counts = values[values > 0].sort_values(ascending=False).astype(float)
+    total = counts.sum()
+    if not total:
+        return {
+            "active_people": 0,
+            "top_1_share": float("nan"),
+            "top_5_share": float("nan"),
+            "contributors_for_50pct": 0,
+            "contributors_for_80pct": 0,
+            "hhi": float("nan"),
+            "gini": float("nan"),
+        }
+    shares = counts / total
+    cumulative = shares.cumsum()
+    return {
+        "active_people": len(counts),
+        "top_1_share": float(shares.iloc[0]),
+        "top_5_share": float(shares.head(5).sum()),
+        "contributors_for_50pct": int((cumulative < 0.5).sum() + 1),
+        "contributors_for_80pct": int((cumulative < 0.8).sum() + 1),
+        "hhi": float((shares * shares).sum()),
+        "gini": gini(counts),
+    }
+
+
+def path_area(filename: str) -> str:
+    path = (filename or "").lower()
+    rules = [
+        ("V1 engine/runtime", r"^vllm/v1/"),
+        ("Model executor/support", r"^vllm/model_executor/"),
+        ("Distributed/executors", r"^vllm/(distributed|executor)/"),
+        ("Frontend/entrypoints", r"^vllm/entrypoints/"),
+        ("Kernels/native code", r"^(csrc|vllm/csrc|vllm/attention|vllm/_custom_ops)/"),
+        ("Platforms/backends", r"^vllm/platforms/"),
+        ("Compilation", r"^vllm/compilation/"),
+        ("Legacy engine/worker", r"^vllm/(engine|worker)/"),
+        ("Tests", r"^tests?/"),
+        ("Benchmarks/evals", r"^(benchmarks?|evals?)/"),
+        ("Documentation", r"^docs?/|\.(md|rst)$"),
+        ("CI/build/packaging", r"^(\.buildkite|\.github|docker|requirements)/|^(setup\.py|pyproject\.toml|cmakelists\.txt)$"),
+        ("Examples", r"^examples?/"),
+        ("Other vLLM Python", r"^vllm/"),
+    ]
+    for name, pattern in rules:
+        if re.search(pattern, path):
+            return name
+    return "Other repository files"
 
 
 def km_curve(duration: pd.Series, event: pd.Series) -> pd.DataFrame:
@@ -400,6 +449,16 @@ def main() -> None:
         """,
         conn,
     )
+    git_commit_identity_audit = pd.read_sql_query(
+        """
+        SELECT COUNT(*) AS commits,
+               COUNT(DISTINCT author_email) AS distinct_author_emails,
+               COUNT(DISTINCT committer_email) AS distinct_committer_emails,
+               SUM(CASE WHEN author_email = committer_email THEN 1 ELSE 0 END) AS same_author_committer_email
+        FROM "commit"
+        """,
+        conn,
+    )
     conn.close()
 
     for frame, columns in [
@@ -472,6 +531,11 @@ def main() -> None:
         for i, t, assigned in zip(prs["id"], prs["title"], prs["work_type"])
     ]
     prs["author_role"] = np.select([prs["user_id"].isin(bot_ids), prs["user_id"].isin(collab_ids)], ["Bot", "Snapshot collaborator"], default="External human")
+    prs["author_permission"] = np.select(
+        [prs["user_id"].isin(bot_ids), prs["user_id"].isin(write_ids), prs["user_id"].isin(collab_ids)],
+        ["Bot", "Snapshot write+", "Snapshot triage-only"],
+        default="External human",
+    )
 
     pr_map = prs.set_index("pr_id")["id"]
     author_by_issue = all_issues.set_index("id")["user_id"]
@@ -491,7 +555,14 @@ def main() -> None:
     prs["collab_event"] = prs["first_collab_at"].notna()
     merge_by_issue = merged.sort_values("merged_at").drop_duplicates("issue_id", keep="last").set_index("issue_id")
     prs["merged_at"] = prs["id"].map(merge_by_issue["merged_at"])
+    prs["merger_id"] = prs["id"].map(merge_by_issue["actor_id"])
+    prs["merger_role"] = np.select(
+        [prs["merger_id"].isin(bot_ids), prs["merger_id"].isin(write_ids), prs["merger_id"].isin(collab_ids)],
+        ["Bot", "Snapshot write+", "Snapshot triage-only"],
+        default="Other/unknown",
+    )
     prs["merged"] = prs["merged_at"].notna()
+    prs["author_merged_own_pr"] = prs["merged"] & prs["merger_id"].eq(prs["user_id"])
     prs["closed_unmerged"] = prs["closed_at"].notna() & ~prs["merged"]
     prs["merge_days"] = (prs["merged_at"] - prs["at_risk_at"]).dt.total_seconds() / 86400
     prs["close_days"] = (prs["closed_at"] - prs["at_risk_at"]).dt.total_seconds() / 86400
@@ -535,6 +606,7 @@ def main() -> None:
 
     file_rows = commit_pr.merge(commit_files, on="commit_sha", how="inner").drop_duplicates(["pull_request_id", "commit_sha", "filename"])
     file_rows["issue_id"] = file_rows["pull_request_id"].map(pr_map)
+    file_rows["path_area"] = file_rows["filename"].map(path_area)
     file_agg = file_rows.groupby("issue_id").agg(
         commits=("commit_sha", "nunique"),
         files=("filename", "nunique"),
@@ -1117,10 +1189,283 @@ def main() -> None:
                 })
     review_burden_dimensions = pd.DataFrame(review_dimension_rows)
 
+    # Engineering ownership: distinguish code authored by current write-capable
+    # collaborators from community intake and from review/merge gatekeeping.
+    human_prs = prs[prs["author_role"] != "Bot"].copy()
+    pr_author_role_rows = []
+    for label, period_group in human_prs.groupby("period", observed=False):
+        for permission, role_group in period_group.groupby("author_permission", observed=False):
+            for work_type, group in role_group.groupby("work_type", observed=False):
+                eligible_90 = group[(group["age_days"] >= 90) & group["at_risk_at"].notna()]
+                covered = group[group["commits"] > 0]
+                type_total = int((period_group["work_type"] == work_type).sum())
+                pr_author_role_rows.append({
+                    "period": str(label),
+                    "author_permission": permission,
+                    "work_type": work_type,
+                    "prs": len(group),
+                    "unique_authors": int(group["user_id"].nunique()),
+                    "share_within_author_role": len(group) / len(role_group) if len(role_group) else np.nan,
+                    "share_of_work_type": len(group) / type_total if type_total else np.nan,
+                    "open_at_snapshot_pct": float((group["state"] == "open").mean()) if len(group) else np.nan,
+                    "merged_at_snapshot_pct": float(group["merged"].mean()) if len(group) else np.nan,
+                    "eligible_for_90d_outcome": len(eligible_90),
+                    "merged_within_90d": int((eligible_90["merged"] & (eligible_90["merge_days"] <= 90)).sum()),
+                    "closed_unmerged_within_90d": int((eligible_90["closed_unmerged"] & (eligible_90["close_days"] <= 90)).sum()),
+                    "merged_within_90d_pct": float((eligible_90["merged"] & (eligible_90["merge_days"] <= 90)).mean()) if len(eligible_90) else np.nan,
+                    "closed_unmerged_within_90d_pct": float((eligible_90["closed_unmerged"] & (eligible_90["close_days"] <= 90)).mean()) if len(eligible_90) else np.nan,
+                    "reviewed_by_snapshot_collaborator_pct": float((group["collab_reviews"] > 0).mean()) if len(group) else np.nan,
+                    "collaborator_reviews": int(group["collab_reviews"].sum()),
+                    "median_collaborator_reviews": float(group["collab_reviews"].median()) if len(group) else np.nan,
+                    "commit_data_coverage_pct": float((group["commits"] > 0).mean()) if len(group) else np.nan,
+                    "median_cumulative_churn_when_covered": float(covered["cumulative_churn"].median()) if len(covered) else np.nan,
+                    "test_touched_when_covered_pct": float(covered["test_touched"].mean()) if len(covered) else np.nan,
+                    "hardware_specific_pct": float(group["hardware_specific"].mean()) if len(group) else np.nan,
+                    "review_intensive_pct": float(group["review_intensive"].mean()) if len(group) else np.nan,
+                })
+    pr_by_author_role_and_type = pd.DataFrame(pr_author_role_rows)
+    pr_author_role_summary = pr_by_author_role_and_type.groupby(["period", "author_permission"], observed=False).agg(
+        prs=("prs", "sum"),
+        unique_authors=("unique_authors", "max"),
+        eligible_for_90d_outcome=("eligible_for_90d_outcome", "sum"),
+        merged_within_90d=("merged_within_90d", "sum"),
+        closed_unmerged_within_90d=("closed_unmerged_within_90d", "sum"),
+        collaborator_reviews=("collaborator_reviews", "sum"),
+    ).reset_index()
+    # Unique authors above cannot be summed across work types; recompute exactly.
+    exact_unique_authors = human_prs.groupby(["period", "author_permission"], observed=False)["user_id"].nunique()
+    pr_author_role_summary["unique_authors"] = [
+        exact_unique_authors.get((row.period, row.author_permission), 0)
+        for row in pr_author_role_summary.itertuples(index=False)
+    ]
+    pr_author_role_summary["merged_within_90d_pct"] = pr_author_role_summary["merged_within_90d"] / pr_author_role_summary["eligible_for_90d_outcome"].replace(0, np.nan)
+    pr_author_role_summary["closed_unmerged_within_90d_pct"] = pr_author_role_summary["closed_unmerged_within_90d"] / pr_author_role_summary["eligible_for_90d_outcome"].replace(0, np.nan)
+    role_metrics = human_prs.groupby(["period", "author_permission"], observed=False).agg(
+        open_at_snapshot_pct=("state", lambda values: float((values == "open").mean())),
+        reviewed_by_snapshot_collaborator_pct=("collab_reviews", lambda values: float((values > 0).mean())),
+        hardware_specific_pct=("hardware_specific", "mean"),
+        review_intensive_pct=("review_intensive", "mean"),
+    ).reset_index()
+    pr_author_role_summary = pr_author_role_summary.merge(role_metrics, on=["period", "author_permission"], how="left")
+    pr_author_role_summary["reviews_per_pr"] = pr_author_role_summary["collaborator_reviews"] / pr_author_role_summary["prs"]
+
+    pr_role_dimension_rows = []
+    for prefix, dimension in [("subsystem__", "subsystem"), ("hardware__", "hardware"), ("topic__", "topic")]:
+        for column in [c for c in human_prs if c.startswith(prefix)]:
+            name = column.removeprefix(prefix)
+            for label, period_group in human_prs.groupby("period", observed=False):
+                dimension_total = int(period_group[column].sum())
+                for permission, role_group in period_group.groupby("author_permission", observed=False):
+                    group = role_group[role_group[column]]
+                    if not len(group):
+                        continue
+                    pr_role_dimension_rows.append({
+                        "period": str(label), "dimension": dimension, "name": name,
+                        "author_permission": permission, "prs": len(group),
+                        "unique_authors": int(group["user_id"].nunique()),
+                        "share_within_author_role": len(group) / len(role_group),
+                        "share_of_dimension": len(group) / dimension_total if dimension_total else np.nan,
+                        "merged_at_snapshot_pct": float(group["merged"].mean()),
+                        "reviewed_by_snapshot_collaborator_pct": float((group["collab_reviews"] > 0).mean()),
+                        "collaborator_reviews": int(group["collab_reviews"].sum()),
+                        "reviews_per_pr": float(group["collab_reviews"].mean()),
+                    })
+    pr_by_author_role_and_dimension = pd.DataFrame(pr_role_dimension_rows)
+
+    ownership_rows = []
+
+    def add_ownership(group: pd.DataFrame, period_name: str, population: str, dimension: str, name: str) -> None:
+        if not len(group):
+            return
+        stats = concentration(group.groupby("user_id").size())
+        ownership_rows.append({
+            "period": period_name, "population": population, "dimension": dimension,
+            "name": name, "prs": len(group), **stats,
+        })
+
+    ownership_populations = {
+        "All human authors": human_prs,
+        "Snapshot collaborators": human_prs[human_prs["author_role"] == "Snapshot collaborator"],
+        "Snapshot write+": human_prs[human_prs["author_permission"] == "Snapshot write+"],
+        "External humans": human_prs[human_prs["author_role"] == "External human"],
+    }
+    for population, population_frame in ownership_populations.items():
+        for label, period_group in population_frame.groupby("period", observed=False):
+            add_ownership(period_group, str(label), population, "overall", "All PRs")
+            for name, group in period_group.groupby("work_type", observed=False):
+                add_ownership(group, str(label), population, "work_type", name)
+            for prefix, dimension in [("subsystem__", "subsystem"), ("hardware__", "hardware"), ("topic__", "topic")]:
+                for column in [c for c in period_group if c.startswith(prefix)]:
+                    add_ownership(period_group[period_group[column]], str(label), population, dimension, column.removeprefix(prefix))
+    engineering_ownership = pd.DataFrame(ownership_rows)
+
+    merged_human = human_prs[human_prs["merged"]].copy()
+    merge_gatekeeping_rows = []
+    for (label, work_type), group in merged_human.groupby(["period", "work_type"], observed=False):
+        actor_counts = group.dropna(subset=["merger_id"]).groupby("merger_id").size()
+        stats = concentration(actor_counts)
+        merge_gatekeeping_rows.append({
+            "period": str(label), "work_type": work_type, "merged_prs": len(group),
+            "external_authored_pct": float((group["author_role"] == "External human").mean()),
+            "snapshot_write_authored_pct": float((group["author_permission"] == "Snapshot write+").mean()),
+            "author_merged_own_pr_pct": float(group["author_merged_own_pr"].mean()),
+            "median_days_to_merge": float(group["merge_days"].median()),
+            **{f"merge_actor_{key}": value for key, value in stats.items()},
+        })
+    merge_gatekeeping = pd.DataFrame(merge_gatekeeping_rows)
+    merge_actor_roles = (
+        merged_human.groupby(["period", "merger_role"], observed=False)
+        .size().rename("merged_prs").reset_index()
+    )
+    merge_actor_roles["share"] = merge_actor_roles["merged_prs"] / merge_actor_roles.groupby("period", observed=False)["merged_prs"].transform("sum")
+
+    # Changed-path areas are single-label per file and multi-label per PR. They
+    # expose concrete code ownership below the broad topic taxonomy.
+    pr_area = (
+        file_rows.dropna(subset=["issue_id"])
+        .groupby(["issue_id", "path_area"], observed=False)
+        .agg(area_cumulative_changes=("changes", "sum"), area_files=("filename", "nunique"))
+        .reset_index()
+        .merge(
+            prs[["id", "period", "author_role", "author_permission", "user_id", "merged", "collab_reviews", "review_intensive"]],
+            left_on="issue_id", right_on="id", how="inner",
+        )
+    )
+    path_area_rows = []
+    for (label, area), group in pr_area.groupby(["period", "path_area"], observed=False):
+        total = len(group)
+        for permission, role_group in group.groupby("author_permission", observed=False):
+            path_area_rows.append({
+                "period": str(label), "path_area": area, "author_permission": permission,
+                "prs": len(role_group), "share_of_area_prs": len(role_group) / total,
+                "unique_authors": int(role_group["user_id"].nunique()),
+                "merged_at_snapshot_pct": float(role_group["merged"].mean()),
+                "median_area_cumulative_changes": float(role_group["area_cumulative_changes"].median()),
+                "reviewed_by_snapshot_collaborator_pct": float((role_group["collab_reviews"] > 0).mean()),
+                "reviews_per_pr": float(role_group["collab_reviews"].mean()),
+            })
+    path_area_by_author_role = pd.DataFrame(path_area_rows)
+
+    path_ownership_rows = []
+    for population, population_frame in {
+        "All human authors": pr_area[pr_area["author_role"] != "Bot"],
+        "Snapshot collaborators": pr_area[pr_area["author_role"] == "Snapshot collaborator"],
+        "External humans": pr_area[pr_area["author_role"] == "External human"],
+    }.items():
+        for (label, area), group in population_frame.groupby(["period", "path_area"], observed=False):
+            path_ownership_rows.append({
+                "period": str(label), "population": population, "path_area": area,
+                "prs": len(group), **concentration(group.groupby("user_id").size()),
+            })
+    path_area_ownership = pd.DataFrame(path_ownership_rows)
+
+    # Review ownership and reviewer specialization use review-event time, not PR
+    # creation cohort. They describe who carried gatekeeping work in each period.
+    review_facts = collab_reviews.merge(
+        prs[["id", "work_type"] + [c for c in prs if c.startswith(("subsystem__", "hardware__", "topic__"))]],
+        left_on="issue_id", right_on="id", how="inner",
+    )
+    review_facts["review_period"] = period(review_facts["submitted_at"])
+    review_ownership_rows = []
+
+    def add_review_ownership(group: pd.DataFrame, period_name: str, dimension: str, name: str) -> None:
+        if not len(group):
+            return
+        review_ownership_rows.append({
+            "period": period_name, "dimension": dimension, "name": name,
+            "review_submissions": len(group), "reviewed_prs": int(group["issue_id"].nunique()),
+            **concentration(group.groupby("user_id").size()),
+        })
+
+    for label, period_group in review_facts.groupby("review_period", observed=False):
+        add_review_ownership(period_group, str(label), "overall", "All reviews")
+        for name, group in period_group.groupby("work_type", observed=False):
+            add_review_ownership(group, str(label), "work_type", name)
+        for prefix, dimension in [("subsystem__", "subsystem"), ("hardware__", "hardware"), ("topic__", "topic")]:
+            for column in [c for c in period_group if c.startswith(prefix)]:
+                add_review_ownership(period_group[period_group[column]], str(label), dimension, column.removeprefix(prefix))
+    review_ownership = pd.DataFrame(review_ownership_rows)
+
+    reviewer_specialization_rows = []
+    reviewer_primary_rows = []
+    for label, period_group in review_facts.groupby("review_period", observed=False):
+        profiles = []
+        for reviewer_id, reviewer_group in period_group.groupby("user_id"):
+            counts = reviewer_group.groupby("work_type").size().sort_values(ascending=False)
+            profiles.append({
+                "reviews": len(reviewer_group),
+                "reviewed_prs": reviewer_group["issue_id"].nunique(),
+                "distinct_work_types": len(counts),
+                "primary_work_type": counts.index[0],
+                "primary_work_type_share": counts.iloc[0] / counts.sum(),
+            })
+        profile = pd.DataFrame(profiles)
+        reviewer_specialization_rows.append({
+            "period": str(label), "active_reviewers": len(profile),
+            "median_review_submissions": float(profile["reviews"].median()),
+            "p90_review_submissions": quantile(profile["reviews"], 0.90),
+            "median_distinct_work_types": float(profile["distinct_work_types"].median()),
+            "median_primary_work_type_share": float(profile["primary_work_type_share"].median()),
+            "reviewers_with_majority_specialty_pct": float((profile["primary_work_type_share"] >= 0.5).mean()),
+        })
+        for name, count in profile["primary_work_type"].value_counts().items():
+            reviewer_primary_rows.append({"period": str(label), "primary_work_type": name, "reviewers": int(count), "share": count / len(profile)})
+    reviewer_specialization = pd.DataFrame(reviewer_specialization_rows)
+    reviewer_primary_work_type = pd.DataFrame(reviewer_primary_rows)
+
+    # Anonymized collaborator portfolio overlap separates engineering from
+    # gatekeeping without publishing individual rankings or identifiers.
+    portfolio_frames = []
+    authored_actions = prs[prs["user_id"].isin(collab_ids)][["created_at", "user_id"]].rename(columns={"created_at": "at", "user_id": "actor_id"})
+    authored_actions["portfolio_action"] = "Authored PR"
+    portfolio_frames.append(authored_actions)
+    for frame, at, actor, action in [
+        (collab_reviews, "submitted_at", "user_id", "Submitted review"),
+        (collab_issue_comments, "created_at", "user_id", "Issue response"),
+        (merged[merged["actor_id"].isin(collab_ids)], "merged_at", "actor_id", "Merge"),
+    ]:
+        subset = frame[[at, actor]].rename(columns={at: "at", actor: "actor_id"}).copy()
+        subset["portfolio_action"] = action
+        portfolio_frames.append(subset)
+    portfolio_events = pd.concat(portfolio_frames, ignore_index=True).dropna(subset=["at", "actor_id"])
+    portfolio_events["period"] = period(portfolio_events["at"])
+    portfolio = portfolio_events.groupby(["period", "actor_id", "portfolio_action"], observed=True).size().unstack(fill_value=0).reset_index()
+    for column in ["Authored PR", "Submitted review", "Issue response", "Merge"]:
+        if column not in portfolio:
+            portfolio[column] = 0
+    portfolio["engineering"] = portfolio["Authored PR"] > 0
+    portfolio["gatekeeping"] = (portfolio[["Submitted review", "Issue response", "Merge"]].sum(axis=1) > 0)
+    portfolio["portfolio_type"] = np.select(
+        [portfolio["engineering"] & portfolio["gatekeeping"], portfolio["engineering"], portfolio["gatekeeping"]],
+        ["Engineering and gatekeeping", "Engineering only", "Gatekeeping only"],
+        default="No observed action",
+    )
+    collaborator_portfolio = portfolio.groupby(["period", "portfolio_type"], observed=True).agg(
+        snapshot_collaborators=("actor_id", "nunique"),
+        authored_prs=("Authored PR", "sum"),
+        submitted_reviews=("Submitted review", "sum"),
+        issue_responses=("Issue response", "sum"),
+        merges=("Merge", "sum"),
+    ).reset_index()
+    inactive_rows = []
+    for label in PERIOD_ORDER:
+        observed_people = int(portfolio.loc[portfolio["period"] == label, "actor_id"].nunique())
+        inactive_rows.append({
+            "period": label, "portfolio_type": "No observed public action",
+            "snapshot_collaborators": len(collab_ids) - observed_people,
+            "authored_prs": 0, "submitted_reviews": 0, "issue_responses": 0, "merges": 0,
+        })
+    collaborator_portfolio = pd.concat([collaborator_portfolio, pd.DataFrame(inactive_rows)], ignore_index=True)
+    collaborator_portfolio["share_of_snapshot_roster"] = collaborator_portfolio["snapshot_collaborators"] / len(collab_ids)
+
     contributor_rows = []
     first_pr = prs.groupby("user_id")["created_at"].min()
     prs["author_first_pr_at"] = prs["user_id"].map(first_pr)
     prs["first_time_author_pr"] = prs["created_at"].eq(prs["author_first_pr_at"])
+    ordered_prs = prs.sort_values(["user_id", "created_at", "id"])
+    observed_pr_number = ordered_prs.groupby("user_id").cumcount().add(1)
+    prs.loc[ordered_prs.index, "author_observed_pr_number"] = observed_pr_number.to_numpy()
+    prs["author_observed_pr_number"] = prs["author_observed_pr_number"].astype(int)
     monthly_contributors = prs.groupby("month", observed=False).agg(
         prs=("id", "size"),
         unique_authors=("user_id", "nunique"),
@@ -1145,6 +1490,91 @@ def main() -> None:
             "collaborator_response_7d_pct": float((eligible_7["collab_event"] & (eligible_7["collab_days"] <= 7)).mean()) if len(eligible_7) else np.nan,
         })
     contributors = pd.DataFrame(contributor_rows)
+
+    # Contributor lifecycle metrics expose onboarding demand hidden by raw PR
+    # volume. "External" remains a snapshot-roster definition throughout.
+    external_prs = prs[prs["author_role"] == "External human"].copy()
+    external_prs["experience"] = pd.cut(
+        external_prs["author_observed_pr_number"],
+        bins=[0, 1, 5, np.inf],
+        labels=["First observed PR", "2nd–5th observed PR", "6th+ observed PR"],
+    )
+    external_experience_rows = []
+    for (label, experience), group in external_prs.groupby(["period", "experience"], observed=True):
+        eligible_7 = group[(group["age_days"] >= 7) & group["at_risk_at"].notna()]
+        eligible_90 = group[(group["age_days"] >= 90) & group["at_risk_at"].notna()]
+        external_experience_rows.append({
+            "period": str(label), "experience": str(experience),
+            "prs": len(group), "unique_authors": int(group["user_id"].nunique()),
+            "share_of_external_prs": len(group) / len(external_prs[external_prs["period"] == label]),
+            "collaborator_response_within_7d_pct": float((eligible_7["collab_event"] & (eligible_7["collab_days"] <= 7)).mean()) if len(eligible_7) else np.nan,
+            "reviewed_by_snapshot_collaborator_pct": float((group["collab_reviews"] > 0).mean()),
+            "collaborator_reviews_per_pr": float(group["collab_reviews"].mean()),
+            "eligible_for_90d_outcome": len(eligible_90),
+            "merged_within_90d_pct": float((eligible_90["merged"] & (eligible_90["merge_days"] <= 90)).mean()) if len(eligible_90) else np.nan,
+            "closed_unmerged_within_90d_pct": float((eligible_90["closed_unmerged"] & (eligible_90["close_days"] <= 90)).mean()) if len(eligible_90) else np.nan,
+            "hardware_specific_pct": float(group["hardware_specific"].mean()),
+            "review_intensive_pct": float(group["review_intensive"].mean()),
+        })
+    external_contributor_experience = pd.DataFrame(external_experience_rows)
+
+    external_experience_by_type = (
+        external_prs.groupby(["period", "experience", "work_type"], observed=True)
+        .size().rename("prs").reset_index()
+    )
+    external_experience_by_type["share_within_experience"] = (
+        external_experience_by_type["prs"]
+        / external_experience_by_type.groupby(["period", "experience"], observed=True)["prs"].transform("sum")
+    )
+
+    frequency = (
+        external_prs.groupby(["period", "user_id"], observed=True)
+        .size().rename("prs").reset_index()
+    )
+    frequency["frequency_band"] = pd.cut(
+        frequency["prs"], bins=[0, 1, 4, np.inf],
+        labels=["One PR in period", "2–4 PRs in period", "5+ PRs in period"],
+    )
+    external_contributor_frequency = (
+        frequency.groupby(["period", "frequency_band"], observed=True)
+        .agg(authors=("user_id", "nunique"), prs=("prs", "sum"))
+        .reset_index()
+    )
+    external_contributor_frequency["share_of_external_authors"] = (
+        external_contributor_frequency["authors"]
+        / external_contributor_frequency.groupby("period", observed=True)["authors"].transform("sum")
+    )
+    external_contributor_frequency["share_of_external_prs"] = (
+        external_contributor_frequency["prs"]
+        / external_contributor_frequency.groupby("period", observed=True)["prs"].transform("sum")
+    )
+
+    external_author_dates = (
+        external_prs.sort_values(["user_id", "created_at", "id"])
+        .groupby("user_id")["created_at"]
+        .agg(
+            first_pr_at="first",
+            second_pr_at=lambda values: values.iloc[1] if len(values) > 1 else pd.NaT,
+            observed_prs="size",
+        )
+        .reset_index()
+    )
+    external_author_dates["first_pr_period"] = period(external_author_dates["first_pr_at"])
+    external_author_dates["days_to_second_pr"] = (
+        external_author_dates["second_pr_at"] - external_author_dates["first_pr_at"]
+    ).dt.total_seconds() / 86400
+    retention_rows = []
+    for label, group in external_author_dates.groupby("first_pr_period", observed=True):
+        for horizon in (90, 180, 365):
+            eligible = group[(CUTOFF - group["first_pr_at"]).dt.total_seconds() / 86400 >= horizon]
+            returned = eligible["days_to_second_pr"].notna() & (eligible["days_to_second_pr"] <= horizon)
+            retention_rows.append({
+                "first_pr_period": str(label), "horizon_days": horizon,
+                "first_time_external_authors": len(group), "eligible_authors": len(eligible),
+                "returned_within_horizon": int(returned.sum()),
+                "return_rate": float(returned.mean()) if len(eligible) else np.nan,
+            })
+    external_contributor_retention = pd.DataFrame(retention_rows)
 
     declared_agent_rows = []
     for agent_label in ["claude-code-assisted", "codex"]:
@@ -1207,6 +1637,7 @@ def main() -> None:
         {"check": "snapshot collaborators with triage+", "value": len(collab_ids), "note": "current snapshot, not a historical roster"},
         {"check": "snapshot collaborators with write+", "value": len(write_ids), "note": "current snapshot, not a historical roster"},
         {"check": "bot actors", "value": len(bot_ids), "note": "GitHub user.type = Bot"},
+        {"check": "submitted reviews missing event time", "value": int(reviews["submitted_at"].isna().sum()), "note": "retained in artifact-level burden; excluded from event-period ownership"},
         {"check": "main-branch commits without PR mapping", "value": int(direct_main_commits["commits"].sum()), "note": "81 of 87 occurred in 2023"},
         {"check": "snapshot checksum verified", "value": 1, "note": snapshot_sha256},
     ])
@@ -1214,6 +1645,7 @@ def main() -> None:
     tables = {
         "dataset_audit": audit,
         "direct_main_commits": direct_main_commits,
+        "git_commit_identity_audit": git_commit_identity_audit,
         "monthly_overview": monthly,
         "period_summary": period_summary,
         "response_horizons": response,
@@ -1232,6 +1664,18 @@ def main() -> None:
         "review_burden_by_outcome": review_burden_outcome,
         "review_burden_by_work_type": review_burden_type,
         "review_burden_by_dimension": review_burden_dimensions,
+        "pr_by_author_role_and_type": pr_by_author_role_and_type,
+        "pr_author_role_summary": pr_author_role_summary,
+        "pr_by_author_role_and_dimension": pr_by_author_role_and_dimension,
+        "engineering_ownership": engineering_ownership,
+        "merge_gatekeeping": merge_gatekeeping,
+        "merge_actor_roles": merge_actor_roles,
+        "path_area_by_author_role": path_area_by_author_role,
+        "path_area_ownership": path_area_ownership,
+        "review_ownership": review_ownership,
+        "reviewer_specialization": reviewer_specialization,
+        "reviewer_primary_work_type": reviewer_primary_work_type,
+        "collaborator_portfolio": collaborator_portfolio,
         "task_feasibility": feasibility_summary,
         "benchmark_work_type_strata": benchmark_work_type,
         "benchmark_dimension_strata": benchmark_dimensions,
@@ -1247,6 +1691,10 @@ def main() -> None:
         "current_pr_queue": current_pr_queue,
         "contributors": contributors,
         "monthly_contributors": monthly_contributors,
+        "external_contributor_experience": external_contributor_experience,
+        "external_experience_by_type": external_experience_by_type,
+        "external_contributor_frequency": external_contributor_frequency,
+        "external_contributor_retention": external_contributor_retention,
         "declared_agent_assistance": declared_agent,
         "issue_closure_reason": issue_closure_reason,
         "issue_closure_actor": issue_closure_actor,
@@ -1458,6 +1906,43 @@ def main() -> None:
     fig.savefig(opt.figures / "contributor_pressure.png", bbox_inches="tight")
     plt.close(fig)
 
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.6))
+    recent_frequency = external_contributor_frequency[external_contributor_frequency["period"] == "2026 to May 18"].copy()
+    frequency_order = ["One PR in period", "2–4 PRs in period", "5+ PRs in period"]
+    recent_frequency["frequency_band"] = pd.Categorical(recent_frequency["frequency_band"], frequency_order, ordered=True)
+    recent_frequency = recent_frequency.sort_values("frequency_band")
+    x = np.arange(len(recent_frequency))
+    axes[0].bar(x - 0.18, recent_frequency["share_of_external_authors"] * 100, 0.36, label="Authors", color=COLORS["cyan"])
+    axes[0].bar(x + 0.18, recent_frequency["share_of_external_prs"] * 100, 0.36, label="PRs", color=COLORS["navy"])
+    axes[0].set_xticks(x, ["1", "2–4", "5+"])
+    axes[0].set_title("External contribution frequency, 2026")
+    axes[0].set_xlabel("PRs per author during period")
+    axes[0].set_ylabel("Share (%)")
+    axes[0].legend(fontsize=8)
+
+    recent_experience = external_contributor_experience[external_contributor_experience["period"] == "2026 to May 18"].copy()
+    experience_order = ["First observed PR", "2nd–5th observed PR", "6th+ observed PR"]
+    recent_experience["experience"] = pd.Categorical(recent_experience["experience"], experience_order, ordered=True)
+    recent_experience = recent_experience.sort_values("experience")
+    x = np.arange(len(recent_experience))
+    axes[1].bar(x - 0.18, recent_experience["collaborator_response_within_7d_pct"] * 100, 0.36, label="Collaborator response ≤7d", color=COLORS["orange"])
+    axes[1].bar(x + 0.18, recent_experience["merged_within_90d_pct"] * 100, 0.36, label="Merged ≤90d", color=COLORS["green"])
+    axes[1].set_xticks(x, ["First", "2nd–5th", "6th+"])
+    axes[1].set_title("Experience and external PR outcomes")
+    axes[1].set_ylabel("Eligible PRs (%)")
+    axes[1].legend(fontsize=8)
+
+    retention = external_contributor_retention[external_contributor_retention["horizon_days"] == 90].copy()
+    retention["first_pr_period"] = pd.Categorical(retention["first_pr_period"], PERIOD_ORDER, ordered=True)
+    retention = retention.sort_values("first_pr_period")
+    axes[2].bar(retention["first_pr_period"].astype(str), retention["return_rate"] * 100, color=COLORS["blue"])
+    axes[2].set_title("Return after a first external PR")
+    axes[2].set_ylabel("Second PR within 90 days (%)")
+    axes[2].tick_params(axis="x", rotation=18)
+    fig.tight_layout()
+    fig.savefig(opt.figures / "external_contributor_lifecycle.png", bbox_inches="tight")
+    plt.close(fig)
+
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     recent_complexity = pr_complexity[pr_complexity["period"] == "2026 to May 18"].copy()
     size_order = ["≤20", "21–100", "101–500", "501–2,000", ">2,000"]
@@ -1475,6 +1960,90 @@ def main() -> None:
     fig.savefig(opt.figures / "pr_complexity.png", bbox_inches="tight")
     plt.close(fig)
 
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.2))
+    recent_roles = pr_by_author_role_and_type[
+        (pr_by_author_role_and_type["period"] == "2026 to May 18")
+        & (pr_by_author_role_and_type["author_permission"] != "Bot")
+    ]
+    role_order = ["External human", "Snapshot triage-only", "Snapshot write+"]
+    contribution = recent_roles.pivot(index="work_type", columns="author_permission", values="share_of_work_type").fillna(0)
+    contribution = contribution.reindex(columns=[value for value in role_order if value in contribution.columns]).sort_values("External human")
+    contribution.plot(kind="barh", stacked=True, ax=axes[0], color=[COLORS["cyan"], COLORS["orange"], COLORS["navy"]])
+    axes[0].set_title("Who authored each 2026 PR type?")
+    axes[0].set_xlabel("Share of PR type")
+    axes[0].set_ylabel("")
+    axes[0].legend(loc="upper center", bbox_to_anchor=(0.5, -0.14), ncol=3, fontsize=8)
+    composition = recent_roles.pivot(index="author_permission", columns="work_type", values="share_within_author_role").fillna(0)
+    composition = composition.reindex([value for value in role_order if value in composition.index])
+    composition.plot(kind="bar", stacked=True, ax=axes[1], colormap="tab20")
+    axes[1].set_title("What does each author group work on?")
+    axes[1].set_ylabel("Share of group PRs")
+    axes[1].set_xlabel("")
+    axes[1].tick_params(axis="x", rotation=15)
+    axes[1].legend(loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=7)
+    fig.tight_layout()
+    fig.savefig(opt.figures / "pr_authorship_by_type.png", bbox_inches="tight")
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.2))
+    recent_ownership = engineering_ownership[
+        (engineering_ownership["period"] == "2026 to May 18")
+        & (engineering_ownership["population"] == "Snapshot write+")
+        & (engineering_ownership["dimension"] == "work_type")
+        & (engineering_ownership["prs"] >= 20)
+    ].sort_values("top_5_share")
+    axes[0].barh(recent_ownership["name"], recent_ownership["top_5_share"] * 100, color=COLORS["orange"])
+    axes[0].set_title("2026 write+ engineering concentration")
+    axes[0].set_xlabel("Share authored by top five (%)")
+    recent_review_ownership = review_ownership[
+        (review_ownership["period"] == "2026 to May 18")
+        & (review_ownership["dimension"] == "work_type")
+        & (review_ownership["review_submissions"] >= 20)
+    ].sort_values("top_5_share")
+    axes[1].barh(recent_review_ownership["name"], recent_review_ownership["top_5_share"] * 100, color=COLORS["green"])
+    axes[1].set_title("2026 review ownership concentration")
+    axes[1].set_xlabel("Share submitted by top five reviewers (%)")
+    fig.tight_layout()
+    fig.savefig(opt.figures / "engineering_and_review_ownership.png", bbox_inches="tight")
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.4))
+    recent_area = path_area_by_author_role[
+        (path_area_by_author_role["period"] == "2026 to May 18")
+        & (path_area_by_author_role["author_permission"] != "Bot")
+    ]
+    area_counts = recent_area.groupby("path_area")["prs"].sum().sort_values()
+    axes[0].barh(area_counts.index, area_counts.values, color=COLORS["blue"])
+    axes[0].set_title("2026 PRs touching each path area")
+    axes[0].set_xlabel("PR-area records (multi-label per PR)")
+    area_roles = recent_area.pivot(index="path_area", columns="author_permission", values="share_of_area_prs").fillna(0).reindex(area_counts.index)
+    area_roles = area_roles.reindex(columns=[value for value in role_order if value in area_roles.columns])
+    area_roles.plot(kind="barh", stacked=True, ax=axes[1], color=[COLORS["cyan"], COLORS["orange"], COLORS["navy"]])
+    axes[1].set_title("Who authored work in each path area?")
+    axes[1].set_xlabel("Share of PR-area records")
+    axes[1].set_ylabel("")
+    axes[1].legend(loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=8)
+    fig.tight_layout()
+    fig.savefig(opt.figures / "path_area_ownership.png", bbox_inches="tight")
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.6))
+    portfolio_pivot = collaborator_portfolio.pivot(index="period", columns="portfolio_type", values="share_of_snapshot_roster").fillna(0).reindex(PERIOD_ORDER)
+    portfolio_pivot.plot(kind="bar", stacked=True, ax=axes[0], color=[COLORS["navy"], COLORS["cyan"], COLORS["orange"], COLORS["gray"]])
+    axes[0].set_title("Snapshot-collaborator portfolio overlap")
+    axes[0].set_ylabel("Share of snapshot roster")
+    axes[0].set_xlabel("")
+    axes[0].tick_params(axis="x", rotation=15)
+    axes[0].legend(fontsize=8)
+    specialization = reviewer_specialization.set_index("period").reindex(PERIOD_ORDER)
+    axes[1].bar(PERIOD_ORDER, specialization["median_primary_work_type_share"] * 100, color=COLORS["green"])
+    axes[1].set_title("Reviewer work-type specialization")
+    axes[1].set_ylabel("Median share in primary PR type (%)")
+    axes[1].tick_params(axis="x", rotation=15)
+    fig.tight_layout()
+    fig.savefig(opt.figures / "collaborator_portfolios.png", bbox_inches="tight")
+    plt.close(fig)
+
     summary = {
         "snapshot": {
             "cutoff": str(CUTOFF),
@@ -1482,6 +2051,7 @@ def main() -> None:
         },
         "audit": audit.to_dict(orient="records"),
         "direct_main_commits": direct_main_commits.to_dict(orient="records"),
+        "git_commit_identity_audit": git_commit_identity_audit.to_dict(orient="records"),
         "period_summary": period_summary.to_dict(orient="records"),
         "response_horizons": response.to_dict(orient="records"),
         "response_by_author_role": response_by_author_role.to_dict(orient="records"),
@@ -1494,6 +2064,18 @@ def main() -> None:
         "review_burden_by_outcome": review_burden_outcome.to_dict(orient="records"),
         "review_burden_by_work_type": review_burden_type.to_dict(orient="records"),
         "review_burden_by_dimension": review_burden_dimensions.to_dict(orient="records"),
+        "pr_by_author_role_and_type": pr_by_author_role_and_type.to_dict(orient="records"),
+        "pr_author_role_summary": pr_author_role_summary.to_dict(orient="records"),
+        "pr_by_author_role_and_dimension": pr_by_author_role_and_dimension.to_dict(orient="records"),
+        "engineering_ownership": engineering_ownership.to_dict(orient="records"),
+        "merge_gatekeeping": merge_gatekeeping.to_dict(orient="records"),
+        "merge_actor_roles": merge_actor_roles.to_dict(orient="records"),
+        "path_area_by_author_role": path_area_by_author_role.to_dict(orient="records"),
+        "path_area_ownership": path_area_ownership.to_dict(orient="records"),
+        "review_ownership": review_ownership.to_dict(orient="records"),
+        "reviewer_specialization": reviewer_specialization.to_dict(orient="records"),
+        "reviewer_primary_work_type": reviewer_primary_work_type.to_dict(orient="records"),
+        "collaborator_portfolio": collaborator_portfolio.to_dict(orient="records"),
         "task_feasibility": feasibility_summary.to_dict(orient="records"),
         "topics": topics.to_dict(orient="records"),
         "classification_coverage": classification_coverage.to_dict(orient="records"),
@@ -1504,6 +2086,10 @@ def main() -> None:
         "current_pr_queue": current_pr_queue.to_dict(orient="records"),
         "issue_disposition_horizons": issue_disposition_horizons.to_dict(orient="records"),
         "contributors": contributors.to_dict(orient="records"),
+        "external_contributor_experience": external_contributor_experience.to_dict(orient="records"),
+        "external_experience_by_type": external_experience_by_type.to_dict(orient="records"),
+        "external_contributor_frequency": external_contributor_frequency.to_dict(orient="records"),
+        "external_contributor_retention": external_contributor_retention.to_dict(orient="records"),
         "pr_competing_risks": competing_risks.to_dict(orient="records"),
         "issue_closure_actor": issue_closure_actor.to_dict(orient="records"),
         "issue_outcomes": issue_outcomes.to_dict(orient="records"),
