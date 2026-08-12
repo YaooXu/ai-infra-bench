@@ -1,8 +1,13 @@
 # RQ1 Empirical Study Protocol
 
-Status: draft for team review  
-Repository: `vllm-project/vllm`  
-Observation cutoff: 2026-08-12 23:59:59 UTC
+Status: implemented empirical baseline; human-validation stages pending
+
+Repository: `vllm-project/vllm`
+
+Observation cutoff: 2026-05-18
+
+The current results are reported in [RQ1 Findings](RQ1_FINDINGS.md).
+The implemented variables are specified in the [RQ1 operational codebook](RQ1_CODEBOOK.md).
 
 ## 1. The decision RQ1 must support
 
@@ -67,24 +72,21 @@ Monthly time series are primary. The following windows are descriptive summaries
 
 Partial months are excluded from month-over-month trend models or normalized by observed days and clearly marked.
 
-### Preliminary size check
+### Frozen snapshot size
 
-GitHub Search counts collected on 2026-08-13 provide the following extraction QA targets:
-
-| Creation window | Issues | Pull requests |
+| Artifact | Rows |
 | --- | ---: | ---: |
-| 2023-02-09 through 2024 | 5,778 | 5,388 |
-| 2025 | 6,928 | 12,807 |
-| 2026 through 2026-08-12 | 4,519 | 15,782 |
-| **Total** | **17,225** | **33,977** |
-
-These are provisional checks, not analysis results. Final counts must come from the frozen cursor-paginated snapshot and pass reconciliation tests.
+| Canonical issues | 15,571 |
+| Canonical pull requests | 26,768 |
+| Top-level comments | 178,352 |
+| Submitted reviews | 114,154 |
+| Inline review comments | 110,113 |
 
 ## 4. Data collection
 
 ### 4.1 Sources
 
-Use GitHub GraphQL cursor pagination for the artifact census and REST endpoints where they expose more complete event detail. Do not use the Search API as the primary extractor.
+The canonical source is the [maintainer-provided Fivetran SQLite snapshot](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`. GitHub GraphQL and REST queries are supplementary reconciliation sources, not the primary census.
 
 Collect:
 
@@ -96,7 +98,7 @@ Collect:
 - PR commits, changed files, additions, deletions, draft state, and merge actor;
 - historical `CODEOWNERS`, issue templates, and repository configuration from git.
 
-Pin the API version, record the collection timestamp and query version, retain raw response checksums, and store pagination checkpoints. Fetch PR patches and commit metadata because head branches can later disappear.
+The analysis reads metadata from the SQLite file without publishing bodies, names, email addresses, or row-level actor identities. Pin the analysis version, retain the source checksum, and record every fallback or exclusion.
 
 ### 4.2 Frozen state reconstruction
 
@@ -105,29 +107,30 @@ For each artifact, reconstruct its state as of the cutoff from timestamps and ti
 - a PR opened before the cutoff but merged afterward is open and unmerged in this study;
 - an issue closed and reopened before the cutoff is open at month end;
 - a comment or review submitted after the cutoff is not a response;
-- labels are the labels active at the relevant time, not only the labels visible today.
+- event-derived states use only events observed by the cutoff. The implemented exploratory classifier uses current snapshot labels as auxiliary signals and says so explicitly; a paper-grade temporal label analysis must reconstruct label intervals from history rather than reading current labels backward.
 
 ### 4.3 Quality checks
 
+- Treat existence in `pull_request`, rather than `issue.pull_request`, as the canonical PR discriminator; the snapshot contains one disagreement.
+- Fall back to materialized `closed_at` for 42 closed artifacts without close-history rows.
+- Use materialized state at the snapshot boundary for eight current-state/history disagreements.
 - Reconcile artifact totals against independent GitHub queries by month and type.
-- Assert unique repository/type/number keys and monotonic event timestamps.
 - Manually compare at least 50 randomly sampled reconstructed timelines with the GitHub UI.
-- Re-run 5% of extraction pages and compare content hashes.
 - Publish extraction and exclusion counts at every stage.
 
 ## 5. Operational definitions
 
 ### 5.1 Human and bot activity
 
-Exclude bots from human responsiveness and maintainer-capacity metrics. Detect bots using GitHub actor type, the `[bot]` suffix, known automation accounts, and a manually reviewed high-volume actor list. Report bot responses separately because automated first responses can make a project appear more responsive than it is.
+Exclude bots from human responsiveness and maintainer-capacity metrics. The implemented census uses GitHub actor type, which identifies ten bot actors. Before paper release, audit a privacy-preserving high-volume actor sample for automation accounts incorrectly typed as users and report the sensitivity result without publishing actor rankings. Do not classify arbitrary usernames containing “bot” as automation; that rule has obvious false positives. Report bot responses separately because automated first responses can make a project appear more responsive than it is.
 
 ### 5.2 Maintainers
 
-The preferred definition is a project-provided roster with role start and end dates. An actor is an **active maintainer in month m** when the actor is on that roster during the month and performs at least one qualifying human maintenance action.
+The snapshot contains 103 active collaborators with triage permission or higher, including 70 with write permission or higher. Because it does not contain membership start and end dates, the implemented analysis calls these users **snapshot collaborators**, not historical maintainers. An actor is an **active snapshot collaborator in month m** when the actor performs at least one qualifying human maintenance action.
 
 Qualifying actions include a human comment or review on another person's artifact, merge, label/assignment/milestone change, or closure decision. Report sensitivity analyses using thresholds of at least one action, at least three active days, and at least five actions in a month.
 
-The current `CODEOWNERS` file is useful for subsystem expertise but is not a historical maintainer roster. If an authoritative roster cannot be obtained, use a documented set of observed gatekeepers derived from merge and review actions plus historical `CODEOWNERS`, manually validate it, and call the group **observed gatekeepers**, not maintainers. `author_association` may be used as a sensitivity check, not the sole definition.
+The current `CODEOWNERS` file is useful for subsystem expertise but is not a historical maintainer roster. A project-provided interval roster remains the preferred paper-grade extension. Until then, report both any-human and snapshot-collaborator results and do not silently relabel the latter as historical maintainer response.
 
 ### 5.3 Responses
 
@@ -184,7 +187,7 @@ The main figures should be:
 5. workload, subsystem, and hardware composition over time;
 6. review-round and review-concentration distributions.
 
-Report medians, interquartile ranges, proportions, and bootstrap 95% confidence intervals. Counts with heavy tails should not be summarized by means alone.
+Report medians, interquartile ranges, proportions, and denominators. Use Wilson intervals for fixed-horizon response proportions. Because the snapshot is a table census rather than a random artifact sample, do not attach artificial sampling-error intervals to raw counts; use design-aware bootstrap intervals for manually coded probability samples and cluster-by-month uncertainty for fitted trend models. Counts with heavy tails should not be summarized by means alone.
 
 ### 7.2 Time-to-event analysis
 
@@ -196,11 +199,11 @@ Regression, if used, is secondary and explanatory rather than causal. Check mode
 
 The study may support claims such as “incoming PR volume grew faster than observed review capacity” only when both sides are measured. It must not infer burnout, insufficient staffing, or causality from latency alone. Correlations between demand/capacity ratios and response times are exploratory.
 
-## 8. From RQ1 to the 200-PR candidate pool
+## 8. Interface from RQ1 to the benchmark
 
-The candidate pool is a probability sample from a clearly declared eligible frame, not a hand-picked list of interesting PRs.
+RQ1 is a longitudinal analysis of the full public workload, not a procedure for selecting 200 PRs. Its benchmark role is to define populations, strata, and weights for three separately reported task contracts: implementation, diagnosis/reproduction, and review.
 
-### Eligible frame
+The PR-derived implementation frame requires sources that are:
 
 - created and merged by the cutoff;
 - human-authored and code-changing;
@@ -209,17 +212,9 @@ The candidate pool is a probability sample from a clearly declared eligible fram
 - no known security embargo or privacy restriction;
 - not a pure revert, duplicate, or dependent slice that would double-count one root cause.
 
-Eligibility for sampling does not guarantee that a PR can become a benchmark task.
+The snapshot yields 16,627 merged, human-authored PRs with commit data before task-feasibility screening. Sample from this or another explicitly declared frame using frozen probabilities, cluster dependent PR series, and record feasibility attrition. Diagnosis and review tasks need their own frames; they cannot inherit implementation-task weights.
 
-### Sampling
-
-1. Assign every eligible PR a primary work type, reporting window, subsystem, and hardware tier.
-2. Collapse dependent PR series and shared root causes into clusters before sampling.
-3. Allocate 200 slots proportionally by work type and time, with explicit minimums for bugs, performance, review-intensive work, and heterogeneous hardware.
-4. Draw with a frozen random seed and record first-order inclusion probabilities.
-5. Freeze an ordered reserve list within each stratum. Replace infeasible candidates only from the same stratum and record every exclusion reason.
-
-The final 76 representative tasks are a second-stage sample after feasibility screening. Workload-reweighted benchmark estimates therefore need both source-selection and task-feasibility weights. Unweighted success remains useful, but it is not a population coverage estimate.
+Any intermediate candidate count is a project-management artifact. It is not an RQ1 result and should not dominate the empirical study.
 
 ## 9. Calibrating review effort
 
@@ -247,12 +242,13 @@ The existing memorable-task survey is valuable for task discovery but is a conve
 
 ### Minimum defensible RQ1 snapshot
 
-- frozen artifact and event manifest through the cutoff;
-- reconciled monthly issue/PR arrivals, outcomes, and backlog;
-- bot policy and maintainer-roster decision;
-- preregistered definitions and analysis notebook outputs;
-- taxonomy codebook with a manually audited pilot;
-- frozen 200-PR manifest, reserve order, seed, and inclusion probabilities.
+- frozen, checksummed artifact and event snapshot;
+- reconciled monthly demand, throughput, backlog, response, and competing PR outcomes;
+- human/bot separation and explicit snapshot-collaborator terminology;
+- current operational queues and non-author review/action decomposition;
+- workload, inference-topic, subsystem, hardware, contributor, review, and task-shape results;
+- an auditable operational codebook and explicit classification provenance;
+- reproducible aggregate pipeline and findings report.
 
 ### Paper-grade extension
 
@@ -262,7 +258,7 @@ The existing memorable-task survey is valuable for task discovery but is a conve
 - full sensitivity and attrition analysis;
 - anonymized derived dataset and reproducibility package.
 
-The August 16 milestone should target the minimum defensible snapshot. The paper-grade extension should not be rushed into that deadline.
+The implemented baseline satisfies the quantitative snapshot requirement. Human taxonomy validation, substantive-response annotation, historical-role recovery, and effort calibration remain paper-grade extensions.
 
 ## 12. References
 
