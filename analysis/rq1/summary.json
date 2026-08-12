@@ -45,9 +45,32 @@
       "note": "GitHub user.type = Bot"
     },
     {
+      "check": "main-branch commits without PR mapping",
+      "value": 87,
+      "note": "81 of 87 occurred in 2023"
+    },
+    {
       "check": "snapshot checksum verified",
       "value": 1,
       "note": "1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d"
+    }
+  ],
+  "direct_main_commits": [
+    {
+      "year": "2023",
+      "commits": 81
+    },
+    {
+      "year": "2024",
+      "commits": 3
+    },
+    {
+      "year": "2025",
+      "commits": 2
+    },
+    {
+      "year": "2026",
+      "commits": 1
     }
   ],
   "period_summary": [

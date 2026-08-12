@@ -101,6 +101,8 @@ This missingness is outcome-related: merged commits are more likely to be presen
 
 `issue_referenced` captures commits that reference an issue, not all PR-body links or cross-reference events. The observed issue↔PR link rate is consequently a lower bound and must not be interpreted as the true rate at which issues lead to code changes.
 
+The PR census captures almost all post-launch default-branch change flow. There are 87 `main`-branch commits without a `commit_pull_request` mapping: 81 in 2023, three in 2024, two in 2025, and one in 2026. Thus direct/unmapped commits are an important launch-history caveat but not a large omitted contemporary workload stream in this snapshot.
+
 Current assignments come from `issue_assignee`. Outstanding review requests are reconstructed from the last add/remove event for each PR–reviewer pair. Latest approval and change-request counts are descriptive only: an approval may target an earlier head, and the snapshot does not provide a complete review-thread resolution model.
 
 ## 3. Demand, throughput, and backlog
@@ -406,6 +408,8 @@ Among 2026 merged source-frame PRs, review intensity rises from 3.6% for cumulat
 ![Patch complexity signals](assets/rq1/pr_complexity.png)
 
 This analysis deliberately does not report merge rates by patch-size bin. Commit/file coverage is much better for merged work than for open heads, so such a comparison would be selection-biased. Patch shape is used only to stratify the reconstructible merged source population.
+
+Declared coding-agent labels are too sparse for a prevalence claim: the snapshot contains eight PRs labeled `claude-code-assisted` and two labeled `codex`, all merged. Label adoption is voluntary and recent, so these ten records cannot estimate how often agents already contribute, how successful they are, or whether agent-assisted PRs require more review.
 
 ### A candidate is not yet a benchmark task
 

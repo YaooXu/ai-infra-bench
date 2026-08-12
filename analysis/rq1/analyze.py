@@ -388,6 +388,18 @@ def main() -> None:
         "requested_reviewer_history",
         "created_at, pull_request_id, requested_id, actor_id, removed, requested_reviewer_type",
     )
+    direct_main_commits = pd.read_sql_query(
+        """
+        SELECT strftime('%Y', c.committer_date) AS year,
+               COUNT(DISTINCT b.commit_sha) AS commits
+        FROM branch_commit_relation b
+        JOIN "commit" c ON c.sha = b.commit_sha
+        LEFT JOIN commit_pull_request cp ON cp.commit_sha = b.commit_sha
+        WHERE b.branch_name = 'main' AND cp.commit_sha IS NULL
+        GROUP BY 1 ORDER BY 1
+        """,
+        conn,
+    )
     conn.close()
 
     for frame, columns in [
@@ -1195,11 +1207,13 @@ def main() -> None:
         {"check": "snapshot collaborators with triage+", "value": len(collab_ids), "note": "current snapshot, not a historical roster"},
         {"check": "snapshot collaborators with write+", "value": len(write_ids), "note": "current snapshot, not a historical roster"},
         {"check": "bot actors", "value": len(bot_ids), "note": "GitHub user.type = Bot"},
+        {"check": "main-branch commits without PR mapping", "value": int(direct_main_commits["commits"].sum()), "note": "81 of 87 occurred in 2023"},
         {"check": "snapshot checksum verified", "value": 1, "note": snapshot_sha256},
     ])
 
     tables = {
         "dataset_audit": audit,
+        "direct_main_commits": direct_main_commits,
         "monthly_overview": monthly,
         "period_summary": period_summary,
         "response_horizons": response,
@@ -1467,6 +1481,7 @@ def main() -> None:
             "sha256": snapshot_sha256,
         },
         "audit": audit.to_dict(orient="records"),
+        "direct_main_commits": direct_main_commits.to_dict(orient="records"),
         "period_summary": period_summary.to_dict(orient="records"),
         "response_horizons": response.to_dict(orient="records"),
         "response_by_author_role": response_by_author_role.to_dict(orient="records"),
