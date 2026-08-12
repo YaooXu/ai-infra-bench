@@ -1,0 +1,3 @@
+# Local benchmark outputs can be large and may contain private trajectories.
+runs/
+*.csv
