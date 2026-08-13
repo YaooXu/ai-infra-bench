@@ -17,6 +17,7 @@ We will evaluate Claude Opus 5, GPT-5.6, Hunyuan 3, Qwen 3.8 Max, Kimi K3, GLM 5
 
 - [Weekly sync notes](https://docs.google.com/document/d/16E7Xm08JTIwKT6pbC5YezCEu-UbbNDzA1PTjk0ZH724/edit?tab=t.0#heading=h.45siya4cjzvw)
 - [vLLM workload report (PDF)](output/pdf/vllm_rq1_workload_report_2026-07-31_zh.pdf) ([English](docs/RQ1_FINDINGS.md), [中文](docs/RQ1_FINDINGS_ZH.md))
+- [vLLM component taxonomy](docs/VLLM_COMPONENT_TAXONOMY.md)
 - [vLLM workload dataset](analysis/rq1/README.md#merged-database)
 - [Benchmark design](docs/BENCHMARK_DESIGN.md)
 - [Dataset card](docs/DATASET_CARD.md)

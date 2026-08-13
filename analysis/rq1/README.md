@@ -31,6 +31,14 @@ The pipeline produces aggregate tables for:
 - contributor intake, first-time and repeat-author lifecycle, return, and review-capacity sensitivity;
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
+The separate [vLLM component taxonomy](../../docs/VLLM_COMPONENT_TAXONOMY.md) triangulates the cutoff source tree, CODEOWNERS, Buildkite test and hardware domains, and 2026 changed paths. Reproduce it with:
+
+```bash
+python3 analysis/rq1/analyze_vllm_components.py
+```
+
+This component analysis additionally uses PyYAML and pathspec to read the maintainer-authored CI and CODEOWNERS definitions.
+
 The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the May 18 collaborator roster as a historical maintainer roster. See the [academic PDF report](../../output/pdf/vllm_rq1_workload_report_2026-07-31_zh.pdf), [English findings](../../docs/RQ1_FINDINGS.md), [Chinese findings](../../docs/RQ1_FINDINGS_ZH.md), or [May-to-July conclusion audit](../../docs/RQ1_CHANGE_AUDIT_2026-07-31.md) for estimands and limitations.
 
 Regenerate the academic PDF with:
