@@ -3,3 +3,8 @@ runs/
 *.csv
 __pycache__/
 *.pyc
+
+# Raw GitHub snapshots contain public text and actor identifiers and are large.
+# Keep them on local storage; only aggregate, identity-free outputs are versioned.
+data/raw/
+data/derived/
