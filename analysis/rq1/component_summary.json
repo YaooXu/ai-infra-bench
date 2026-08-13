@@ -1,0 +1,826 @@
+{
+  "cutoff": "2026-07-31T23:59:59Z",
+  "source_commit": "e3be89673db6143c1f9c8689d853b9c7c7a5eb29",
+  "source_commit_time": "2026-07-31T14:48:27-07:00",
+  "method": {
+    "evidence": [
+      "vLLM source tree",
+      "vLLM CODEOWNERS careful-review paths",
+      "Buildkite test areas and hardware jobs",
+      "2026 pull-request changed paths"
+    ],
+    "component_labels_are_multilabel": true,
+    "primary_component_rule": "Highest weighted changed-file score; source file=2, test file=1; taxonomy order breaks ties.",
+    "separate_axes": [
+      "work type",
+      "component",
+      "capability/topic",
+      "hardware backend",
+      "verification surface"
+    ]
+  },
+  "taxonomy": [
+    {
+      "name": "Scheduler and core runtime",
+      "layer": "Runtime control plane",
+      "description": "Request scheduling, batch formation, block coordination, and core state machines."
+    },
+    {
+      "name": "Engine lifecycle",
+      "layer": "Runtime control plane",
+      "description": "Synchronous/asynchronous engine APIs, engine processes, lifecycle, and IPC."
+    },
+    {
+      "name": "Worker and model runner",
+      "layer": "Execution data plane",
+      "description": "Device workers, model runners, execution state, and GPU/CPU execution loops."
+    },
+    {
+      "name": "KV cache and data movement",
+      "layer": "Execution data plane",
+      "description": "KV allocation, caching, connectors, offload, and prefill/decode data transfer."
+    },
+    {
+      "name": "Distributed execution",
+      "layer": "Execution data plane",
+      "description": "Executors, collectives, tensor/data/pipeline parallelism, and multi-node coordination."
+    },
+    {
+      "name": "Serving APIs and frontend",
+      "layer": "Serving and request interface",
+      "description": "OpenAI/Anthropic-compatible servers, CLI, MCP, pooling, scale-out, and Rust frontend."
+    },
+    {
+      "name": "Input, multimodal, and rendering",
+      "layer": "Model and data semantics",
+      "description": "Input preprocessing, multimodal data, tokenization, chat rendering, parsers, and tools."
+    },
+    {
+      "name": "Model implementations and registry",
+      "layer": "Model and data semantics",
+      "description": "Model architectures, registry integration, configs, processors, and model-specific behavior."
+    },
+    {
+      "name": "Model loading and execution layers",
+      "layer": "Model and data semantics",
+      "description": "Weights, loaders, generic neural-network layers, warmup, offloading, and execution utilities."
+    },
+    {
+      "name": "Attention",
+      "layer": "Kernels and compilation",
+      "description": "Attention backends, attention layers, paged attention, and flash-attention integration."
+    },
+    {
+      "name": "Kernels and custom operators",
+      "layer": "Kernels and compilation",
+      "description": "Native/Triton/Helion operators and low-level operator bindings not owned by a narrower domain."
+    },
+    {
+      "name": "Quantization and low precision",
+      "layer": "Kernels and compilation",
+      "description": "Quantization configurations, low-precision layers, formats, and quantized kernels."
+    },
+    {
+      "name": "MoE and expert parallelism",
+      "layer": "Execution data plane",
+      "description": "Mixture-of-experts layers and kernels, expert parallelism, load balancing, and routing."
+    },
+    {
+      "name": "Compilation, graphs, and IR",
+      "layer": "Kernels and compilation",
+      "description": "torch.compile integration, graph capture, compilation passes, and vLLM IR."
+    },
+    {
+      "name": "Sampling",
+      "layer": "Execution data plane",
+      "description": "Logits processing, sampling algorithms, and output selection."
+    },
+    {
+      "name": "Speculative decoding",
+      "layer": "Execution data plane",
+      "description": "Draft-model, EAGLE, Medusa, MTP, and speculative decoding orchestration."
+    },
+    {
+      "name": "LoRA and adapters",
+      "layer": "Model and data semantics",
+      "description": "LoRA execution, adapter management, resolver plugins, and related kernels."
+    },
+    {
+      "name": "Platform and device abstraction",
+      "layer": "Platform and operations",
+      "description": "Runtime selection and behavioral abstraction for CUDA, ROCm, CPU, XPU, TPU, and plugins."
+    },
+    {
+      "name": "Reliability and observability",
+      "layer": "Platform and operations",
+      "description": "Fault tolerance, health, metrics, tracing, profiling, logging, and usage telemetry."
+    },
+    {
+      "name": "Configuration and shared infrastructure",
+      "layer": "Platform and operations",
+      "description": "Configuration, environment settings, shared utilities, public parameters, and common infrastructure."
+    }
+  ],
+  "source": {
+    "tracked_files": 6321,
+    "code_files": 5065,
+    "code_lines": 1591043,
+    "production_files": 3463,
+    "production_code_lines": 1031612,
+    "component_summary": [
+      {
+        "layer": "Model and data semantics",
+        "component": "Model implementations and registry",
+        "tracked_files": 677,
+        "code_files": 669,
+        "code_lines": 293625,
+        "production_files": 476,
+        "production_code_files": 476,
+        "production_code_lines": 255503,
+        "test_files": 201,
+        "test_code_lines": 38122
+      },
+      {
+        "layer": "Serving and request interface",
+        "component": "Serving APIs and frontend",
+        "tracked_files": 840,
+        "code_files": 743,
+        "code_lines": 199476,
+        "production_files": 602,
+        "production_code_files": 505,
+        "production_code_lines": 143679,
+        "test_files": 238,
+        "test_code_lines": 55797
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Kernels and custom operators",
+        "tracked_files": 573,
+        "code_files": 554,
+        "code_lines": 211024,
+        "production_files": 340,
+        "production_code_files": 321,
+        "production_code_lines": 132064,
+        "test_files": 233,
+        "test_code_lines": 78960
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "Model loading and execution layers",
+        "tracked_files": 976,
+        "code_files": 413,
+        "code_lines": 133143,
+        "production_files": 929,
+        "production_code_files": 366,
+        "production_code_lines": 125676,
+        "test_files": 47,
+        "test_code_lines": 7467
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Quantization and low precision",
+        "tracked_files": 911,
+        "code_files": 520,
+        "code_lines": 119239,
+        "production_files": 642,
+        "production_code_files": 272,
+        "production_code_lines": 81845,
+        "test_files": 216,
+        "test_code_lines": 32123
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "Input, multimodal, and rendering",
+        "tracked_files": 444,
+        "code_files": 433,
+        "code_lines": 127130,
+        "production_files": 289,
+        "production_code_files": 282,
+        "production_code_lines": 73406,
+        "test_files": 155,
+        "test_code_lines": 53724
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "KV cache and data movement",
+        "tracked_files": 315,
+        "code_files": 304,
+        "code_lines": 121176,
+        "production_files": 169,
+        "production_code_files": 167,
+        "production_code_lines": 59866,
+        "test_files": 136,
+        "test_code_lines": 60857
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "MoE and expert parallelism",
+        "tracked_files": 612,
+        "code_files": 279,
+        "code_lines": 93895,
+        "production_files": 462,
+        "production_code_files": 133,
+        "production_code_lines": 58508,
+        "test_files": 150,
+        "test_code_lines": 35387
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Distributed execution",
+        "tracked_files": 213,
+        "code_files": 211,
+        "code_lines": 75147,
+        "production_files": 150,
+        "production_code_files": 148,
+        "production_code_lines": 57000,
+        "test_files": 63,
+        "test_code_lines": 18147
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Attention",
+        "tracked_files": 138,
+        "code_files": 136,
+        "code_lines": 64186,
+        "production_files": 106,
+        "production_code_files": 105,
+        "production_code_lines": 51265,
+        "test_files": 30,
+        "test_code_lines": 11154
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Worker and model runner",
+        "tracked_files": 146,
+        "code_files": 139,
+        "code_lines": 44766,
+        "production_files": 103,
+        "production_code_files": 102,
+        "production_code_lines": 34351,
+        "test_files": 35,
+        "test_code_lines": 10179
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Configuration and shared infrastructure",
+        "tracked_files": 89,
+        "code_files": 87,
+        "code_lines": 29679,
+        "production_files": 75,
+        "production_code_files": 75,
+        "production_code_lines": 26264,
+        "test_files": 14,
+        "test_code_lines": 3415
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Compilation, graphs, and IR",
+        "tracked_files": 134,
+        "code_files": 131,
+        "code_lines": 39374,
+        "production_files": 57,
+        "production_code_files": 57,
+        "production_code_lines": 19076,
+        "test_files": 75,
+        "test_code_lines": 20298
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "LoRA and adapters",
+        "tracked_files": 89,
+        "code_files": 87,
+        "code_lines": 26190,
+        "production_files": 46,
+        "production_code_files": 45,
+        "production_code_lines": 14411,
+        "test_files": 42,
+        "test_code_lines": 11779
+      },
+      {
+        "layer": "Runtime control plane",
+        "component": "Engine lifecycle",
+        "tracked_files": 42,
+        "code_files": 42,
+        "code_lines": 22162,
+        "production_files": 20,
+        "production_code_files": 20,
+        "production_code_lines": 13644,
+        "test_files": 22,
+        "test_code_lines": 8518
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Speculative decoding",
+        "tracked_files": 80,
+        "code_files": 80,
+        "code_lines": 20796,
+        "production_files": 45,
+        "production_code_files": 45,
+        "production_code_lines": 11870,
+        "test_files": 33,
+        "test_code_lines": 8462
+      },
+      {
+        "layer": "Runtime control plane",
+        "component": "Scheduler and core runtime",
+        "tracked_files": 37,
+        "code_files": 37,
+        "code_lines": 30606,
+        "production_files": 15,
+        "production_code_files": 15,
+        "production_code_lines": 11261,
+        "test_files": 22,
+        "test_code_lines": 19345
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Reliability and observability",
+        "tracked_files": 39,
+        "code_files": 39,
+        "code_lines": 9814,
+        "production_files": 28,
+        "production_code_files": 28,
+        "production_code_lines": 6800,
+        "test_files": 11,
+        "test_code_lines": 3014
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Sampling",
+        "tracked_files": 39,
+        "code_files": 39,
+        "code_lines": 13983,
+        "production_files": 17,
+        "production_code_files": 17,
+        "production_code_lines": 5883,
+        "test_files": 22,
+        "test_code_lines": 8100
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Platform and device abstraction",
+        "tracked_files": 42,
+        "code_files": 42,
+        "code_lines": 6761,
+        "production_files": 16,
+        "production_code_files": 16,
+        "production_code_lines": 5483,
+        "test_files": 26,
+        "test_code_lines": 1278
+      }
+    ]
+  },
+  "buildkite": {
+    "area_files": 34,
+    "groups": 34,
+    "steps": 205,
+    "steps_with_component_mapping": 169,
+    "steps_spanning_multiple_components": 124,
+    "largest_groups": {
+      "LM Eval": 25,
+      "Kernels": 20,
+      "Miscellaneous": 16,
+      "Distributed": 14,
+      "Compile": 13,
+      "Disaggregated": 12,
+      "Models - Multimodal": 11,
+      "Entrypoints": 11,
+      "Spec Decode": 11,
+      "Models - Language": 8,
+      "Engine": 7,
+      "PyTorch": 7
+    }
+  },
+  "hardware_ci": {
+    "files": 6,
+    "steps": 19,
+    "optional_steps": 5,
+    "soft_fail_steps": 5,
+    "devices": {
+      "intel_cpu": 8,
+      "amd_cpu": 3,
+      "intel_gpu": 3,
+      "ascend_npu": 1,
+      "arm_cpu": 1,
+      "gh200": 1,
+      "intel_hpu": 1
+    }
+  },
+  "codeowners": {
+    "entries": 160,
+    "ownerless_entries": 1,
+    "entries_with_component_mapping": 114,
+    "production_files_covered": 2358,
+    "production_file_coverage": 0.6809125036095871,
+    "prs_with_files_touching_codeowned_path": 10674,
+    "share_of_prs_with_files_touching_codeowned_path": 0.8339714040159387,
+    "component_entry_counts": {
+      "Serving APIs and frontend": 18,
+      "Input, multimodal, and rendering": 15,
+      "Attention": 13,
+      "Model implementations and registry": 13,
+      "Model loading and execution layers": 10,
+      "KV cache and data movement": 7,
+      "Worker and model runner": 7,
+      "Kernels and custom operators": 6,
+      "Configuration and shared infrastructure": 6,
+      "Distributed execution": 5,
+      "Sampling": 3,
+      "Platform and device abstraction": 3,
+      "Compilation, graphs, and IR": 2,
+      "LoRA and adapters": 2,
+      "MoE and expert parallelism": 2,
+      "Quantization and low precision": 2,
+      "Engine lifecycle": 2,
+      "Scheduler and core runtime": 2,
+      "Speculative decoding": 1
+    },
+    "interpretation": "CODEOWNERS explicitly describes careful-review surfaces, not an exhaustive architecture taxonomy."
+  },
+  "pull_requests_2026": {
+    "total": 14718,
+    "with_observed_files": 12799,
+    "with_component": 11196,
+    "component_coverage_of_prs_with_files": 0.8747558403000234,
+    "component_coverage_of_all_prs": 0.7607011822258459,
+    "stable_with_observed_files": 11592,
+    "stable_with_component": 10082,
+    "stable_component_coverage": 0.8697377501725327,
+    "unclassified_with_files": 1603,
+    "unclassified_support_only": 1466,
+    "median_components_per_classified_pr": 2.0,
+    "multi_component_prs": 5932,
+    "multi_component_share_of_classified": 0.5298320828867452,
+    "prevalence": [
+      {
+        "layer": "Model and data semantics",
+        "component": "Model loading and execution layers",
+        "any_prs": 2744,
+        "any_share_of_prs_with_files": 0.21439174935541838,
+        "primary_prs": 840,
+        "primary_share_of_prs_with_files": 0.06563012735369951
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "Model implementations and registry",
+        "any_prs": 2429,
+        "any_share_of_prs_with_files": 0.18978045159778106,
+        "primary_prs": 1577,
+        "primary_share_of_prs_with_files": 0.12321275099617157
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Configuration and shared infrastructure",
+        "any_prs": 2024,
+        "any_share_of_prs_with_files": 0.1581373544808188,
+        "primary_prs": 398,
+        "primary_share_of_prs_with_files": 0.031096179389014766
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Kernels and custom operators",
+        "any_prs": 1799,
+        "any_share_of_prs_with_files": 0.14055785608250645,
+        "primary_prs": 550,
+        "primary_share_of_prs_with_files": 0.04297210719587468
+      },
+      {
+        "layer": "Serving and request interface",
+        "component": "Serving APIs and frontend",
+        "any_prs": 1746,
+        "any_share_of_prs_with_files": 0.13641690757090397,
+        "primary_prs": 1217,
+        "primary_share_of_prs_with_files": 0.09508555355887179
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Quantization and low precision",
+        "any_prs": 1736,
+        "any_share_of_prs_with_files": 0.13563559653097898,
+        "primary_prs": 743,
+        "primary_share_of_prs_with_files": 0.058051410266427066
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Worker and model runner",
+        "any_prs": 1616,
+        "any_share_of_prs_with_files": 0.12625986405187906,
+        "primary_prs": 835,
+        "primary_share_of_prs_with_files": 0.06523947183373702
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "Input, multimodal, and rendering",
+        "any_prs": 1557,
+        "any_share_of_prs_with_files": 0.12165012891632158,
+        "primary_prs": 966,
+        "primary_share_of_prs_with_files": 0.07547464645675443
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "KV cache and data movement",
+        "any_prs": 1494,
+        "any_share_of_prs_with_files": 0.11672786936479412,
+        "primary_prs": 776,
+        "primary_share_of_prs_with_files": 0.060629736698179545
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "MoE and expert parallelism",
+        "any_prs": 1413,
+        "any_share_of_prs_with_files": 0.11039924994140167,
+        "primary_prs": 553,
+        "primary_share_of_prs_with_files": 0.04320650050785218
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Attention",
+        "any_prs": 1346,
+        "any_share_of_prs_with_files": 0.1051644659739042,
+        "primary_prs": 778,
+        "primary_share_of_prs_with_files": 0.06078599890616455
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Distributed execution",
+        "any_prs": 1329,
+        "any_share_of_prs_with_files": 0.10383623720603172,
+        "primary_prs": 251,
+        "primary_share_of_prs_with_files": 0.019610907102117353
+      },
+      {
+        "layer": "Runtime control plane",
+        "component": "Engine lifecycle",
+        "any_prs": 959,
+        "any_share_of_prs_with_files": 0.07492772872880694,
+        "primary_prs": 339,
+        "primary_share_of_prs_with_files": 0.0264864442534573
+      },
+      {
+        "layer": "Runtime control plane",
+        "component": "Scheduler and core runtime",
+        "any_prs": 842,
+        "any_share_of_prs_with_files": 0.0657863895616845,
+        "primary_prs": 383,
+        "primary_share_of_prs_with_files": 0.029924212829127276
+      },
+      {
+        "layer": "Kernels and compilation",
+        "component": "Compilation, graphs, and IR",
+        "any_prs": 805,
+        "any_share_of_prs_with_files": 0.06289553871396203,
+        "primary_prs": 308,
+        "primary_share_of_prs_with_files": 0.02406438002968982
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Speculative decoding",
+        "any_prs": 686,
+        "any_share_of_prs_with_files": 0.053597937338854595,
+        "primary_prs": 158,
+        "primary_share_of_prs_with_files": 0.012344714430814908
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Platform and device abstraction",
+        "any_prs": 615,
+        "any_share_of_prs_with_files": 0.04805062895538714,
+        "primary_prs": 147,
+        "primary_share_of_prs_with_files": 0.011485272286897413
+      },
+      {
+        "layer": "Model and data semantics",
+        "component": "LoRA and adapters",
+        "any_prs": 423,
+        "any_share_of_prs_with_files": 0.033049456988827254,
+        "primary_prs": 157,
+        "primary_share_of_prs_with_files": 0.012266583326822409
+      },
+      {
+        "layer": "Execution data plane",
+        "component": "Sampling",
+        "any_prs": 408,
+        "any_share_of_prs_with_files": 0.03187749042893976,
+        "primary_prs": 149,
+        "primary_share_of_prs_with_files": 0.011641534494882413
+      },
+      {
+        "layer": "Platform and operations",
+        "component": "Reliability and observability",
+        "any_prs": 287,
+        "any_share_of_prs_with_files": 0.02242362684584733,
+        "primary_prs": 71,
+        "primary_share_of_prs_with_files": 0.005547308383467458
+      }
+    ],
+    "layer_totals_note": "Any-PR totals overlap; primary-PR totals do not.",
+    "layer_totals": [
+      {
+        "layer": "Model and data semantics",
+        "any_prs": 7153,
+        "primary_prs": 3540
+      },
+      {
+        "layer": "Execution data plane",
+        "any_prs": 6946,
+        "primary_prs": 2722
+      },
+      {
+        "layer": "Kernels and compilation",
+        "any_prs": 5686,
+        "primary_prs": 2379
+      },
+      {
+        "layer": "Platform and operations",
+        "any_prs": 2926,
+        "primary_prs": 616
+      },
+      {
+        "layer": "Runtime control plane",
+        "any_prs": 1801,
+        "primary_prs": 722
+      },
+      {
+        "layer": "Serving and request interface",
+        "any_prs": 1746,
+        "primary_prs": 1217
+      }
+    ],
+    "support_surfaces": [
+      {
+        "surface": "Tests and verification",
+        "prs": 6166,
+        "share_of_prs_with_files": 0.4817563872177514
+      },
+      {
+        "surface": "Build, packaging, and CI",
+        "prs": 1929,
+        "share_of_prs_with_files": 0.15071489960153137
+      },
+      {
+        "surface": "Documentation",
+        "prs": 1486,
+        "share_of_prs_with_files": 0.11610282053285413
+      },
+      {
+        "surface": "Benchmarks and evaluation",
+        "prs": 601,
+        "share_of_prs_with_files": 0.046956793499492146
+      },
+      {
+        "surface": "Examples",
+        "prs": 466,
+        "share_of_prs_with_files": 0.03640909446050473
+      }
+    ],
+    "hardware_backends_from_paths": [
+      {
+        "backend": "CUDA/NVIDIA",
+        "prs": 1654,
+        "share_of_prs_with_files": 0.12922884600359402
+      },
+      {
+        "backend": "ROCm/AMD",
+        "prs": 1380,
+        "share_of_prs_with_files": 0.1078209235096492
+      },
+      {
+        "backend": "CPU",
+        "prs": 679,
+        "share_of_prs_with_files": 0.0530510196109071
+      },
+      {
+        "backend": "XPU/Intel",
+        "prs": 624,
+        "share_of_prs_with_files": 0.04875380889131963
+      },
+      {
+        "backend": "TPU",
+        "prs": 104,
+        "share_of_prs_with_files": 0.00812563481521994
+      }
+    ],
+    "largest_component_overlaps": [
+      {
+        "left": "Model loading and execution layers",
+        "right": "Quantization and low precision",
+        "prs": 1310,
+        "jaccard": 0.41324921135646686
+      },
+      {
+        "left": "MoE and expert parallelism",
+        "right": "Model loading and execution layers",
+        "prs": 1148,
+        "jaccard": 0.38152210036556994
+      },
+      {
+        "left": "Kernels and custom operators",
+        "right": "Model loading and execution layers",
+        "prs": 932,
+        "jaccard": 0.2581002492384381
+      },
+      {
+        "left": "Distributed execution",
+        "right": "KV cache and data movement",
+        "prs": 835,
+        "jaccard": 0.4200201207243461
+      },
+      {
+        "left": "Kernels and custom operators",
+        "right": "Quantization and low precision",
+        "prs": 827,
+        "jaccard": 0.3053914327917282
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Model loading and execution layers",
+        "prs": 805,
+        "jaccard": 0.2031289427201615
+      },
+      {
+        "left": "Model implementations and registry",
+        "right": "Model loading and execution layers",
+        "prs": 779,
+        "jaccard": 0.17728720983158852
+      },
+      {
+        "left": "MoE and expert parallelism",
+        "right": "Quantization and low precision",
+        "prs": 745,
+        "jaccard": 0.3099001663893511
+      },
+      {
+        "left": "Attention",
+        "right": "Model loading and execution layers",
+        "prs": 677,
+        "jaccard": 0.1983592147670671
+      },
+      {
+        "left": "Kernels and custom operators",
+        "right": "MoE and expert parallelism",
+        "prs": 675,
+        "jaccard": 0.26606227828143475
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Worker and model runner",
+        "prs": 645,
+        "jaccard": 0.21535893155258765
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Model implementations and registry",
+        "prs": 621,
+        "jaccard": 0.16205636743215032
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Kernels and custom operators",
+        "prs": 573,
+        "jaccard": 0.1763076923076923
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Engine lifecycle",
+        "prs": 559,
+        "jaccard": 0.2306105610561056
+      },
+      {
+        "left": "KV cache and data movement",
+        "right": "Scheduler and core runtime",
+        "prs": 532,
+        "jaccard": 0.29490022172949004
+      },
+      {
+        "left": "Attention",
+        "right": "Kernels and custom operators",
+        "prs": 528,
+        "jaccard": 0.20175773786778756
+      },
+      {
+        "left": "Input, multimodal, and rendering",
+        "right": "Model implementations and registry",
+        "prs": 514,
+        "jaccard": 0.1480414746543779
+      },
+      {
+        "left": "Attention",
+        "right": "Configuration and shared infrastructure",
+        "prs": 513,
+        "jaccard": 0.17955897794889744
+      },
+      {
+        "left": "Configuration and shared infrastructure",
+        "right": "Quantization and low precision",
+        "prs": 499,
+        "jaccard": 0.15302054584483288
+      },
+      {
+        "left": "Model implementations and registry",
+        "right": "Worker and model runner",
+        "prs": 476,
+        "jaccard": 0.133370692070608
+      }
+    ]
+  }
+}
