@@ -31,7 +31,13 @@ The pipeline produces aggregate tables for:
 - contributor intake, first-time and repeat-author lifecycle, return, and review-capacity sensitivity;
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
-The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the May 18 collaborator roster as a historical maintainer roster. See the [English findings report](../../docs/RQ1_FINDINGS.md), [Chinese findings report](../../docs/RQ1_FINDINGS_ZH.md), or [May-to-July conclusion audit](../../docs/RQ1_CHANGE_AUDIT_2026-07-31.md) for estimands and limitations.
+The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the May 18 collaborator roster as a historical maintainer roster. See the [academic PDF report](../../output/pdf/vllm_rq1_workload_report_2026-07-31_zh.pdf), [English findings](../../docs/RQ1_FINDINGS.md), [Chinese findings](../../docs/RQ1_FINDINGS_ZH.md), or [May-to-July conclusion audit](../../docs/RQ1_CHANGE_AUDIT_2026-07-31.md) for estimands and limitations.
+
+Regenerate the academic PDF with:
+
+```bash
+python3 analysis/rq1/render_academic_report.py
+```
 
 ## Base snapshot provenance
 
