@@ -5,7 +5,7 @@ This directory contains the reproducible aggregate analysis for the vLLM workloa
 ## Source snapshot
 
 - Snapshot date: 2026-05-18
-- Gist: <https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1>
+- Source: Simon Mo, [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1)
 - SHA-256: `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`
 
 Download the SQLite file using the URL in the gist README, then run:
@@ -49,3 +49,43 @@ The local dataset contains updated issues and PRs, conversation and inline-revie
 The canonical cutoff is `2026-07-31T23:59:59Z`. Raw responses can contain later current-state representations when an older artifact changed after the cutoff; every analytical event table is separately counted and filtered at the cutoff. The public API cannot enumerate the complete current collaborator roster without write-level repository access, so the extension retains the May 18 snapshot roster only as a documented sensitivity definition, not as a historical maintainer identity label.
 
 The identity-free [collection manifest](COLLECTION_2026-07-31.json) publishes coverage, validation results, fallback counts, and limitations without publishing row-level raw data.
+
+## Merged database
+
+The public database combines the May 18 snapshot and July 31 delta in one SQLite file. Download the compressed asset from the [`vllm-github-data-2026-07-31` release](https://github.com/ai-infra-bench/ai-infra-bench/releases/tag/vllm-github-data-2026-07-31), verify its SHA-256 against the release manifest, and decompress it with `unzstd`.
+
+To reproduce it locally:
+
+```bash
+python3 analysis/rq1/build_merged_database.py \
+  --base data/raw/vllm_github_2026-07-31/base/vllm_2026-05-18.sqlite \
+  --delta data/raw/vllm_github_2026-07-31/derived/github_delta.sqlite \
+  --output data/derived/vllm_github_2026-07-31.sqlite
+```
+
+The database has three query layers:
+
+- the original Fivetran tables, preserved unchanged;
+- `delta_*`, the complete normalized API delta including raw JSON;
+- `canonical_*`, deduplicated tables materialized at the inclusive `2026-07-31T23:59:59Z` cutoff.
+
+`dataset_source`, `dataset_metadata`, `dataset_table_inventory`, and `dataset_validation` make provenance, cutoff semantics, row counts, anomalies, and validation results queryable inside the database. Text edited after the cutoff remains the representation observed during collection and is flagged by `representation_may_postdate_cutoff`. PR file lists that cannot be proven stable at the cutoff are flagged by `files_cutoff_stable`/`cutoff_stable`.
+
+The database contains public GitHub text, usernames, actor identifiers, and commit metadata including names and emails. It is not de-identified survey data. No new license is asserted over third-party GitHub content; users should follow the source and GitHub terms when redistributing or using it.
+
+### Citation
+
+The merged database derives from the snapshot shared by Simon Mo. Cite the source gist as:
+
+> Simon Mo. “vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran).” GitHub Gist, May 18, 2026. <https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1>.
+
+```bibtex
+@misc{mo2026vllmgithubgym,
+  author       = {Mo, Simon},
+  title        = {vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)},
+  year         = {2026},
+  month        = may,
+  howpublished = {GitHub Gist},
+  url          = {https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1}
+}
+```

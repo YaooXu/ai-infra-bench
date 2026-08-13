@@ -33,7 +33,7 @@ RQ1 要回答的不是“vLLM 有多少个 issue”，而是：
 
 ## 1. 数据与研究边界
 
-数据来自 vLLM maintainer 提供的 [Fivetran SQLite 快照](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1)，SHA-256 为 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`。
+基础数据来自 Simon Mo 提供的 [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1)，SHA-256 为 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`。
 
 | 数据对象 | 数量 |
 | --- | ---: |

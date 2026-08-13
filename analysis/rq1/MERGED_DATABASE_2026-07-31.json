@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "vllm-project/vllm",
+  "analysis_cutoff": "2026-07-31T23:59:59Z",
+  "cutoff_semantics": "inclusive UTC",
+  "release": {
+    "tag": "vllm-github-data-2026-07-31",
+    "url": "https://github.com/ai-infra-bench/ai-infra-bench/releases/tag/vllm-github-data-2026-07-31"
+  },
+  "sources": [
+    {
+      "title": "vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)",
+      "author": "Simon Mo",
+      "url": "https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1",
+      "cutoff": "2026-05-18T20:02:21Z",
+      "bytes": 1119092736,
+      "sha256": "1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d"
+    },
+    {
+      "title": "vLLM GitHub API delta through 2026-07-31",
+      "author": "AI Infra Bench",
+      "retrieved_through": "2026-08-13T05:34:54.476488Z",
+      "sha256": "1eac619c39ceba3cb99f889c513211a21ceef43ca89b57401c2fdbb253b18d98"
+    }
+  ],
+  "artifacts": {
+    "sqlite": {
+      "filename": "vllm_github_2026-07-31.sqlite",
+      "bytes": 2935083008,
+      "sha256": "2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5"
+    },
+    "zstandard": {
+      "filename": "vllm_github_2026-07-31.sqlite.zst",
+      "bytes": 402421721,
+      "sha256": "a15e30ab5d187a46b46a4fc493b157fe00d13d3135d87ab94b990e2df04383e0",
+      "compression": "zstd -15 --long=27",
+      "test": "ok"
+    }
+  },
+  "canonical_counts": {
+    "artifacts": 49925,
+    "issues": 16990,
+    "pull_requests": 32935,
+    "conversation_comments": 205998,
+    "pull_request_reviews": 131473,
+    "inline_review_comments": 122491,
+    "pull_request_commit_associations": 77682,
+    "pull_request_files_with_delta_coverage": 87940,
+    "maintenance_timeline_events_with_delta_coverage": 157127,
+    "default_branch_commits": 19416
+  },
+  "validation": {
+    "checks_passed": 19,
+    "checks_total": 19,
+    "sqlite_integrity_check": "ok",
+    "foreign_key_violations": 0,
+    "post_cutoff_rows_in_time_bounded_canonical_tables": 0,
+    "bitwise_rebuild_match": true
+  },
+  "preserved_source_anomalies": {
+    "pre_base_cutoff_artifacts_recovered_from_delta": 1,
+    "base_pull_request_flag_mismatches": 1,
+    "base_reviews_whose_pull_request_row_is_absent": 2,
+    "base_pull_request_commit_associations_whose_commit_row_is_absent": 1
+  },
+  "query_layers": {
+    "base": "Original Fivetran tables preserved unchanged",
+    "delta": "delta_* tables preserve the normalized API delta and raw JSON",
+    "canonical": "canonical_* tables are deduplicated and materialized at the analysis cutoff",
+    "metadata": "dataset_* tables contain provenance, semantics, inventory, and validation"
+  },
+  "known_limitations": [
+    "Text edited after the cutoff is the representation observed during the August collection and is flagged by representation_may_postdate_cutoff.",
+    "PR-level aggregate file coverage is available for delta-refreshed PRs; older per-commit file data remains in commit_file.",
+    "Open PR file lists that may include post-cutoff changes are flagged as unstable.",
+    "Commit timestamps do not reveal when a commit was first pushed to a pull request.",
+    "repo_collaborator is the May 18 roster, not a historical maintainer-membership table."
+  ],
+  "data_notice": "The database contains public GitHub text, usernames, actor identifiers, and commit metadata including names and emails. It is not de-identified survey data. No new license is asserted over third-party GitHub content."
+}

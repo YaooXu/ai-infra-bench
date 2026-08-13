@@ -37,7 +37,7 @@ The benchmark implication is fundamental: one headline percentage cannot honestl
 
 ## 1. Data and estimands
 
-The source is the [maintainer-provided Fivetran SQLite snapshot](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`.
+The base source is Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`.
 
 The canonical artifact census contains:
 
