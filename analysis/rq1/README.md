@@ -34,3 +34,18 @@ The pipeline produces aggregate tables for:
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
 The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the current collaborator roster as a historical maintainer roster. See the [English findings report](../../docs/RQ1_FINDINGS.md) or [Chinese findings report](../../docs/RQ1_FINDINGS_ZH.md) for estimands and limitations.
+
+## July 31 extension
+
+`collect_github_delta.py` extends the maintainer snapshot through 2026-07-31. It saves every API response as a gzip-compressed JSON envelope before normalization, then builds a queryable SQLite index and a checksum manifest:
+
+```bash
+python3 analysis/rq1/collect_github_delta.py \
+  --output data/raw/vllm_github_2026-07-31
+```
+
+The local dataset contains updated issues and PRs, conversation and inline-review comments, maintenance timeline events, PR reviews/commits/files, default-branch delivery history, repository labels, and the repository tree at the cutoff. Collection is resumable and reads authentication from `gh auth token`; credentials are never written to disk. Raw files and derived row-level databases stay under ignored `data/raw/` because they contain public text, actor identifiers, and commit emails. The generated `manifest.json` records file families, checksums, row counts, cutoff-consistent counts, and known historical limitations.
+
+The canonical cutoff is `2026-07-31T23:59:59Z`. Raw responses can contain later current-state representations when an older artifact changed after the cutoff; every analytical event table is separately counted and filtered at the cutoff. The public API cannot enumerate the complete current collaborator roster without write-level repository access, so the extension retains the May 18 snapshot roster only as a documented sensitivity definition, not as a historical maintainer identity label.
+
+The identity-free [collection manifest](COLLECTION_2026-07-31.json) publishes coverage, validation results, fallback counts, and limitations without publishing row-level raw data.

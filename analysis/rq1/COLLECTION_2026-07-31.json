@@ -1,0 +1,62 @@
+{
+  "repository": "vllm-project/vllm",
+  "base_cutoff": "2026-05-18T20:02:21Z",
+  "analysis_cutoff": "2026-07-31T23:59:59Z",
+  "collection_status": "complete",
+  "base_snapshot": {
+    "bytes": 1119092736,
+    "sha256": "1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d",
+    "source": "https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1"
+  },
+  "local_raw_layer": {
+    "response_files": 12498,
+    "compressed_bytes": 221732328,
+    "canonical_response_files": 12223,
+    "invalid_canonical_responses": 0
+  },
+  "cutoff_consistent_delta_counts": {
+    "updated_artifacts": 12636,
+    "pull_requests_with_detailed_connections": 9220,
+    "conversation_comments": 27677,
+    "inline_review_comments": 12380,
+    "reviews": 27690,
+    "pull_request_commits": 47359,
+    "maintenance_timeline_events": 157127,
+    "default_branch_commits": 2682
+  },
+  "completeness": {
+    "missing_artifacts": 0,
+    "extra_artifacts": 0,
+    "missing_review_connections": 0,
+    "missing_commit_connections": 0,
+    "missing_file_connections": 0,
+    "expected_tail_connections": 85,
+    "missing_tail_connections": 0,
+    "incomplete_tail_connections": 0,
+    "incomplete_file_connections": 0,
+    "capped_file_connections": 7,
+    "git_diff_fallback_connections": 7,
+    "missing_capped_file_fallbacks": 0,
+    "default_branch_history_pages": 27,
+    "direct_default_branch_commits": 1,
+    "missing_direct_commit_details": 0
+  },
+  "pathological_commit_recovery": {
+    "graphql_full": 4,
+    "graphql_lightweight": 4,
+    "graphql_minimal": 1,
+    "rest_fallback": 1
+  },
+  "derived_sqlite": {
+    "sha256": "1eac619c39ceba3cb99f889c513211a21ceef43ca89b57401c2fdbb253b18d98",
+    "integrity_check": "ok"
+  },
+  "privacy": "Raw issue text, actor identifiers, and commit emails remain in ignored local storage. This file contains aggregate, identity-free collection metadata only.",
+  "known_limitations": [
+    "The public API cannot enumerate the complete collaborator roster without repository write-level access; the May 18 roster is retained only as a sensitivity definition.",
+    "Content deleted before retrieval cannot be recovered, and bodies edited after the cutoff are current representations rather than historical body snapshots.",
+    "Current open-PR file lists can include changes after the cutoff; merged-by-cutoff PRs are stable for benchmark task-source analysis.",
+    "Commit timestamps do not reveal when a commit was first pushed to an open pull request; cutoff filtering uses committedAt.",
+    "Project-board-only and notification/bookkeeping timeline events are outside the engineering-maintenance event scope."
+  ]
+}
