@@ -6,11 +6,9 @@ Download `vllm_github_2026-07-31.sqlite.zst`, verify SHA-256 `a15e30ab5d187a46b4
 
 The database preserves the original Fivetran tables, adds the full `delta_*` normalized API layer, and provides deduplicated `canonical_*` tables plus queryable provenance and validation. All 19 release checks pass, including SQLite integrity, foreign keys, union counts, and cutoff leakage checks. See `MERGED_DATABASE_2026-07-31.json` for counts, anomalies, checksums, and limitations.
 
-## Source and citation
+## Source
 
-The base snapshot is Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), shared May 18, 2026. Please cite that gist when using this dataset:
-
-> Simon Mo. “vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran).” GitHub Gist, May 18, 2026. <https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1>.
+This dataset uses Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1) as its base and extends the data through 2026-07-31.
 
 ## Data notice
 

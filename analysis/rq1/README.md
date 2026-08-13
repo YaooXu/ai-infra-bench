@@ -71,21 +71,6 @@ The database has three query layers:
 
 `dataset_source`, `dataset_metadata`, `dataset_table_inventory`, and `dataset_validation` make provenance, cutoff semantics, row counts, anomalies, and validation results queryable inside the database. Text edited after the cutoff remains the representation observed during collection and is flagged by `representation_may_postdate_cutoff`. PR file lists that cannot be proven stable at the cutoff are flagged by `files_cutoff_stable`/`cutoff_stable`.
 
+This dataset uses Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1) as its base and extends the data through 2026-07-31.
+
 The database contains public GitHub text, usernames, actor identifiers, and commit metadata including names and emails. It is not de-identified survey data. No new license is asserted over third-party GitHub content; users should follow the source and GitHub terms when redistributing or using it.
-
-### Citation
-
-The merged database derives from the snapshot shared by Simon Mo. Cite the source gist as:
-
-> Simon Mo. “vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran).” GitHub Gist, May 18, 2026. <https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1>.
-
-```bibtex
-@misc{mo2026vllmgithubgym,
-  author       = {Mo, Simon},
-  title        = {vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)},
-  year         = {2026},
-  month        = may,
-  howpublished = {GitHub Gist},
-  url          = {https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1}
-}
-```
