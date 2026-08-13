@@ -1,614 +1,310 @@
-# RQ1 Findings: The vLLM Maintenance Workload
+# RQ1: What is the real maintenance workload in vLLM?
 
-Snapshot cutoff: 2026-05-18
+Data cutoff: **2026-07-31 23:59:59 UTC**
 
-Status: reproducible quantitative census; content-validation and effort-calibration stages remain
+## Executive finding
 
-Chinese version: [RQ1 研究结果：vLLM 的真实维护工作负载](RQ1_FINDINGS_ZH.md)
+The central maintenance problem in vLLM is not runaway issue intake. It is the widening gap between **pull-request arrivals and observable review/merge capacity**.
 
-## Executive answer
+Monthly averages changed as follows from 2025 to January–July 2026:
 
-vLLM is not simply receiving “more issues.” Its public maintenance system changed in three coupled ways: PR intake surged, the contributor population broadened, and the technical work shifted toward heterogeneous backends and inference-system internals. Observable review activity grew, but much more slowly than incoming PRs. The result is a large, mostly recent PR queue and a meaningful older issue queue.
+| Monthly metric | 2025 | 2026 Jan–Jul | Change |
+|---|---:|---:|---:|
+| Issues opened | 578.2 | 609.9 | +5.5% |
+| PRs opened | 1,068.6 | 2,102.6 | **+96.8%** |
+| PRs merged | 720.1 | 974.4 | +35.3% |
+| Active May-18-roster reviewers | 54.3 | 58.0 | +6.9% |
+| Reviewer-days | 560.6 | 697.6 | +24.4% |
+| Submitted reviews | 2,316.7 | 2,727.3 | +17.7% |
+| Inline review comments | 1,949.3 | 2,003.4 | +2.8% |
+| Submitted reviews per opened PR | 2.17 | 1.35 | **−37.7%** |
+| Inline comments per opened PR | 1.83 | 1.01 | **−44.8%** |
 
-The clearest comparison is between calendar year 2025 and the four complete months from January through April 2026:
+PR intake nearly doubled, while merges, active reviewers, submitted reviews, and reviewer-days grew much more slowly. In July alone, 2,722 PRs arrived and 1,134 merged; 52 roster members submitted a review, corresponding to 52.3 new PRs per active reviewer.
 
-| Monthly average | 2025 | 2026 Jan–Apr | Change |
-| --- | ---: | ---: | ---: |
-| Issues opened | 578.2 | 619.5 | +7% |
-| PRs opened | 1,068.6 | 1,836.2 | +72% |
-| PRs merged | 720.1 | 909.0 | +26% |
-| Active snapshot-collaborator reviewers | 54.3 | 60.3 | +11% |
-| Non-author collaborator review submissions | 2,316.7 | 2,778.3 | +20% |
-| PR arrivals per active reviewer | 19.5 | 30.5 | +57% |
-| Submitted reviews per opened PR | 2.17 | 1.55 | −29% |
-| Inline review comments per opened PR | 1.83 | 1.20 | −35% |
+The gap is visible in the operational queue:
 
-The gap is visible in outcomes and in the queue. At the snapshot boundary, 1,994 issues and 3,037 PRs were open. Of the open issues, 1,396 (70.0%) had no observable response from anyone in the snapshot collaborator roster, 697 (35.0%) were older than 90 days, and only 10.0% had a current assignee. Of the open PRs, 2,266 (74.6%) had no submitted snapshot-collaborator review and 2,141 (70.5%) had at least one outstanding review request. These counts do not prove that every item deserved action, but they describe the operational queue much more directly than cumulative GitHub totals.
+- open PRs increased from 1,320 at the end of 2025 to **4,194** on July 31, a 217.7% increase;
+- open issues increased from 1,791 to **2,055**, or 14.7%;
+- 3,405 of 4,194 open PRs (81.2%) had no submitted roster review, and 3,013 (71.8%) retained an outstanding review request;
+- 1,570 of 2,055 open issues (76.4%) had no observable roster response, and only 165 (8.0%) had a current assignee.
 
-Responsiveness also fell. The seven-day response rate declined from 65.0% to 53.7% for issues and from 82.8% to 66.9% for ready PRs when any non-author human response is counted. Using the 2026 snapshot collaborator list, the corresponding rates fell from 46.1% to 27.2% for issues and from 79.9% to 62.2% for PRs.
+RQ1 therefore constrains the benchmark directly: it must represent diagnosis, heterogeneous hardware, review-heavy integration, open and closed-unmerged work, weak-verifier tasks, and work that depends on specialist judgement—not only merged features.
 
-Review burden is not confined to merged work. In the 2026 cohort, open and closed-unmerged PRs together absorbed 21.0% of non-author snapshot-collaborator reviews and 30.1% of inline review comments observed for that cohort. This is not “waste”: review can correctly reject, redirect, or improve a contribution. It does mean that counting merged PRs alone understates public review work.
+![Activity and backlog](assets/rq1/activity_and_backlog.png)
 
-The implementation and gatekeeping populations are also structurally different. External humans authored 71.7% of human PRs in 2026 and nearly four-fifths of bug and feature PRs. Current write-capable collaborators authored most refactors and dominated V1/runtime, platform, compilation, kernel, benchmark, and integration paths. Seventy-five snapshot collaborators submitted non-author reviews in 2026; just eight produced half of all review submissions. This combination—broad community implementation with concentrated integration and specialist review—is the central organizational fact the benchmark must preserve.
+## Data and estimands
 
-The engineering mix also changed. Among merged, human-authored PRs with commit data, the share with a hardware signal rose from 17.8% in the launch–2024 window to 36.8% in 2026. Across all PRs, the strongest recent topic signals include distributed/parallel execution (22.9%), attention and kernels (21.5%), KV cache/connectors/offload (13.3%), V1/model-runner work (13.1%), quantization (12.4%), multimodality (11.8%), and MoE/expert parallelism (11.3%). This directly supports strong heterogeneous-hardware and inference-runtime coverage in AI Infra Bench. The repository contains almost no MLU and very little Ascend/NPU work, however; those systems cannot be presented as representative of the observed vLLM distribution.
+This dataset uses Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1) as its base and extends the data through 2026-07-31. The merged database and validation manifest are published in [`vllm-github-data-2026-07-31`](https://github.com/ai-infra-bench/ai-infra-bench/releases/tag/vllm-github-data-2026-07-31).
 
-The benchmark implication is fundamental: one headline percentage cannot honestly cover implementation, diagnosis, triage, and review unless the benchmark constructs and weights those populations separately. PR-derived coding tasks estimate coverage of code-changing work with a reference solution. They do not estimate coverage of unanswered issues, reproduction work, architectural judgment, rejected contributions, or total maintainer time.
+The analysis covers:
 
-## 1. Data and estimands
+- 49,925 issue/PR artifacts;
+- 16,990 issues;
+- 32,935 PRs;
+- 205,998 issue/PR conversation comments;
+- 131,473 submitted reviews;
+- 122,491 inline review comments;
+- 77,682 PR–commit associations;
+- 19,416 default-branch commits.
 
-The base source is Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`.
+The comparison periods are project launch–2024, calendar year 2025, and the seven complete months January–July 2026. Current-state and queue estimands are defined at the July 31 cutoff. Fixed 7/14/30/90/180-day outcomes include only cohorts old enough to have the corresponding follow-up. PR response time starts at the first ready-for-review event; drafts never observed ready are excluded from the response risk set. A response must come from someone other than the artifact author.
 
-The canonical artifact census contains:
+`repo_collaborator` remains the May 18 permission snapshot. The report therefore uses **May-18 snapshot roster**, not “July maintainers” and not a historical membership claim. Any-human response is the primary estimand; roster response is a capacity sensitivity definition.
 
-| Artifact | Count |
-| --- | ---: |
-| Issues | 15,571 |
-| Pull requests | 26,768 |
-| Top-level issue/PR comments | 178,352 |
-| Submitted PR reviews | 114,154 |
-| Inline review comments | 110,113 |
-| Commits | 29,659 |
-| Per-commit file changes | 405,311 |
+## Data quality and reproducibility
 
-An artifact is treated as a PR when it has a row in `pull_request`; otherwise it is an issue. This avoids one observed disagreement with the `issue.pull_request` flag.
+All 19 database release validations pass. The analysis additionally checks that:
 
-The three reporting windows are:
+- canonical artifact, PR, comment, review, inline-comment, commit, and file counts reconcile with the database;
+- GitHub PullRequest database IDs map explicitly to their issue database IDs;
+- refreshed artifacts use the canonical timeline while unrefreshed artifacts use the original Fivetran history, preventing duplicate pre-base events;
+- no analytical event occurs after the cutoff;
+- canonical artifact, PR, comment, review, and inline-comment IDs are unique;
+- repeated end-to-end runs produce byte-identical `summary.json`, all 19 figures, and all 57 aggregate CSV tables.
 
-1. repository launch through 2024;
-2. calendar year 2025;
-3. 2026 through May 18.
+Preserved source anomalies include 443 closed artifacts without a close-history row, two current-state/history disagreements, two reviews without an event time, 21 inline comments that cannot map to a canonical PR, and 88 default-branch commits without an associated PR. GitHub's generic artifact state also represents 279 PRs with observed merge events as `CLOSED`; conversely, 168 PRs have a cutoff materialized merge timestamp but no retained merge event. The analysis defines merge by the union of these cutoff-consistent signals and leaves the 168 missing merge actors unknown rather than imputing them.
 
-Monthly series are the primary longitudinal view. May 2026 is partial and is not used in the complete-month rate comparison above.
+For 1,799 artifacts, the observed text representation changed after cutoff; 1,227 open PR file lists cannot be proven unchanged after cutoff. Excluding those records changes issue-intent shares by at most 0.75 percentage points, PR work type by 0.28, hardware by 0.28, and topic by 1.00. The workload findings are robust to this boundary.
 
-All variable definitions and classification precedence rules are frozen in the [RQ1 operational codebook](RQ1_CODEBOOK.md); the executable implementation is in `analysis/rq1/analyze.py`.
+## Demand, throughput, and backlog
 
-### What the analysis measures
+PR demand grew much faster than issue demand. Average monthly PR arrivals rose 96.8% over 2025, versus 35.3% for merges. This is not one transient spike: 2,342 PRs arrived in March, 2,545 in June, and 2,722 in July.
 
-- **Demand:** issue and PR arrivals.
-- **Throughput:** human and bot closures, merges, and closed-unmerged PRs.
-- **Responsiveness:** first non-author human response and first response from a user in the snapshot collaborator roster.
-- **Review burden:** non-author review submissions, review rounds, review span, active reviewers, and concentration.
-- **Work composition:** issue intent, PR work type, subsystem, hardware, and change shape.
-- **Benchmark evidence:** merged human PRs, test-file signals, hardware requirements, review intensity, code-change size, and commit-reference links.
+| Month end | Open PRs | Open issues |
+|---|---:|---:|
+| 2025-12 | 1,320 | 1,791 |
+| 2026-03 | 2,230 | 1,773 |
+| 2026-04 | 2,779 | 1,937 |
+| 2026-05 | 3,125 | 1,993 |
+| 2026-06 | 3,472 | 1,970 |
+| 2026-07 | **4,194** | **2,055** |
 
-These are repository observables. They do not measure private discussion, active engineering hours, or response quality.
+The 2026 cohort contains 14,718 PRs: 6,619 merged, 4,048 closed unmerged, and 4,051 remained open at cutoff. Competing-risk estimates put 30-day merge and closed-unmerged incidence at 48.3% and 18.1%; at 90 days they reach 51.8% and 23.8%.
 
-### Statistical interpretation
+## The queue visible to maintainers at cutoff
 
-This snapshot is a census of the tables supplied, not a random sample of vLLM artifacts. Sampling-error intervals around raw monthly counts would therefore be artificial. Uncertainty enters through right-censoring, incomplete event/file coverage, historical-role ambiguity, and classification error. The analysis responds to those sources directly:
+Among 2,055 open issues:
 
-- fixed-horizon response denominators and Kaplan–Meier curves retain unresolved artifacts;
-- cumulative-incidence curves treat merge and closed-unmerged as competing outcomes;
-- file-derived results state their commit-coverage denominator and never use coverage-conditioned patch size to estimate merge probability;
-- human-response results are primary, while snapshot-collaborator results are explicitly a role-roster sensitivity analysis;
-- deterministic topic and workload labels remain provisional until a stratified, double-coded validation sample is complete.
+- 1,136 (55.3%) are bug/correctness reports;
+- 682 (33.2%) have no non-author human response;
+- 1,570 (76.4%) have no May-18-roster response;
+- 798 (38.8%) are older than 90 days;
+- 519 (25.3%) are both older than 90 days and lack a roster response;
+- 165 (8.0%) have a current assignee.
 
-Wilson intervals are shown for response proportions. They describe binomial precision conditional on the observed corpus, not uncertainty from missing GitHub activity or taxonomy error. The longitudinal comparisons are descriptive, not causal: this report does not infer burnout, contributor quality, or staffing adequacy.
+Among 4,194 open PRs:
 
-## 2. Data-quality audit
+- 1,528 (36.4%) are bug/correctness changes;
+- 757 (18.0%) remain drafts;
+- 3,139 (74.8%) have no roster response;
+- 3,405 (81.2%) have no submitted roster review;
+- 3,013 (71.8%) retain an outstanding review request;
+- 1,783 (42.5%) carry a rebase/conflict signal;
+- 245 (5.8%) carry a stale signal.
 
-The snapshot is rich enough for a full longitudinal study, but it is not analysis-ready without reconciliation.
+These counts do not imply that every open item deserves action, nor that a correctly rejected or redirected PR is wasted work. They describe the public surface that maintainers must triage, review, redirect, close, or integrate.
 
-| Audit finding | Count | Resolution |
-| --- | ---: | --- |
-| Issue/PR flag conflicts | 1 | Use existence in `pull_request` as canonical |
-| Closed artifacts without close-history rows | 42 | Fall back to materialized `closed_at` |
-| Current state versus latest history mismatch | 8 | Use materialized state at the snapshot boundary |
-| Snapshot collaborators with triage or higher | 103 | Call them snapshot collaborators, not a historical roster |
-| Snapshot collaborators with write or higher | 70 | Report separately where needed |
-| Actors typed as bots | 10 | Exclude from human-response and review metrics |
-| Submitted reviews missing `submitted_at` | 2 | Retain in PR-level burden; exclude from event-period ownership |
+![Current queues](assets/rq1/current_queues.png)
 
-Commit-to-PR coverage is incomplete for open heads. It covers 74.5% of PRs in launch–2024, 69.3% in 2025, and 47.6% in 2026. Therefore file, churn, and test-touch statistics are calculated on PRs with commit data, and the benchmark-eligible analysis is restricted to merged human PRs with commit data.
+## Responsiveness and formal review
 
-This missingness is outcome-related: merged commits are more likely to be present than open PR heads. Consequently, patch-size and changed-file fields are **not** used to estimate merge probability. Doing so would condition the outcome comparison on a post-intake coverage mechanism and produce strongly inflated merge rates.
+Seven-day response rates are:
 
-`issue_referenced` captures commits that reference an issue, not all PR-body links or cross-reference events. The observed issue↔PR link rate is consequently a lower bound and must not be interpreted as the true rate at which issues lead to code changes.
+| Artifact / responder | Launch–2024 | 2025 | 2026 Jan–Jul |
+|---|---:|---:|---:|
+| Issue: any non-author human | 65.0% | 59.1% | **53.3%** |
+| Issue: May-18 roster | 46.1% | 40.0% | **23.0%** |
+| PR: any non-author human | 82.8% | 82.6% | **63.5%** |
+| PR: May-18 roster | 79.9% | 80.1% | **57.6%** |
+| PR: submitted roster review | 72.1% | 73.8% | **50.8%** |
 
-The PR census captures almost all post-launch default-branch change flow. There are 87 `main`-branch commits without a `commit_pull_request` mapping: 81 in 2023, three in 2024, two in 2025, and one in 2026. Thus direct/unmapped commits are an important launch-history caveat but not a large omitted contemporary workload stream in this snapshot.
+For the 2026 cohort, 30-day rates are 61.0% for issue any-human response, 27.5% for issue roster response, 72.0% for PR any-human response, 66.6% for PR roster response, and 59.4% for a submitted roster review. Longer follow-up recovers some responses but does not close the early-review gap.
 
-Current assignments come from `issue_assignee`. Outstanding review requests are reconstructed from the last add/remove event for each PR–reviewer pair. Latest approval and change-request counts are descriptive only: an approval may target an earlier head, and the snapshot does not provide a complete review-thread resolution model.
-
-## 3. Demand, throughput, and backlog
-
-![Incoming work and backlog](assets/rq1/activity_and_backlog.png)
-
-PR demand changed much faster than issue demand. The 2026 January–April monthly average was 72% above 2025 for PR arrivals, while merge throughput was only 26% higher. Issue arrivals rose 7%.
-
-The PR backlog consequently accelerated from 1,296 at the end of December 2025 to 2,779 at the end of April 2026 and 3,037 at the May 18 snapshot. The issue backlog was 1,791 at the end of 2025, 1,936 at the end of April, and 1,994 at the snapshot.
-
-### Backlog age at the snapshot
-
-| Age | Open issues | Share | Open PRs | Share |
-| --- | ---: | ---: | ---: | ---: |
-| ≤30 days | 477 | 23.9% | 1,067 | 35.1% |
-| 31–90 days | 820 | 41.1% | 1,304 | 42.9% |
-| 91–180 days | 438 | 22.0% | 503 | 16.6% |
-| >180 days | 259 | 13.0% | 163 | 5.4% |
-
-Most of the PR backlog is recent, consistent with an intake surge rather than only a permanent stock of old PRs. The issue backlog is older: 35.0% was more than 90 days old.
-
-### The current operational queue
-
-Backlog age alone does not show what a maintainer encounters. The snapshot queue adds response, assignment, review, and process-state signals.
-
-| Queue signal at 2026-05-18 | Count | Share of queue |
-| --- | ---: | ---: |
-| Open issues | 1,994 | 100% |
-| Open issues with no non-author human response | 608 | 30.5% |
-| Open issues with no snapshot-collaborator response | 1,396 | 70.0% |
-| Open issues older than 90 days | 697 | 35.0% |
-| Open issues >90d with no collaborator response | 402 | 20.2% |
-| Open issues with a current assignee | 200 | 10.0% |
-| Open PRs | 3,037 | 100% |
-| Open PRs still marked draft | 579 | 19.1% |
-| Open PRs with no collaborator response | 2,086 | 68.7% |
-| Open PRs with no submitted collaborator review | 2,266 | 74.6% |
-| Open PRs with an outstanding review request | 2,141 | 70.5% |
-| Open PRs labeled rebase/conflict | 475 | 15.6% |
-| Open PRs labeled stale | 201 | 6.6% |
-
-![Current issue and PR queues](assets/rq1/current_queues.png)
-
-Bug/correctness dominates both queues: 1,101 open issues (55.2% of open issues) and 991 open PRs (32.6% of open PRs). Feature/model/backend requests add 337 open issues, while feature/capability contributes 563 open PRs. Design/RFC issues have the oldest median age among the large issue categories (95.5 days), which is consistent with long-lived design discussion but not evidence that the queue is healthy or unhealthy.
-
-These state signals must not be summed into a single “staleness score.” Draft PRs, requested reviews, requested changes, conflicts, and unanswered reports imply different actions and different benchmark contracts. They are most useful for constructing diagnosis, review, and maintainer-triage samples that a merged-PR benchmark would otherwise omit.
-
-### Closure is not the same as resolution
-
-Across the snapshot, issue state reasons include 7,766 `completed`, 5,705 `not_planned`, 106 `duplicate`, and 37 `reopened`. Among issue close events, bots accounted for 19.0% in the launch–2024 window, 46.6% in 2025, and 45.1% in 2026. The large backlog reductions around November 2024 and several later months therefore include automated lifecycle management, not only solved engineering work.
-
-For RQ1, report human closures, bot closures, `completed`, and `not_planned` separately. A closed-issue count is not a valid proxy for maintainer engineering throughput.
-
-Age-matched 90-day disposition reinforces the distinction. Among 2026 issues old enough for 90 days of observation, 51.1% of bug reports were currently marked completed and had closed within 90 days, compared with 28.2% of feature/model/backend requests, 19.2% of performance issues, 15.4% of design/RFC issues, and 25.0% of usage issues. These are final-snapshot disposition signals rather than causal resolution rates: reopened items and later reclassification can change the current state reason. They nevertheless show why issue categories need different outcome definitions.
-
-## 4. Responsiveness
-
-Fixed-horizon rates avoid comparing only artifacts that eventually received a response. Each denominator includes every artifact old enough to have been observed for the stated horizon. Wilson 95% confidence intervals are reported below.
-
-### Seven-day response
-
-| Artifact and responder | Launch–2024 | 2025 | 2026 through May 18 |
-| --- | ---: | ---: | ---: |
-| Issue, any human | 65.0% [63.8, 66.2] | 59.1% [57.9, 60.3] | 53.7% [51.8, 55.6] |
-| Issue, snapshot collaborator | 46.1% [44.8, 47.4] | 40.0% [38.9, 41.2] | 27.2% [25.6, 28.9] |
-| PR, any human | 82.8% [81.7, 83.8] | 82.5% [81.9, 83.2] | 66.9% [65.9, 68.0] |
-| PR, snapshot collaborator | 79.9% [78.7, 80.9] | 80.0% [79.3, 80.8] | 62.2% [61.1, 63.3] |
+Author role is a major stratifier. Among 2026 PRs eligible for seven-day observation, external-human PRs receive 57.8% any-human and 50.8% roster response, compared with 81.7% and 79.2% for roster-authored PRs. Reporting all PRs together obscures the external contributor experience.
 
 ![Response within seven days](assets/rq1/response_within_7_days.png)
 
-The drop is not an artifact of excluding unresolved items; the time-to-event curves preserve right-censored observations.
+## Issue workload and disposition
 
-![Response survival curves](assets/rq1/response_survival.png)
+The 4,269 issues opened in January–July 2026 consist of:
 
-The snapshot collaborator roster is a role snapshot, not a historical membership table. The absolute collaborator-response levels should therefore be treated as a sensitivity analysis. The any-human trend is not affected by this role limitation.
+| Issue intent | Issues | Share |
+|---|---:|---:|
+| Bug/correctness | 2,475 | 58.0% |
+| Feature/model/backend request | 534 | 12.5% |
+| Other/tracking | 302 | 7.1% |
+| CI/infrastructure | 291 | 6.8% |
+| Design/RFC | 282 | 6.6% |
+| Usage/configuration | 141 | 3.3% |
+| Performance | 129 | 3.0% |
 
-Author role matters. External humans authored 83.4% of 2026 issues and 71.5% of 2026 PRs. For 2026 external-human artifacts, seven-day any-human response was 56.5% for issues and 60.7% for ready PRs; snapshot-collaborator response was 28.5% and 55.0%, respectively. The all-PR rate is higher partly because collaborator-authored PRs receive faster review. A public benchmark claiming to represent community support should therefore preserve author role as a sampling and reporting stratum.
+Bug share rose from 55.2% in 2025 to 58.0%. Usage/configuration fell from 13.0% to 3.3%, while CI/infrastructure and design/RFC rose. Template, label, and community-use changes may contribute, so these are descriptive composition changes rather than pure changes in underlying demand.
 
-Conversation response and code review are not the same. The probability of a non-author submitted snapshot-collaborator review within seven days was 72.1% in launch–2024, 73.8% in 2025, and 55.0% in 2026. For the 2026 cohort, it reached 59.8% by 14 days and 64.0% by 30 days. Seven-day submitted-review rates were 67.0% for refactors, 62.7% for CI/build, 51.7% for bugs, 51.6% for performance work, and 50.1% for features. These figures exclude PR-author self-reviews and author replies.
+Among 2026 issues old enough for 90-day follow-up, the share currently marked completed and closed within 90 days is 86.0% for CI/infrastructure, 52.2% for installation/build, 45.0% for bugs, 28.9% for feature/model/backend requests, 22.4% for performance, 20.6% for design/RFC, and 20.8% for usage. These are disposition signals, not unbiased “engineering solved” rates; bots performed 47.2% of 2026 close events.
 
-### Which issues receive slower collaborator response?
+## What the community changes every day
 
-In 2026, the seven-day snapshot-collaborator response rate varied materially by issue intent:
+The 14,718 PRs opened in January–July 2026 break down as follows:
 
-| Issue intent | Seven-day collaborator response |
-| --- | ---: |
-| CI/infrastructure | 11.5% |
-| Other/tracking | 18.7% |
-| Installation/build | 20.0% |
-| Performance | 25.7% |
-| Bug/correctness | 26.9% |
-| Documentation/API | 32.0% |
-| Feature/model/backend request | 33.2% |
-| Usage/configuration | 33.6% |
-| Design/RFC | 50.7% |
+| PR work type | PRs | 2026 share | 2025 share |
+|---|---:|---:|---:|
+| Bug/correctness | 4,982 | **33.8%** | 22.8% |
+| Other/unclear | 2,194 | 14.9% | 16.7% |
+| CI/build/release | 2,100 | 14.3% | 16.6% |
+| Documentation/API/UX | 1,984 | 13.5% | 20.1% |
+| Feature/capability | 1,917 | 13.0% | 13.7% |
+| Performance/efficiency | 895 | 6.1% | 5.5% |
+| Refactor/maintainability | 486 | 3.3% | 3.6% |
+| Test/evaluation | 125 | 0.8% | 0.5% |
 
-This does not mean that RFCs are easier. They are more likely to attract discussion, while bug and performance reports can require reproduction before a useful answer. A future content-analysis sample must separately annotate acknowledgement, request for information, diagnosis, design discussion, and resolution. Comment existence alone cannot measure substantive help.
+The clearest structural change is an 11-point rise in bug/correctness share. Explicit title tags or current labels classify 60.1% of 2026 PRs, deterministic lexical rules classify 25.0%, and 14.9% remain unresolved. These strata are suitable for source-frame analysis, but final benchmark tasks still require human coding.
 
-## 5. What users ask for
+Outcomes differ materially by type. Ninety-day merge is 48.1% for bugs, 67.0% for CI/build, 49.2% for features, 52.6% for performance work, and 74.7% for refactors. A single undifferentiated PR success metric is therefore inappropriate.
 
-Issue titles and current labels provide a high-coverage deterministic intent taxonomy, especially after issue forms became standardized.
+![Workload mix](assets/rq1/workload_mix.png)
 
-| Issue intent | 2025 | 2026 through May 18 |
-| --- | ---: | ---: |
-| Bug/correctness | 55.2% | 56.1% |
-| Feature/model/backend request | 16.3% | 13.2% |
-| Usage/configuration | 13.0% | 4.0% |
-| CI/infrastructure | 2.5% | 9.3% |
-| Design/RFC | 3.5% | 5.6% |
-| Performance | 3.0% | 2.7% |
-| Installation/build | 2.8% | 2.0% |
-| Documentation/API | 2.0% | 1.0% |
-| Other/tracking | 1.6% | 6.1% |
+## Implementation, review, and merge ownership
 
-Bug/correctness is the dominant incoming issue workload. CI/infrastructure issues grew sharply in 2026. Some apparent shifts, especially usage and other/tracking, can reflect issue-template and labeling changes, so the taxonomy needs a manually coded gold sample before publication-level trend claims.
+Among 14,643 human-authored PRs in January–July 2026:
 
-Classification provenance makes this limitation measurable. In 2026, 93.9% of issues receive their intent from an explicit title tag or current label, while 6.1% remain the default other/tracking category. Coverage was only 68.0% explicit in launch–2024, so early-versus-late category shifts are partly entangled with issue-form adoption.
+- external humans authored 10,993 (75.1%) across 3,401 authors;
+- May-18 snapshot write+ users authored 2,896 (19.8%) across 56 authors;
+- May-18 snapshot triage-only users authored 754 (5.1%) across 19 authors.
 
-For the benchmark, issue workload suggests two task families that PR-only sampling misses:
+The community supplies most implementation intake, while integration outcomes differ sharply. Among PRs eligible for 90-day outcomes, 42.5% of external PRs merge within 90 days, versus 83.8% for write+ authors and 80.8% for triage-only authors. At least one roster review is observed for 46.9% of external PRs versus 76.8% of write+ PRs. These are associations, not patch-quality effects: task selection, specialization, contributor history, reviewer familiarity, and organizational priority are confounded with author role.
 
-- **diagnosis/reproduction tasks** from bug, performance, installation, and CI issues;
-- **triage/design tasks** from feature requests and RFCs.
+Merge gatekeeping is concentrated among permissioned actors. Among the 6,445 human-authored 2026 merges with an observed actor, 96.1% were performed by users in the May-18 write+ roster, 3.8% by triage-only users, and 0.1% by other actors; 168 additional merge actors are unavailable and are not imputed. Top-five merge-actor share ranges from 43.8% for bugs to 60.2% for refactors.
 
-They should be reported separately from implementation tasks because their verifiers and target outputs differ.
+Within the 103-person May roster, the observed 2026 portfolio is: 72 both engineering and gatekeeping, three engineering only, eight gatekeeping only, and 20 with none of the public actions measured here. The last group must not be called inactive: private discussion, security, release work, CI babysitting, vendor coordination, and other repositories are not observed.
 
-## 6. PR work and lifecycle
+![Engineering and review ownership](assets/rq1/engineering_and_review_ownership.png)
 
-The provisional rule-based PR taxonomy uses title tags, labels, verbs, and changed-file paths. `Other/unclear` remains explicit rather than forcing uncertain assignments.
+## Review capacity and specialization
 
-| PR work type | 2025 | 2026 through May 18 |
-| --- | ---: | ---: |
-| Bug/correctness | 22.9% | 32.0% |
-| CI/build/release | 16.5% | 13.2% |
-| Documentation/API/UX | 20.0% | 14.2% |
-| Feature/capability | 13.8% | 13.8% |
-| Performance/efficiency | 5.5% | 6.6% |
-| Refactor/maintainability | 3.6% | 4.2% |
-| Test/evaluation as primary intent | 0.5% | 0.6% |
-| Dependency/chore | 0.5% | 0.3% |
-| Other/unclear | 16.7% | 15.1% |
+Seventy-seven roster members submitted 19,091 non-author reviews in January–July 2026. The top five produced 35.0%, ten people produced half, 23 produced 80%, and the Gini coefficient is 0.664. Relative to the May analysis, the population widened from 75 to 77 and top-five share fell from 39.7% to 35.0%; review became slightly broader, but nowhere near enough to match intake growth.
 
-Test/evaluation is rare as a primary PR intent, but tests are commonly modified inside bug, feature, refactor, and hardware PRs. A benchmark taxonomy should therefore keep **work intent** separate from the **test/verifier signal**.
+Top-five shares by action are 35.0% for submitted reviews, 36.2% for inline comments, 34.8% for PR conversation comments, 37.2% for issue conversation comments, 38.9% for label changes, 41.3% for close/reopen events, and 44.4% for merges.
 
-For 2026 PRs, 58.5% of assignments use a class-specific title tag/current label, 26.4% use a lexical heuristic, and 15.1% remain other/unclear. Those are provenance categories, not calibrated confidence scores. The unresolved and heuristic strata must be oversampled in human validation; otherwise aggregate precision can hide poor performance exactly where benchmark quotas are most uncertain.
+Specialties remain more concentrated than aggregate review. Top-five reviewers account for 61.6% of multimodal/audio reviews, 55.5% of frontend/API, 52.7% of ROCm, 51.3% of XPU, 49.8% of quantization, and 49.6% of MoE. These overlapping heuristic signals are not expertise credentials, but they locate domains where verifier and expert-review capacity is plausibly scarce.
 
-### Competing PR outcomes
+Merged work does not consume all review. In the 2026 creation cohort, merged PRs account for 81.4% of roster review submissions and 74.1% of inline comments; closed-unmerged PRs account for 8.9% and 11.5%; open PRs already account for 9.7% and 14.3%. A merged-only workload census omits 18.6% of submitted reviews and 25.9% of inline review work.
 
-Merge and close-without-merge are competing outcomes. Treating closed-unmerged PRs as ordinary censoring would overstate merge probability.
+![Review capacity](assets/rq1/review_capacity.png)
 
-| Cohort | Merged by 30d | Closed unmerged by 30d | Merged by 90d | Closed unmerged by 90d |
-| --- | ---: | ---: | ---: | ---: |
-| Launch–2024 | 74.0% | 12.3% | 76.4% | 15.1% |
-| 2025 | 69.6% | 13.8% | 72.6% | 16.3% |
-| 2026 through May 18 | 50.5% | 18.0% | 53.8% | 21.8% |
+## External contributor lifecycle
 
-![PR competing outcomes](assets/rq1/pr_competing_outcomes.png)
+The 2026 cohort contains 3,401 external authors and 10,993 external PRs; 2,807 authors are first observed in the dataset during this period.
 
-Within the 2026 cohort old enough for 90-day observation, provisional work types have different merge incidence: refactor/maintainability 81.7%, CI/build/release 74.1%, performance 65.8%, bug/correctness 60.5%, and feature/capability 56.1%. These are associations, not intrinsic difficulty estimates; author role, scope, and censoring structure differ across categories.
+| External author frequency in Jan–Jul | Authors | PRs | Share of external PRs |
+|---|---:|---:|---:|
+| One PR | 1,896 | 1,896 | 17.2% |
+| 2–4 PRs | 984 | 2,548 | 23.2% |
+| 5+ PRs | 521 | 6,549 | **59.6%** |
 
-## 7. Who authors what engineering work?
-
-“Committer” is ambiguous in a GitHub repository. The SQLite `commit` table contains 29,659 commits, 2,733 distinct author-email strings, but only 117 distinct committer-email strings; author and committer email match on 11,053 commits. Squash, merge, and automation mechanics therefore make git `committer` metadata a poor measure of the person who did the engineering. This report uses:
-
-- **PR author** for code-change ownership;
-- **merge actor** for final integration gatekeeping;
-- **non-author reviewer/commenter** for review and triage work;
-- **snapshot write+** and **snapshot triage-only** only as current-role sensitivity groups, never as historical permissions.
-
-Of the 8,532 human-authored PRs created in 2026 through May 18, 6,117 (71.7%) came from external humans, 1,997 (23.4%) from users currently holding write permission, and 418 (4.9%) from current triage-only collaborators. The small difference from the 71.5% all-PR external share is the exclusion of 19 bot-authored PRs.
-
-### Work type and author role are not interchangeable
-
-| 2026 PR type | External humans | Snapshot triage-only | Snapshot write+ |
-| --- | ---: | ---: | ---: |
-| Bug/correctness | 79.4% | 4.2% | 16.4% |
-| Feature/capability | 78.1% | 3.1% | 18.8% |
-| Documentation/API/UX | 75.4% | 2.3% | 22.3% |
-| Performance/efficiency | 72.5% | 1.4% | 26.1% |
-| CI/build/release | 52.5% | 13.5% | 34.0% |
-| Refactor/maintainability | 41.4% | 6.8% | 51.8% |
-| Test/evaluation as primary intent | 84.3% | 0.0% | 15.7% |
-
-![PR authorship by work type](assets/rq1/pr_authorship_by_type.png)
-
-The community is the dominant source of user-facing demand response: external contributors authored nearly four-fifths of bug and feature PRs. Core engineering is different. Current write+ contributors authored most refactors and a disproportionate share of CI/build, performance, and unclear cross-cutting work.
-
-The internal portfolio also changed. From 2025 to 2026, refactor/maintainability rose from 5.2% to 9.2% of write+ PRs and performance from 5.0% to 7.4%, while documentation/API fell from 18.3% to 13.5%. In the external portfolio, bug/correctness rose from 23.9% to 35.6%. The aggregate shift toward bug-fix PRs is therefore largely a change in community intake, while the core portfolio shifted toward refactoring and performance.
-
-The external/core outcome difference is not explained away by this coarse work-type mix. Among 2026 PRs old enough for 90-day follow-up, external versus current write+ merge incidence was 49.0% versus 88.0% for bugs, 46.5% versus 86.2% for features, 50.5% versus 92.7% for performance, 55.3% versus 92.4% for refactors, 61.8% versus 86.3% for CI/build, and 51.9% versus 95.9% for documentation/API. This within-stratum persistence strengthens the conclusion that the streams operate differently, but it remains non-causal: the taxonomy is coarse, task scope and contributor experience differ, and current permission may reflect successful prior contribution rather than status at PR creation.
-
-This distinction matters for the benchmark. A proportional sample of all PRs will mostly test whether agents can address community-facing bugs and features. It will underrepresent the system-internal refactoring, integration, and architectural work disproportionately performed by core contributors unless author role is an explicit secondary stratum.
-
-### Technical ownership differs even more than PR type
-
-The 2026 share authored by current write+ contributors rises as work moves deeper into the runtime:
-
-| Technical signal | External | Triage-only | Write+ |
-| --- | ---: | ---: | ---: |
-| Frontend/API subsystem | 64.8% | 3.6% | 31.5% |
-| Kernels/operators | 64.1% | 5.6% | 30.3% |
-| Distributed serving | 57.5% | 4.4% | 38.1% |
-| Model support | 54.9% | 4.0% | 41.1% |
-| Tests/evaluation paths | 50.6% | 8.0% | 41.4% |
-| Engine/scheduler | 35.6% | 1.8% | 62.5% |
-| V1 engine/model runner topic | 41.9% | 4.8% | 53.3% |
-| Disaggregated serving topic | 24.4% | 0.0% | 75.6% |
-
-Hardware ownership is ecosystem-dependent. External humans authored 65.2% of CUDA-signal PRs, 57.6% of ROCm, 56.1% of XPU, and 65.6% of CPU work. Current write+ contributors authored 39.4% of cross-backend work and 43.0% of XPU work. The 76.0% write+ share for NPU and 57.9% for TPU are based on much smaller samples and must not be generalized.
-
-### Concrete code-path hotspots
-
-Path analysis is restricted to PRs with commit/file data. A PR can touch multiple path areas.
-
-| 2026 path area | PRs touching area | External | Triage-only | Write+ |
-| --- | ---: | ---: | ---: | ---: |
-| Tests | 1,637 | 48.9% | 8.4% | 42.4% |
-| Model executor/support | 1,429 | 53.6% | 4.3% | 42.0% |
-| Other vLLM Python | 1,260 | 47.0% | 2.7% | 50.0% |
-| V1 engine/runtime | 1,059 | 41.7% | 4.2% | 53.8% |
-| CI/build/packaging | 809 | 30.7% | 10.5% | 57.0% |
-| Frontend/entrypoints | 514 | 33.9% | 2.9% | 62.8% |
-| Distributed/executors | 382 | 37.7% | 2.9% | 58.9% |
-| Kernels/native code | 335 | 33.4% | 1.2% | 64.8% |
-| Compilation | 284 | 31.0% | 1.1% | 67.3% |
-| Platforms/backends | 282 | 23.8% | 3.2% | 72.3% |
-| Benchmarks/evals | 222 | 19.8% | 0.5% | 78.8% |
-
-![Path-area engineering ownership](assets/rq1/path_area_ownership.png)
-
-This exposes an important distinction hidden by title taxonomy: external contributors generate most incoming PRs, but current collaborators dominate the executable infrastructure used to validate and integrate them—benchmarks/evals, platforms, compilation, native kernels, distributed executors, and CI/build. An agent benchmark that selects tasks only where a simple unit test already exists will disproportionately sample the community-facing side and miss much of the environment-building work.
-
-### Engineering ownership is broad overall but narrow in specialties
-
-Among current write+ authors in 2026, 55 people authored 1,997 PRs. The top author contributed 8.7%, the top five 32.5%; ten authors produced half and 21 produced 80%. That aggregate breadth masks specialization:
-
-- the top five authored 63.0% of write+ refactors and 62.2% of performance PRs, versus 31.8% of bug PRs;
-- the top five authored 71.4% of write+ XPU work, 63.8% of cross-backend work, and 56.5% of CUDA work;
-- the top five authored 71.4% of LoRA/adapters, 68.8% of compilation/CUDA-graph, 68.6% of disaggregated-serving, and 68.6% of MoE/expert-parallel work;
-- at the path level, the top five current collaborators authored 73.9% of benchmark/eval PR-area records, 72.2% of compilation, and 69.2% of kernel/native-code records.
-
-![Engineering and review ownership concentration](assets/rq1/engineering_and_review_ownership.png)
-
-These are dependency signals, not criticism of individual contributors. They show where task construction and verification will require scarce domain experts. Rare-topic benchmark tasks should be reviewed by the relevant specialists, and the project should not assume that any maintainer can validate any accelerator or runtime task interchangeably.
-
-### Merge authority is even more concentrated
-
-All 2025 and 2026 merges in the snapshot were performed by users currently in the write+ roster; only three launch–2024 merges fall outside it. In 2026, the top five merge actors integrated 48.7% of bug PRs, 58.0% of CI/build, 61.3% of documentation/API, and 65.1% of refactors. Only 7.9% of merged bug PRs and 8.2% of performance PRs were merged by their own author, compared with 26.6% of refactors.
-
-Merge-actor concentration captures final gatekeeping, not the full decision process. A merge actor may press the button after others review, and current permission cannot establish historical authority. Still, it confirms that contribution volume and integration authority are separate systems.
-
-## 8. What maintainers visibly do
-
-Repository events expose several distinct maintenance actions. They are reported separately because an inline review, a label change, and a merge do not represent equal effort.
-
-| Snapshot-collaborator action, monthly mean | 2025 | 2026 Jan–Apr | Change |
-| --- | ---: | ---: | ---: |
-| Non-author submitted reviews | 2,316.7 | 2,778.3 | +19.9% |
-| Non-author inline review comments | 1,949.3 | 2,132.3 | +9.4% |
-| Non-author PR conversation comments | 926.1 | 1,125.3 | +21.5% |
-| Non-author issue conversation comments | 710.4 | 476.8 | −32.9% |
-| Label changes | 750.7 | 1,229.8 | +63.8% |
-| Close/reopen events | 1,033.0 | 1,362.8 | +31.9% |
-| Merges | 720.1 | 909.0 | +26.2% |
-
-![Observable maintainer workload](assets/rq1/maintainer_workload.png)
-
-The central comparison is not that maintainers became less active. Every visible PR-facing action increased, and label and lifecycle activity increased sharply. Rather, PR intake grew 71.8% while non-author submitted reviews grew 19.9% and inline comments grew 9.4%. The observable review interaction available per incoming PR therefore fell. Non-author issue conversation comments declined 32.9% while issue intake rose 7.1%.
-
-This event decomposition still omits code written inside maintainer-authored PRs, reading without commenting, reproduction, profiling, meetings, and private chat. It is a public-workflow description, not a timesheet.
-
-The capacity conclusion is robust to simple activity thresholds. The monthly mean number of snapshot collaborators with at least one observable non-author/operational action was 65.9 in 2025 and 68.2 in 2026 Jan–Apr; with at least five actions, 54.0 and 57.2; active on at least three distinct days, 53.3 and 56.8. The visible active pool grew only modestly. Observable reviewer-days grew 21.2%, from 560.6 to 679.5 per month—still far below the 71.8% increase in PR intake. Meanwhile, the median heterogeneous event count per active collaborator rose from 34.6 to 64.5 per month, and the 90th percentile rose from 329.1 to 369.9. Event counts and active days remain incomparable to hours, but these sensitivity checks rule out an apparent capacity trend caused solely by a one-event activity threshold.
-
-Work remains concentrated by action. In 2026, the top five snapshot collaborators performed 39.7% of non-author submitted reviews, 39.0% of inline comments, 49.9% of merges, 41.4% of non-author issue conversation comments, and 46.8% of close/reopen events. These aggregate statistics intentionally do not identify or rank individuals.
-
-### Maintainer portfolios and expertise bottlenecks
-
-The current roster contains 103 users with triage permission or higher. In the 2026 observation window, 69 (67.0%) both authored a PR and performed at least one observable gatekeeping action (review, issue response, or merge), five (4.9%) only authored PRs, nine (8.7%) only gatekept, and 20 (19.4%) had no observed public action of those kinds. This is a snapshot-roster overlap analysis, not proof that the last group was inactive: membership intervals, private work, issue operations other than responses, and work in other repositories are unavailable.
-
-Review is broad across coarse work types but narrow inside technical specialties. The 75 active snapshot reviewers in 2026 had a median of six distinct PR work types; the median reviewer still placed 38.7% of submissions in one primary type. At the corpus level, eight reviewers produced half of all 12,506 time-stamped non-author review submissions and 21 produced 80%. Topic-level top-five shares were 62.1% for multimodal/audio, 61.8% for frontend/API, 58.8% for model support, 55.3% for LoRA/adapters, 54.8% for MoE/expert parallelism, 53.6% for quantization, and 52.6% for compilation/CUDA graphs. These overlapping heuristic topic signals do not prove expertise, but they identify domains where verification capacity is plausibly scarce and should be checked with CODEOWNERS and maintainers.
-
-Engineering and review concentration should not be read as a leaderboard or as evidence of unhealthy project structure. They answer a benchmark-design question: which task strata can be validated by a broad reviewer pool, and which require a small set of domain experts whose time must be budgeted explicitly?
-
-### Review spent beyond merged PRs
-
-| 2026 cohort outcome at snapshot | PRs | PRs with a collaborator review | Submitted reviews | Share of reviews | Inline comments | Share of inline comments |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Merged | 3,943 | 96.7% | 9,165 | 79.0% | 6,003 | 69.9% |
-| Closed unmerged | 1,856 | 20.6% | 837 | 7.2% | 837 | 9.7% |
-| Still open | 2,752 | 23.0% | 1,601 | 13.8% | 1,752 | 20.4% |
-
-Open and closed-unmerged PRs together account for 21.0% of non-author submitted reviews and 30.1% of non-author inline comments in the 2026 cohort. This is exactly the review population excluded by a benchmark derived only from merged patches. A review track should deliberately sample accepted, rejected, redirected, and still-contested changes.
-
-Review burden also differs from PR-count share. In 2026, documentation/API/UX represented 14.2% of PRs but 21.6% of non-author submitted reviews and 29.0% of non-author inline comments. Refactors represented 4.2% of PRs but 5.8% of review submissions. Bug/correctness represented 32.0% of PRs but 24.0% of review submissions. These are workload-composition differences, not direct time estimates.
-
-## 9. Contributor intake, experience, and review capacity
-
-The share of PRs authored by users outside the snapshot collaborator roster rose from 43.6% in launch–2024 to 55.7% in 2025 and 71.5% in 2026. Excluding bots, external humans authored 6,117 of 8,532 PRs (71.7%) in 2026. There were 1,957 first-time external PR authors in all of 2025 and 1,575 by May 18, 2026.
-
-![Contributor intake and review capacity](assets/rq1/contributor_pressure.png)
-
-Among cohorts with 90 days of follow-up, external-human PRs merged within 90 days at 60.6% in launch–2024 and 60.7% in 2025, falling to 51.7% in the observable 2026 cohort. Snapshot-collaborator-authored PRs remained around 87–89%. The 2026 comparison uses only PRs old enough for a full 90-day outcome; it does not treat newer PRs as failures. The role gap still must not be interpreted as contributor quality: work type, task scope, prior contributor experience, and selection into review differ.
-
-### Most external authors contribute once, but repeat authors supply most PRs
-
-The external stream is not one homogeneous crowd. Among the 2,105 external humans who opened a PR in 2026 through May 18, 1,188 (56.4%) opened one PR in the period, 616 (29.3%) opened two to four, and 301 (14.3%) opened five or more. The last group supplied 54.6% of all external PRs, while one-PR contributors supplied 19.4%. This means maintainers face both high onboarding breadth and a smaller repeat-contributor production stream.
-
-PR-level experience is associated with markedly different observable outcomes:
-
-| 2026 external PR experience | PRs | Share of external PRs | Collaborator response by 7d | Reviewed by collaborator | Merged by 90d |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| First observed PR | 1,575 | 25.7% | 43.3% | 37.0% | 40.1% |
-| 2nd–5th observed PR | 1,851 | 30.3% | 54.5% | 46.7% | 45.6% |
-| 6th+ observed PR | 2,691 | 44.0% | 62.5% | 57.4% | 63.4% |
+Broad onboarding and high-volume repeat production coexist. A roster review is observed on 34.0% of first PRs, 43.0% of second–fifth PRs, and 56.9% of sixth-or-later PRs. Ninety-day merge is 27.9%, 38.8%, and 53.8%, respectively. Among first-time 2026 external authors with full 90-day follow-up, 42.0% submit another PR within 90 days. This measures public PR return, not every form of participation.
 
 ![External contributor lifecycle](assets/rq1/external_contributor_lifecycle.png)
 
-These are descriptive associations, not evidence that maintainers favor familiar people or that first-time contributions are worse. Repeated contributors are selected by prior experience and may choose different work. The type mix supports that caution: 38.8% of first PRs were classified as bugs and 19.2% as documentation/API, versus 32.8% and 11.7% among sixth-or-later PRs. A causal analysis would need task controls and a historical membership model.
+## Inference systems, heterogeneous hardware, and specialist work
 
-The lifecycle still quantifies a real interface cost. First PRs accounted for one quarter of recent external intake and had the lowest observed response and review coverage. Of first-time external authors with complete follow-up, 33.9% of the launch–2024 cohort, 41.2% of the 2025 cohort, and 46.9% of the eligible early-2026 cohort submitted a second PR within 90 days. The last estimate covers only 390 early-2026 authors and should not be extrapolated to the full partial-year cohort.
+The leading multi-label topic signals in 2026 are:
 
-For the benchmark, first-time and repeat-contributor work should be retained as a secondary stratum. Tasks derived only from frequently contributing authors will overstate repository familiarity and underrepresent onboarding, problem clarification, environment setup, and patch-shaping work. Conversely, a sample dominated by one-off PRs will miss the larger share of external patches actually produced by repeat contributors.
+| Topic | PRs | 2026 share | 2025 share |
+|---|---:|---:|---:|
+| Distributed and parallelism | 5,418 | **36.8%** | 29.1% |
+| Attention and kernels | 4,025 | 27.3% | 19.8% |
+| V1 engine and model runner | 3,692 | 25.1% | 17.3% |
+| Model support | 2,704 | 18.4% | 17.5% |
+| Frontend, serving, and APIs | 2,493 | 16.9% | 18.9% |
+| KV cache, connectors, and offload | 2,148 | 14.6% | 8.8% |
+| Quantization and low precision | 2,133 | 14.5% | 10.9% |
+| MoE and expert parallelism | 1,761 | 12.0% | 9.0% |
+| Speculative decoding | 1,505 | 10.2% | 7.8% |
 
-![Review demand and capacity](assets/rq1/review_capacity.png)
+The core of inference engineering is not merely model configuration. It combines distributed execution, attention/kernel work, V1 runtime, KV cache, quantization, MoE, speculative decoding, and serving integration.
 
-The mean number of active snapshot-collaborator reviewers rose from 54.3 in 2025 to 60.3 in early 2026, while PR arrivals per reviewer rose from 19.5 to 30.5 per month. Non-author review submissions increased, but far less quickly than PR arrivals.
+Hardware signals also expanded:
 
-Review work is distributed across more people than in the early project, but remains concentrated:
+| Hardware signal | 2026 PRs | 2026 share | 2025 share |
+|---|---:|---:|---:|
+| NVIDIA/CUDA | 2,505 | 17.0% | 10.7% |
+| AMD/ROCm | 2,432 | 16.5% | 10.8% |
+| CPU | 1,099 | 7.5% | 5.0% |
+| Cross-backend | 1,000 | 6.8% | 4.7% |
+| Intel/XPU | 879 | 6.0% | 2.3% |
+| TPU | 148 | 1.0% | 6.2% |
+| Ascend/NPU | 42 | 0.3% | 0.1% |
+| MLU | 0 | 0.0% | 0.0% |
 
-| Period | Active snapshot reviewers | Submitted reviews | Top-five share | Gini |
-| --- | ---: | ---: | ---: | ---: |
-| Launch–2024 | 56 | 10,222 | 49.9% | 0.734 |
-| 2025 | 89 | 27,800 | 43.6% | 0.749 |
-| 2026 through May 18 | 75 | 12,506 | 39.7% | 0.688 |
+ROCm and CUDA now have similar observable PR volume, and XPU grew substantially. Ascend/NPU and MLU remain too sparse in the vLLM source frame for large representative weights. If included, they should be reported as a maintainer-nominated heterogeneous stress track or supported by data from more relevant repositories.
 
-Counts and concentration quantify observable review burden, not review effort. Reading, reproducing, profiling, offline discussion, and design work are not recoverable from GitHub. A small maintainer calibration study remains necessary if the project wants effort-weighted coverage.
+![Engineering topics](assets/rq1/engineering_topics.png)
 
-## 10. Technical workload: inference topics, subsystems, and hardware
+![Subsystems and hardware](assets/rq1/subsystems_and_hardware.png)
 
-The broad subsystem taxonomy is useful for benchmark coverage, but vLLM maintainers work on more specific inference concerns. A second multi-label taxonomy uses titles, labels, and available paths to expose those concerns.
+## Direct implications for benchmark construction
 
-| Engineering topic signal | 2025 | 2026 through May 18 | Change |
-| --- | ---: | ---: | ---: |
-| Distributed and parallelism | 28.5% | 22.9% | −5.6 pp |
-| Attention and kernels | 19.6% | 21.5% | +1.9 pp |
-| Frontend, serving, and APIs | 18.9% | 16.4% | −2.5 pp |
-| Model support | 17.3% | 13.7% | −3.6 pp |
-| KV cache, connectors, and offload | 8.8% | 13.3% | +4.5 pp |
-| V1 engine and model runner | 16.8% | 13.1% | −3.8 pp |
-| Quantization and low precision | 10.8% | 12.4% | +1.6 pp |
-| Multimodal and audio | 12.2% | 11.8% | −0.4 pp |
-| MoE and expert parallelism | 8.8% | 11.3% | +2.5 pp |
-| Speculative decoding | 7.8% | 9.7% | +2.0 pp |
-| Structured output, tools, reasoning | 8.0% | 9.2% | +1.2 pp |
-| torch.compile and CUDA graphs | 4.1% | 5.8% | +1.7 pp |
-| Disaggregated serving | 1.1% | 1.8% | +0.8 pp |
+The 2026 representative source frame contains 6,613 merged, human-authored PRs with commit data:
 
-![Engineering topic signals](assets/rq1/engineering_topics.png)
+- 45.0% touch tests;
+- 39.0% carry a hardware signal;
+- 5.9% have performance intent;
+- 9.6% are large changes;
+- 14.5% are review-intensive;
+- 2.9% are documentation-only.
 
-The largest positive change is KV cache/connectors/offload, followed by MoE, speculative decoding, attention/kernels, and compilation/CUDA-graph work. PRs opened in the 2026 cohort received 4,918 submitted snapshot-collaborator reviews on distributed/parallel work; attention/kernel PRs received 3,501; model-support PRs 2,990; V1/model-runner PRs 2,789; and KV-cache/connectors/offload PRs 1,916 by the cutoff. These are PR-creation-cohort totals rather than review-event-period totals; the multi-label signals overlap and must not be added.
+Test-file presence is only a visible verifier signal, not evidence that tests fully grade the proposed task. Test-touched shares are 37.4% for performance, 40.2% for bugs, 41.9% for other, 44.9% for features, 47.3% for refactors, 48.2% for docs/API, and 52.4% for CI/build. Performance and bug work are important benchmark categories with relatively weak existing verifier coverage.
 
-Topic detection is provisional and more sensitive to missing paths than title-level work-type classification. The report uses it to identify benchmark coverage needs, not to claim a precise causal shift in engineering priorities.
+Hardware source-frame test coverage is 58.0% for ROCm, 52.8% for CUDA, 54.5% for CPU, 47.9% for XPU, and 72.9% for cross-backend work. The 18 Ascend source-frame PRs show 94.4% test touching, but the sample is tiny and 88.9% are large changes; this does not imply an easy environment.
 
-### Broad subsystems and heterogeneous hardware
+The 76 representative tasks should stratify at least by:
 
-The following shares use the benchmark-source frame: merged, human-authored PRs with commit data. Dimensions are multi-label, so rows do not sum to 100%.
+1. bug/correctness across runtime, kernels, distributed systems, APIs, and model support;
+2. feature/capability and model/backend integration;
+3. performance/efficiency with continuous reward where appropriate;
+4. CI/build/release and cross-platform breakage;
+5. refactor/maintainability and architecture migration;
+6. test/evaluation and verifier construction;
+7. CUDA, ROCm, XPU, CPU, and cross-backend work;
+8. distributed execution, attention/kernels, V1, KV cache, quantization, MoE, and speculative decoding;
+9. open, closed-unmerged, review-intensive, and maintainer-nominated tasks to cover the merged-only frame's blind spots.
 
-| Subsystem signal | Launch–2024 | 2025 | 2026 through May 18 |
-| --- | ---: | ---: | ---: |
-| Distributed serving | 40.9% | 38.8% | 43.4% |
-| Tests/evaluation paths | 37.8% | 38.3% | 42.7% |
-| Kernels/operators | 23.4% | 28.6% | 34.2% |
-| Model support | 24.7% | 22.5% | 23.6% |
-| Platform/build/CI | 26.1% | 22.0% | 21.0% |
-| Frontend/API | 18.5% | 17.5% | 18.9% |
-| Memory/KV cache | 5.3% | 9.0% | 12.7% |
-| Engine/scheduler | 17.7% | 11.3% | 8.3% |
-
-| Hardware signal | Launch–2024 | 2025 | 2026 through May 18 |
-| --- | ---: | ---: | ---: |
-| NVIDIA/CUDA | 8.1% | 11.3% | 15.8% |
-| AMD/ROCm | 6.2% | 10.7% | 19.6% |
-| CPU | 5.0% | 6.0% | 9.1% |
-| Intel/XPU | 2.1% | 2.9% | 6.2% |
-| TPU | 3.2% | 6.3% | 1.6% |
-| Ascend/NPU | 0.0% | 0.2% | 0.4% |
-| MLU | 0.0% | <0.1% | 0.0% |
-| Cross-backend | 3.1% | 4.8% | 7.3% |
-| No detected hardware signal | 82.2% | 73.1% | 63.2% |
-
-![Subsystem and hardware signals](assets/rq1/subsystems_and_hardware.png)
-
-This is the strongest empirical justification for a hardware-aware AI-inference benchmark. Kernels, KV cache, ROCm, CUDA, XPU, CPU, and cross-backend changes are becoming a larger share of merged maintenance work.
-
-It also establishes a boundary: Ascend/NPU and MLU cannot be assigned large representative weights from this vLLM snapshot. If the benchmark includes them because maintainers consider them strategically important, report them as a **targeted heterogeneous-system stress track** or augment RQ1 with repositories where that work actually occurs.
-
-## 11. Benchmark source population and verifier reality
-
-The snapshot contains 16,627 merged, human-authored PRs with commit data:
-
-| Source period | PRs in source frame | Tests touched | Hardware signal | Performance intent | Large change | Review-intensive |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Launch–2024 | 3,944 | 33.3% | 17.8% | 1.8% | 9.9% | 13.1% |
-| 2025 | 8,746 | 34.3% | 26.9% | 5.4% | 7.4% | 14.6% |
-| 2026 through May 18 | 3,937 | 41.6% | 36.8% | 6.2% | 10.0% | 14.8% |
-
-“Tests touched” is evidence that an execution verifier may be recoverable; it is not proof that the original tests fully specify the task. “Review-intensive” is an exploratory proxy: at least three non-author review-head rounds, ten non-author collaborator review submissions, or a review span of at least 14 days. It is not a measure of hours.
+Weights should be based on human-coded eligible records, not copied directly from heuristic shares. The 24 memorable tasks should be reported as a separate targeted track, not mixed into one probability-sampled population pass rate.
 
 ![Benchmark task signals](assets/rq1/benchmark_task_signals.png)
 
-### Verifier signals vary by task type
-
-Within the 2026 merged-human source frame, the share touching test files is 35.0% for bug fixes, 42.6% for features, 34.7% for performance work, 51.6% for CI/build, 46.7% for refactors, and 46.4% for documentation/API/UX. Only performance work commonly touches an explicit benchmark/evaluation path (41.6%); the corresponding rates are 2.1% for bug fixes and 4.1% for features.
-
-Hardware PRs have more test-path signal—56.4% for CUDA, 58.6% for ROCm, 57.0% for XPU, 57.1% for CPU, and 80.4% for cross-backend work—but many require the relevant accelerator, driver, compiler, model checkpoint, or distributed topology. A visible test is not necessarily runnable in the frozen benchmark environment.
-
 ![Verifier signals](assets/rq1/verifier_signals.png)
 
-### Patch shape is part of task difficulty
+## What changed from the May 18 analysis
 
-Among 2026 merged source-frame PRs, review intensity rises from 3.6% for cumulative churn ≤20 lines, to 11.2% for 21–100, 24.9% for 101–500, and 42.2% for 501–2,000. Test-file signal rises from 18.3% to 79.2% over the same bins. PRs above 2,000 cumulative changed lines are structurally unusual—the median touches 208.5 files—and should not be treated as ordinary single-agent coding tasks without manual dependency and generated-file checks.
+With complete May–July data, the earlier central conclusion is stronger:
 
-![Patch complexity signals](assets/rq1/pr_complexity.png)
+- estimated 2026 monthly PR intake rises from 1,836.3 to 2,102.6;
+- monthly merges rise only from 909.0 to 974.4;
+- active roster reviewers fall from the early-year average of 60.3 to a seven-month average of 58.0;
+- submitted reviews per new PR fall from 1.55 to 1.35;
+- cutoff open PRs increase from 3,037 to 4,194;
+- issue seven-day roster response falls from 27.2% to 23.0%;
+- PR roster response falls from 62.2% to 57.6%;
+- submitted roster review falls from 55.0% to 50.8%.
 
-This analysis deliberately does not report merge rates by patch-size bin. Commit/file coverage is much better for merged work than for open heads, so such a comparison would be selection-biased. Patch shape is used only to stratify the reconstructible merged source population.
+One statement needs refinement: gatekeeping did not become more concentrated. Top-five review share fell from 39.7% to 35.0%, and active reviewers increased from 75 to 77. The accurate conclusion is: **review participation broadened slightly, but capacity grew far more slowly than demand, so observable review density per PR fell sharply.**
 
-Declared coding-agent labels are too sparse for a prevalence claim: the snapshot contains eight PRs labeled `claude-code-assisted` and two labeled `codex`, all merged. Label adoption is voluntary and recent, so these ten records cannot estimate how often agents already contribute, how successful they are, or whether agent-assisted PRs require more review.
+## Limitations
 
-### A candidate is not yet a benchmark task
+- The May-18 roster is neither the July roster nor a historical membership table.
+- GitHub does not capture Slack, private security, vendor coordination, release planning, or local/unsubmitted work.
+- Event counts, active days, and review counts cannot be converted to labor hours.
+- Title/label/path taxonomies are deterministic exploratory classifications, not human gold labels.
+- Content deleted before collection cannot be recovered; post-cutoff text edits have no historical body snapshot.
+- Commit timestamps do not reveal when a commit first entered an open PR.
+- Delta-refreshed PRs have PR-level file coverage; older PRs use original per-commit file data.
+- Review submissions and inline comments do not fully measure thread resolution, synchronous design, or CI babysitting.
+- Outcome differences are observational associations, not causal effects of author role, hardware, or work type.
 
-The 16,627-PR frame is a source population, not a count of offline-solvable tasks. Each sampled task still needs a reconstructible base commit, dependency and checkpoint availability, a query that does not leak the solution, an executable environment, a necessary public test, a stronger hidden verifier, and expert review. Feasibility rejection rates must be recorded by stratum; silent replacement would bias the final benchmark toward easy, CPU-only, well-tested work.
+## Answer to RQ1
 
-### Recommended benchmark tracks
+Real vLLM maintenance is a **high-growth, community-driven, specialist-integration-constrained** system. PR demand nearly doubled in 2026; inference-internal and heterogeneous-hardware work occupies a large and growing share; external authors supply roughly three quarters of human PRs; and review, merge, and specialist gatekeeping still depend on a visible maintainer pool that grows much more slowly.
 
-The observed workload supports three separately scored task contracts:
-
-1. **Implementation:** reconstruct a pre-change repository state and ask the agent to implement a bug fix, feature, performance change, refactor, test, CI/build, or API change.
-2. **Diagnosis and reproduction:** start from a user issue and require a reproducer, root-cause localization, or an executable diagnosis. This covers real issue demand that may not map cleanly to one patch.
-3. **Review:** give the agent a candidate patch and ask it to identify correctness, performance, hardware, API, or design problems. This measures workload currently carried by maintainers but absent from patch-generation-only benchmarks.
-
-The memorable track remains useful for rare, high-value tasks. It must not substitute for probability sampling of representative work.
-
-| Contract | Source population | Agent output | Primary verifier | What its score estimates |
-| --- | --- | --- | --- | --- |
-| Implementation | Reconstructible merged human PRs | Repository patch | Public + hidden tests; performance checks where needed | Solvable share of eligible code-changing work |
-| Diagnosis/reproduction | User issues with a reproducible failure or measurable symptom | Reproducer, localization, diagnosis, optionally patch | Failure reproduction and targeted assertions | Capability on observable problem-understanding work |
-| Review | Submitted PR revisions, including non-merged outcomes | Findings, severity, suggested changes | Expert rubric + known later fixes/outcomes | Ability to surface review-relevant defects and risks |
-| Memorable | Maintainer-nominated difficult tasks | Task-specific | Expert-built | Capability on high-value tail cases, not prevalence |
-| Targeted hardware | Strategically selected accelerator cases | Patch/diagnosis | Native hardware tests | Stress performance outside workload-representative weighting |
-
-The unit of success differs across contracts. Diagnosis cannot be graded solely by whether the reference patch is reproduced, and review cannot be reduced to test pass/fail. Contract-specific scores should remain visible even if a later paper constructs an explicitly weighted aggregate.
-
-### Representative sampling
-
-For the PR-derived implementation population, recent merged work suggests an initial distribution centered on bug/correctness, CI/build, documentation/API, feature work, performance, and refactor. Exact quotas should be frozen only after the human-coded taxonomy validation because 14–15% of recent PRs remain `Other/unclear` under deterministic rules.
-
-Subsystem and hardware dimensions should be imposed as multi-label coverage constraints rather than exclusive buckets. In particular:
-
-- preserve substantial distributed-serving, kernel/operator, model, frontend, and platform work;
-- reflect the growth of memory/KV-cache work;
-- cover CUDA, ROCm, XPU, CPU, and cross-backend behavior;
-- report targeted NPU/MLU additions separately from workload-reweighted results;
-- retain recorded inclusion and feasibility probabilities so the benchmark can distinguish a raw score from a workload-reweighted estimate.
-
-Only 1.6–1.8% of merged source-frame PRs have an issue link recoverable through commit-reference events. This is a schema lower bound, but it means task synthesis cannot assume that the SQLite link table provides a complete issue→PR query. PR bodies, cross-reference events, closing keywords, and maintainer validation are needed.
-
-### Headline metrics
-
-Do not collapse the three task contracts into “agents solve X% of vLLM work” unless an external effort study supplies weights. Report at least:
-
-- success on representative implementation tasks, workload-reweighted within its eligible frame;
-- success on diagnosis/reproduction tasks;
-- success on review tasks;
-- success on the memorable and targeted hardware tracks;
-- results by work type, subsystem, hardware, test signal, patch size, and review intensity.
-
-## 12. What remains unobserved and what must be done next
-
-1. **Validate taxonomy.** Double-code stratified issue and PR samples and report per-class agreement. Automated classifications in this report are descriptive, not frozen benchmark labels.
-2. **Recover historical roles.** Obtain collaborator membership intervals or report only “snapshot collaborator.” Do not back-project the current roster as ground-truth historical maintainer status.
-3. **Annotate substantive response.** Sample issue and PR threads to distinguish acknowledgement, triage, diagnosis, review, and resolution.
-4. **Complete issue→PR linkage.** Add PR-body references, closing keywords, and cross-reference events; treat commit references as a lower bound.
-5. **Calibrate effort.** Ask maintainers for ordinal active-time estimates on a stratified PR/review sample. Do not convert comments or elapsed time directly into hours.
-6. **Audit task feasibility.** For a probability sample, measure base-state reconstruction, offline solvability, model/checkpoint requirements, hardware cost, test adequacy, and hidden-verifier construction effort.
-7. **Freeze before model runs.** Freeze the snapshot, codebook, source frame, sampling seed, inclusion probabilities, and replacement policy before observing agent results.
-8. **Model dependent work.** Cluster stacked PRs, follow-up fixes, reverts, and release trains so one engineering change is not sampled multiple times as independent work.
-9. **Recover review-thread semantics.** Submitted-review state and head SHA do not reveal whether each inline concern was resolved, superseded, or waived. A review benchmark needs thread-level reconstruction and expert adjudication.
-10. **Measure hidden operational work.** Release management, security reports, Slack/design discussion, CI babysitting, and vendor coordination are outside the snapshot. The benchmark must state that boundary rather than treating absence as zero.
-11. **Audit environment selection.** GPU availability will cause non-random feasibility loss. Publish rejection reasons and both source-population and feasible-population weights, especially for ROCm, XPU, CPU, CUDA, multi-node, and model-dependent cases.
-12. **Run temporal robustness checks.** Recompute RQ1 on each live-bench refresh and distinguish changes caused by community demand from changes caused by issue forms, labels, bots, or ingestion coverage.
-
-### Publication-readiness assessment
-
-The quantitative repository census is now sufficient to motivate the benchmark and to define its major populations. It is not yet sufficient for a paper claim that “agents solve X% of maintainer workload.” That stronger claim requires, at minimum, validated content labels, feasible-task inclusion probabilities, diagnosis and review populations, maintainer effort calibration, and an explicit estimand for any aggregate percentage.
-
-The most important missing evidence is not another aggregate plot. It is human validation at the interfaces where repository events cease to mean what the benchmark needs: whether a response was substantive, whether a closed issue was actually resolved, whether a PR consumed significant expert time, whether a task is independently solvable offline, and whether a verifier captures the intended behavior rather than only the reference implementation.
-
-## References
-
-- GitHub, [REST API endpoints for timeline events](https://docs.github.com/en/rest/issues/timeline?apiVersion=2022-11-28).
-- GitHub, [Using pagination in the GraphQL API](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api).
-- CHAOSS, [Issue Response Time](https://chaoss.community/kb/metric-issue-response-time/).
-- Wessel et al., [Understanding the Time to First Response in GitHub Pull Requests](https://arxiv.org/abs/2304.08426), 2023.
-- Kalliamvakou et al., [The Promises and Perils of Mining GitHub](https://www.microsoft.com/en-us/research/publication/an-in-depth-study-of-the-promises-and-perils-of-mining-github/), MSR 2014.
-- Chatterjee, Sharma, and Ralph, [Empirical Standards for Repository Mining](https://arxiv.org/abs/2203.15950), MSR 2022.
+An AI inference benchmark must therefore test more than ordinary repository editing. It must measure whether agents can diagnose, implement, test, performance-validate, adapt hardware, and respond to review in this workload. The source frame supports both execution-verifiable tasks and tasks requiring synthesized verifiers, real accelerators, or expert judgement. Without those dimensions, the benchmark cannot answer how much real AI inference engineering work LLM agents can solve.

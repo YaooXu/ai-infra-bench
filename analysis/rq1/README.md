@@ -1,24 +1,22 @@
 # RQ1 analysis
 
-This directory contains the reproducible aggregate analysis for the vLLM workload study. It consumes the maintainer-provided Fivetran SQLite snapshot and never writes issue bodies, comment text, names, email addresses, or row-level actor identities to the repository.
+This directory contains the reproducible aggregate analysis for the vLLM workload study. The current results use the merged database through **2026-07-31 23:59:59 UTC**. The analysis never writes issue bodies, comment text, names, email addresses, or row-level actor identities to the repository.
 
-## Source snapshot
+## Reproduce the current analysis
 
-- Snapshot date: 2026-05-18
-- Source: Simon Mo, [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1)
-- SHA-256: `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`
+Download and decompress `vllm_github_2026-07-31.sqlite.zst` from the [`vllm-github-data-2026-07-31` release](https://github.com/ai-infra-bench/ai-infra-bench/releases/tag/vllm-github-data-2026-07-31). The uncompressed database must have SHA-256 `2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5`.
 
-Download the SQLite file using the URL in the gist README, then run:
+Run:
 
 ```bash
 python3 analysis/rq1/analyze.py \
-  --snapshot /path/to/vllm-github-issues-pr-snapshot-2026-05-18.sqlite \
+  --snapshot data/derived/vllm_github_2026-07-31.sqlite \
   --output analysis/rq1/outputs \
   --figures docs/assets/rq1 \
   --summary analysis/rq1/summary.json
 ```
 
-Runtime dependencies are Python 3.10+, pandas, NumPy, SciPy, and Matplotlib. The 1.1 GB source snapshot stays outside the repository; only aggregate, identity-free outputs are versioned.
+Runtime dependencies are Python 3.10+, pandas, NumPy, SciPy, and Matplotlib. Row-level databases stay outside git; only aggregate, identity-free outputs are versioned. `load_merged.py` translates the merged database into the analyzer's canonical inputs and prevents duplicated base/delta events.
 
 CSV outputs are ignored by git because they are reproducible. The aggregate summary and report figures are versioned. The title/label/path taxonomies are deterministic exploratory classifications; they are not substitutes for the preregistered human-coded gold sample.
 
@@ -33,7 +31,11 @@ The pipeline produces aggregate tables for:
 - contributor intake, first-time and repeat-author lifecycle, return, and review-capacity sensitivity;
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
-The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the current collaborator roster as a historical maintainer roster. See the [English findings report](../../docs/RQ1_FINDINGS.md) or [Chinese findings report](../../docs/RQ1_FINDINGS_ZH.md) for estimands and limitations.
+The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the May 18 collaborator roster as a historical maintainer roster. See the [English findings report](../../docs/RQ1_FINDINGS.md), [Chinese findings report](../../docs/RQ1_FINDINGS_ZH.md), or [May-to-July conclusion audit](../../docs/RQ1_CHANGE_AUDIT_2026-07-31.md) for estimands and limitations.
+
+## Base snapshot provenance
+
+The merged database starts from Simon Mo's [*vLLM GitHub Gym: vLLM GitHub Snapshot (Fivetran)*](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), observed on 2026-05-18 with SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`, and extends it through July 31.
 
 ## July 31 extension
 

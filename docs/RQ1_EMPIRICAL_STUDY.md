@@ -4,7 +4,7 @@ Status: implemented empirical baseline; human-validation stages pending
 
 Repository: `vllm-project/vllm`
 
-Observation cutoff: 2026-05-18
+Observation cutoff: 2026-07-31 23:59:59 UTC
 
 The current results are reported in [RQ1 Findings](RQ1_FINDINGS.md).
 The implemented variables are specified in the [RQ1 operational codebook](RQ1_CODEBOOK.md).
@@ -86,18 +86,18 @@ Partial months are excluded from month-over-month trend models or normalized by 
 ### Frozen snapshot size
 
 | Artifact | Rows |
-| --- | ---: | ---: |
-| Canonical issues | 15,571 |
-| Canonical pull requests | 26,768 |
-| Top-level comments | 178,352 |
-| Submitted reviews | 114,154 |
-| Inline review comments | 110,113 |
+| --- | ---: |
+| Canonical issues | 16,990 |
+| Canonical pull requests | 32,935 |
+| Top-level comments | 205,998 |
+| Submitted reviews | 131,473 |
+| Mappable inline review comments | 122,470 |
 
 ## 4. Data collection
 
 ### 4.1 Sources
 
-The canonical source is the [maintainer-provided Fivetran SQLite snapshot](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1), SHA-256 `1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d`. GitHub GraphQL and REST queries are supplementary reconciliation sources, not the primary census.
+The canonical source is the released [merged SQLite database](https://github.com/ai-infra-bench/ai-infra-bench/releases/tag/vllm-github-data-2026-07-31), SHA-256 `2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5`. It uses Simon Mo's [maintainer-provided Fivetran snapshot](https://gist.github.com/simon-mo/2b0f4e9f872d479a08ae53edac51ecb1) as its base and supplements it with cutoff-filtered GitHub GraphQL and REST data through July 31.
 
 Collect:
 
@@ -122,9 +122,12 @@ For each artifact, reconstruct its state as of the cutoff from timestamps and ti
 
 ### 4.3 Quality checks
 
-- Treat existence in `pull_request`, rather than `issue.pull_request`, as the canonical PR discriminator; the snapshot contains one disagreement.
-- Fall back to materialized `closed_at` for 42 closed artifacts without close-history rows.
-- Use materialized state at the snapshot boundary for eight current-state/history disagreements.
+- Treat existence in the canonical pull-request table as the PR discriminator; there are no remaining issue/PR flag conflicts.
+- Fall back to materialized `closed_at` for 443 closed artifacts without close-history rows.
+- Use materialized state at the snapshot boundary for two current-state/history disagreements.
+- Exclude 21 inline comments that cannot be mapped to a canonical PR from PR-level analysis while retaining them in the input audit.
+- Define a merged PR by cutoff-consistent `merged_at`, taking the union of observed merge events and the materialized PR merge timestamp. This resolves 279 REST-state `CLOSED` representations with a merge event and retains 168 merged PRs whose merge event is absent; merge-actor analyses leave those 168 actors unknown.
+- Require all 19 database release validations to pass before analysis.
 - Reconcile artifact totals against independent GitHub queries by month and type.
 - Manually compare at least 50 randomly sampled reconstructed timelines with the GitHub UI.
 - Publish extraction and exclusion counts at every stage.
@@ -133,11 +136,11 @@ For each artifact, reconstruct its state as of the cutoff from timestamps and ti
 
 ### 5.1 Human and bot activity
 
-Exclude bots from human responsiveness and maintainer-capacity metrics. The implemented census uses GitHub actor type, which identifies ten bot actors. Before paper release, audit a privacy-preserving high-volume actor sample for automation accounts incorrectly typed as users and report the sensitivity result without publishing actor rankings. Do not classify arbitrary usernames containing “bot” as automation; that rule has obvious false positives. Report bot responses separately because automated first responses can make a project appear more responsive than it is.
+Exclude bots from human responsiveness and maintainer-capacity metrics. The implemented census identifies 18 bot actors from the base GitHub actor type plus conservative login patterns for delta-only actors. Before paper release, audit a privacy-preserving high-volume actor sample for automation accounts incorrectly typed as users and report the sensitivity result without publishing actor rankings. Do not classify every username containing the substring “bot” as automation; that rule has obvious false positives. Report bot responses separately because automated first responses can make a project appear more responsive than it is.
 
 ### 5.2 Maintainers
 
-The snapshot contains 103 current collaborator rows with triage permission or higher, including 70 with write permission or higher. Because it does not contain membership start and end dates, the implemented analysis calls these users **snapshot collaborators**, not historical maintainers. An actor is an **active snapshot collaborator in month m** when the actor performs at least one qualifying human maintenance action.
+The May 18 base snapshot contains 103 collaborator rows with triage permission or higher, including 70 with write permission or higher. The public API extension cannot refresh this roster and it does not contain membership start and end dates. The implemented analysis therefore calls these users **May-18 snapshot collaborators**, not July or historical maintainers. An actor is an **active snapshot collaborator in month m** when the actor performs at least one qualifying human maintenance action.
 
 Qualifying actions include a human comment or review on another person's artifact, merge, label/assignment/milestone change, or closure decision. Report sensitivity analyses using thresholds of at least one action, at least three active days, and at least five actions in a month.
 
@@ -183,7 +186,7 @@ Repository labels alone are insufficient: labels change over time, are incomplet
 5. Apply deterministic rules and an assisted classifier to the remaining corpus. Freeze prompts/model/rules, and report macro-F1, per-class precision/recall, and confusion matrices against held-out human labels.
 6. Human-review every artifact entering the 200-PR candidate pool; automated labels are never final benchmark labels.
 
-For PRs, classification uses only information available at the chosen source cutoff: title, body, contemporaneous labels, changed-file paths, and the pre-solution issue when linked. Reference patch content may be used for RQ1 taxonomy validation, but must not leak into released task instructions.
+The implemented PR classifier uses title, labels observed at collection, and cutoff-observed changed paths; it does not claim that current labels were present at PR creation. Because some current text and open-PR file representations were observed after the analytical cutoff, the report also publishes a stable-input exclusion sensitivity. A paper-grade temporal classifier must reconstruct label intervals and historical text explicitly. Reference patch content may be used for RQ1 taxonomy validation, but must not leak into released task instructions.
 
 ## 7. Analysis plan
 
@@ -224,7 +227,7 @@ The PR-derived implementation frame requires sources that are:
 - no known security embargo or privacy restriction;
 - not a pure revert, duplicate, or dependent slice that would double-count one root cause.
 
-The snapshot yields 16,627 merged, human-authored PRs with commit data before task-feasibility screening. Sample from this or another explicitly declared frame using frozen probabilities, cluster dependent PR series, and record feasibility attrition. Diagnosis and review tasks need their own frames; they cannot inherit implementation-task weights.
+The merged database yields 19,312 merged, human-authored PRs with commit data before task-feasibility screening, including 6,613 created in 2026 Jan–Jul. Sample from this or another explicitly declared frame using frozen probabilities, cluster dependent PR series, and record feasibility attrition. Diagnosis and review tasks need their own frames; they cannot inherit implementation-task weights.
 
 Preserve author role and contributor experience as secondary implementation strata. Community-facing bugs and features, first-time-contributor patches, core runtime/refactor work, and specialist hardware/integration work expose different repository knowledge and verifier requirements. These strata inform coverage and expert-review allocation; current roster status must not be presented as historical membership.
 

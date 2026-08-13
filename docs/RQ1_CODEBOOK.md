@@ -2,7 +2,7 @@
 
 Version: exploratory census, 2026-08-13
 
-Observation cutoff: 2026-05-18
+Observation cutoff: 2026-07-31 23:59:59 UTC
 
 This codebook defines the variables used in the RQ1 vLLM workload census. It makes the aggregate report auditable; it is not a substitute for the planned human-coded gold sample.
 
@@ -35,8 +35,8 @@ Contributor experience is not tenure, employment, expertise, or historical permi
 
 ## Time and state
 
-- Creation cohorts are launch–2024, calendar 2025, and 2026 through May 18.
-- May 2026 is partial and excluded from complete-month comparisons.
+- Creation cohorts are launch–2024, calendar 2025, and 2026 Jan–Jul.
+- Every month in the 2026 reporting window is complete at the inclusive cutoff.
 - Month-end backlog reconstructs close/reopen history. Materialized state is authoritative at the final snapshot boundary.
 - An issue response clock begins at issue creation.
 - A ready PR clock begins at creation; a draft PR clock begins at its first `ready_for_review` event. Draft PRs never observed as ready are excluded from response-time risk sets.
