@@ -4,6 +4,8 @@ Snapshot cutoff: 2026-05-18
 
 Status: reproducible quantitative census; content-validation and effort-calibration stages remain
 
+Chinese version: [RQ1 研究结果：vLLM 的真实维护工作负载](RQ1_FINDINGS_ZH.md)
+
 ## Executive answer
 
 vLLM is not simply receiving “more issues.” Its public maintenance system changed in three coupled ways: PR intake surged, the contributor population broadened, and the technical work shifted toward heterogeneous backends and inference-system internals. Observable review activity grew, but much more slowly than incoming PRs. The result is a large, mostly recent PR queue and a meaningful older issue queue.

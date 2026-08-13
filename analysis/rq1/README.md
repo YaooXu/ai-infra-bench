@@ -33,4 +33,4 @@ The pipeline produces aggregate tables for:
 - contributor intake, first-time and repeat-author lifecycle, return, and review-capacity sensitivity;
 - competing PR outcomes, test/verifier signals, and merged-task complexity strata.
 
-The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the current collaborator roster as a historical maintainer roster. See [the findings report](../../docs/RQ1_FINDINGS.md) for estimands and limitations.
+The script never treats heterogeneous event counts as hours, never estimates patch-size effects on merge from outcome-dependent commit coverage, and never relabels the current collaborator roster as a historical maintainer roster. See the [English findings report](../../docs/RQ1_FINDINGS.md) or [Chinese findings report](../../docs/RQ1_FINDINGS_ZH.md) for estimands and limitations.
