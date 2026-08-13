@@ -18,10 +18,13 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
+from load_merged import load_merged_inputs
 
-CUTOFF = pd.Timestamp("2026-05-18 20:02:21")
-EXPECTED_SHA256 = "1992a9f7011ebe35ba6f62511d5ccc727b233e21d7279db3d3496f9f4892c44d"
-PERIOD_ORDER = ["Launch–2024", "2025", "2026 to May 18"]
+
+CUTOFF = pd.Timestamp("2026-07-31 23:59:59")
+EXPECTED_SHA256 = "2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5"
+RECENT_PERIOD = "2026 Jan–Jul"
+PERIOD_ORDER = ["Launch–2024", "2025", RECENT_PERIOD]
 COLORS = {
     "navy": "#16324F",
     "blue": "#2E86AB",
@@ -57,7 +60,7 @@ def sha256_file(path: Path) -> str:
 def dates(frame: pd.DataFrame, *columns: str) -> None:
     for column in columns:
         if column in frame:
-            frame[column] = pd.to_datetime(frame[column], errors="coerce")
+            frame[column] = pd.to_datetime(frame[column], errors="coerce", utc=True).dt.tz_localize(None)
 
 
 def period(series: pd.Series) -> pd.Categorical:
@@ -415,50 +418,63 @@ def main() -> None:
         )
     conn = sqlite3.connect(f"file:{opt.snapshot}?mode=ro", uri=True)
 
-    users = read(conn, "user", "id, type")
-    collaborators = read(conn, "repo_collaborator", "user_id, role_name, pull, triage, push, maintain, admin, _fivetran_deleted")
-    all_issues = read(conn, "issue", "id, created_at, updated_at, number, state, state_reason, title, closed_at, pull_request, user_id")
-    prs_raw = read(conn, "pull_request", "id, issue_id, created_at, closed_at, draft, merge_commit_sha, base_sha, head_sha")
-    comments = read(conn, "issue_comment", "id, issue_id, created_at, user_id")
-    reviews = read(conn, "pull_request_review", "id, pull_request_id, submitted_at, state, user_id, commit_sha")
-    inline = read(conn, "pull_request_review_comments", "id, pull_request_id, pull_request_review_id, created_at, user_id, path")
-    closed = read(conn, "issue_closed_history", "closed, issue_id, updated_at, actor_id")
-    merged = read(conn, "issue_merged", "issue_id, merged_at, actor_id, commit_sha")
-    ready = read(conn, "pull_request_ready_for_review_history", "created_at, pull_request_id, ready_for_review, actor_id")
-    issue_labels = read(conn, "issue_label", "issue_id, label_id")
-    labels = read(conn, "label", "id, name")
-    commit_pr = read(conn, "commit_pull_request", "commit_sha, pull_request_id")
-    commit_files = read(conn, "commit_file", "commit_sha, filename, additions, deletions, changes")
-    issue_refs = read(conn, "issue_referenced", "issue_id, referenced_at, commit_sha, actor_id")
-    label_history = read(conn, "issue_label_history", "issue_id, updated_at, actor_id, labeled")
-    issue_assignees = read(conn, "issue_assignee", "issue_id, user_id")
-    reviewer_requests = read(
-        conn,
-        "requested_reviewer_history",
-        "created_at, pull_request_id, requested_id, actor_id, removed, requested_reviewer_type",
-    )
-    direct_main_commits = pd.read_sql_query(
-        """
-        SELECT strftime('%Y', c.committer_date) AS year,
-               COUNT(DISTINCT b.commit_sha) AS commits
-        FROM branch_commit_relation b
-        JOIN "commit" c ON c.sha = b.commit_sha
-        LEFT JOIN commit_pull_request cp ON cp.commit_sha = b.commit_sha
-        WHERE b.branch_name = 'main' AND cp.commit_sha IS NULL
-        GROUP BY 1 ORDER BY 1
-        """,
-        conn,
-    )
-    git_commit_identity_audit = pd.read_sql_query(
-        """
-        SELECT COUNT(*) AS commits,
-               COUNT(DISTINCT author_email) AS distinct_author_emails,
-               COUNT(DISTINCT committer_email) AS distinct_committer_emails,
-               SUM(CASE WHEN author_email = committer_email THEN 1 ELSE 0 END) AS same_author_committer_email
-        FROM "commit"
-        """,
-        conn,
-    )
+    if not conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='canonical_artifact'"
+    ).fetchone():
+        raise ValueError("RQ1 analysis now requires the merged July 31 database")
+    inputs = load_merged_inputs(conn)
+    users = inputs["users"]
+    collaborators = inputs["collaborators"]
+    all_issues = inputs["all_issues"]
+    prs_raw = inputs["prs_raw"]
+    comments = inputs["comments"]
+    reviews = inputs["reviews"]
+    inline = inputs["inline"]
+    closed = inputs["closed"]
+    merged = inputs["merged"]
+    ready = inputs["ready"]
+    issue_labels_named = inputs["issue_labels_named"]
+    commit_pr = inputs["commit_pr"]
+    commit_files = inputs["commit_files"]
+    pr_files = inputs["pr_files"]
+    issue_refs = inputs["issue_refs"]
+    label_history = inputs["label_history"]
+    issue_assignees = inputs["issue_assignees"]
+    reviewer_requests = inputs["reviewer_requests"]
+    direct_main_commits = inputs["direct_main_commits"]
+    git_commit_identity_audit = inputs["git_commit_identity_audit"]
+    merged_input_audit = inputs["input_audit"]
+    audit_counts = merged_input_audit.set_index("check_name")["value"].to_dict()
+    observed_core_counts = {
+        "canonical_artifacts": len(all_issues),
+        "canonical_pull_requests": len(prs_raw),
+        "canonical_comments": len(comments),
+        "canonical_reviews": len(reviews),
+        "canonical_inline_comments": len(inline),
+        "canonical_pr_commit_associations": len(commit_pr),
+        "canonical_pr_files": len(pr_files),
+        "canonical_merged_prs": merged["issue_id"].nunique(),
+    }
+    mismatched_counts = {
+        name: (audit_counts.get(name), observed)
+        for name, observed in observed_core_counts.items()
+        if audit_counts.get(name) != observed
+    }
+    if mismatched_counts:
+        raise ValueError(f"Merged input count mismatch: {mismatched_counts}")
+    if audit_counts.get("release_validation_failures") != 0:
+        raise ValueError("Merged database contains failed release validations")
+    if merged["issue_id"].duplicated().any():
+        raise ValueError("Duplicate merged-PR records after event/materialized reconciliation")
+    for name, frame, key in [
+        ("artifacts", all_issues, "id"),
+        ("pull requests", prs_raw, "id"),
+        ("comments", comments, "id"),
+        ("reviews", reviews, "id"),
+        ("inline comments", inline, "id"),
+    ]:
+        if frame[key].duplicated().any():
+            raise ValueError(f"Duplicate canonical {name} IDs")
     conn.close()
 
     for frame, columns in [
@@ -476,6 +492,21 @@ def main() -> None:
     ]:
         dates(frame, *columns)
 
+    post_cutoff_times = {
+        "artifacts": int((all_issues["created_at"] > CUTOFF).sum()),
+        "comments": int((comments["created_at"] > CUTOFF).sum()),
+        "reviews": int((reviews["submitted_at"] > CUTOFF).sum()),
+        "inline comments": int((inline["created_at"] > CUTOFF).sum()),
+        "close/reopen events": int((closed["updated_at"] > CUTOFF).sum()),
+        "merge events": int((merged["merged_at"] > CUTOFF).sum()),
+        "ready/draft events": int((ready["created_at"] > CUTOFF).sum()),
+        "reference events": int((issue_refs["referenced_at"] > CUTOFF).sum()),
+        "label events": int((label_history["updated_at"] > CUTOFF).sum()),
+        "review-request events": int((reviewer_requests["created_at"] > CUTOFF).sum()),
+    }
+    if any(post_cutoff_times.values()):
+        raise ValueError(f"Post-cutoff analytical rows detected: {post_cutoff_times}")
+
     pr_issue_ids = set(prs_raw["issue_id"])
     flag_conflicts = all_issues[(all_issues["id"].isin(pr_issue_ids)) != (all_issues["pull_request"] == 1)]
     issues = all_issues[~all_issues["id"].isin(pr_issue_ids)].copy()
@@ -490,7 +521,9 @@ def main() -> None:
     write_ids = set(active_collabs.loc[active_collabs["push"] == 1, "user_id"])
     human_ids = set(users.loc[users["type"] == "User", "id"])
 
-    labels_by_issue = label_sets(issue_labels, labels)
+    labels_by_issue = (
+        issue_labels_named.groupby("issue_id")["name"].agg(lambda values: set(values)).to_dict()
+    )
     issues["period"] = period(issues["created_at"])
     issues["month"] = issues["created_at"].dt.to_period("M").dt.to_timestamp()
     issues["intent"] = [issue_intent(t, labels_by_issue.get(i, set())) for i, t in zip(issues["id"], issues["title"])]
@@ -604,18 +637,43 @@ def main() -> None:
     prs["first_submitted_collab_review_days"] = (prs["first_review_at"] - prs["at_risk_at"]).dt.total_seconds() / 86400
     prs["submitted_collab_review_event"] = prs["first_review_at"].notna()
 
-    file_rows = commit_pr.merge(commit_files, on="commit_sha", how="inner").drop_duplicates(["pull_request_id", "commit_sha", "filename"])
+    delta_file_pr_ids = set(prs_raw.loc[prs_raw["source_layer"] == "delta", "id"])
+    base_file_rows = (
+        commit_pr[~commit_pr["pull_request_id"].isin(delta_file_pr_ids)]
+        .merge(commit_files, on="commit_sha", how="inner")
+        .drop_duplicates(["pull_request_id", "commit_sha", "filename"])
+    )
+    delta_file_rows = pr_files.copy()
+    delta_file_rows["commit_sha"] = pd.NA
+    file_rows = pd.concat(
+        [
+            base_file_rows[
+                ["pull_request_id", "commit_sha", "filename", "additions", "deletions", "changes"]
+            ],
+            delta_file_rows[
+                ["pull_request_id", "commit_sha", "filename", "additions", "deletions", "changes"]
+            ],
+        ],
+        ignore_index=True,
+    )
     file_rows["issue_id"] = file_rows["pull_request_id"].map(pr_map)
     file_rows["path_area"] = file_rows["filename"].map(path_area)
     file_agg = file_rows.groupby("issue_id").agg(
-        commits=("commit_sha", "nunique"),
         files=("filename", "nunique"),
         cumulative_additions=("additions", "sum"),
         cumulative_deletions=("deletions", "sum"),
         cumulative_churn=("changes", "sum"),
         paths=("filename", lambda x: " ".join(sorted(set(x)))),
     )
-    prs = prs.join(file_agg, on="id")
+    commit_agg = (
+        commit_pr.groupby("pull_request_id")["commit_sha"]
+        .nunique()
+        .rename("commits")
+        .to_frame()
+    )
+    commit_agg["issue_id"] = commit_agg.index.map(pr_map)
+    commit_agg = commit_agg.dropna(subset=["issue_id"]).groupby("issue_id")["commits"].max()
+    prs = prs.join(file_agg, on="id").join(commit_agg, on="id")
     for column in ["commits", "files", "cumulative_additions", "cumulative_deletions", "cumulative_churn"]:
         prs[column] = prs[column].fillna(0).astype(int)
     prs["paths"] = prs["paths"].fillna("")
@@ -643,6 +701,13 @@ def main() -> None:
         ],
         axis=1,
     )
+    prs["cutoff_stable_classification_inputs"] = (
+        prs["files_cutoff_stable"].eq(1)
+        & prs["issue_representation_may_postdate_cutoff"].eq(0)
+    )
+    issues["cutoff_stable_classification_inputs"] = issues[
+        "representation_may_postdate_cutoff"
+    ].eq(0)
     prs["hardware_specific"] = ~prs["hardware__Hardware-independent"]
     prs["large_change"] = (prs["files"] > 20) | (prs["cumulative_churn"] > 1000) | (prs["commits"] > 20)
     prs["review_intensive"] = (prs["review_rounds"] >= 3) | (prs["collab_reviews"] >= 10) | (prs["review_span_days"] >= 14)
@@ -743,6 +808,47 @@ def main() -> None:
             })
     topics = pd.DataFrame(topic_rows)
 
+    classification_sensitivity_rows = []
+    for population, frame, dimension, prefix in [
+        ("Issue", issues, "intent", None),
+        ("PR", prs, "work_type", None),
+        ("PR", prs, "hardware", "hardware__"),
+        ("PR", prs, "topic", "topic__"),
+    ]:
+        recent = frame[frame["period"] == RECENT_PERIOD]
+        stable = recent[recent["cutoff_stable_classification_inputs"]]
+        if prefix is None:
+            names = sorted(recent[dimension].dropna().unique())
+            for name in names:
+                all_share = float(recent[dimension].eq(name).mean())
+                stable_share = float(stable[dimension].eq(name).mean())
+                classification_sensitivity_rows.append({
+                    "artifact": population,
+                    "dimension": dimension,
+                    "name": name,
+                    "all_records": len(recent),
+                    "stable_records": len(stable),
+                    "all_share": all_share,
+                    "stable_only_share": stable_share,
+                    "absolute_difference": stable_share - all_share,
+                })
+        else:
+            for column in sorted(c for c in recent if c.startswith(prefix)):
+                name = column.removeprefix(prefix)
+                all_share = float(recent[column].mean())
+                stable_share = float(stable[column].mean())
+                classification_sensitivity_rows.append({
+                    "artifact": population,
+                    "dimension": dimension,
+                    "name": name,
+                    "all_records": len(recent),
+                    "stable_records": len(stable),
+                    "all_share": all_share,
+                    "stable_only_share": stable_share,
+                    "absolute_difference": stable_share - all_share,
+                })
+    classification_stability_sensitivity = pd.DataFrame(classification_sensitivity_rows)
+
     period_rows = []
     for label in PERIOD_ORDER:
         issue_group = issues[issues["period"] == label]
@@ -773,7 +879,7 @@ def main() -> None:
         start, end = {
             "Launch–2024": (pd.Timestamp("2023-02-09"), pd.Timestamp("2024-12-31 23:59:59")),
             "2025": (pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31 23:59:59")),
-            "2026 to May 18": (pd.Timestamp("2026-01-01"), CUTOFF),
+            RECENT_PERIOD: (pd.Timestamp("2026-01-01"), CUTOFF),
         }[label]
         actions = collab_reviews[(collab_reviews["submitted_at"] >= start) & (collab_reviews["submitted_at"] <= end)].groupby("user_id").size().sort_values(ascending=False)
         concentration_rows.append({
@@ -957,10 +1063,10 @@ def main() -> None:
         action_comparison_rows.append({
             "action": action,
             "2025_monthly_mean": float(action_month_pivot.loc["2025-01-01":"2025-12-01", action].mean()),
-            "2026_jan_apr_monthly_mean": float(action_month_pivot.loc["2026-01-01":"2026-04-01", action].mean()),
+            "2026_jan_jul_monthly_mean": float(action_month_pivot.loc["2026-01-01":"2026-07-01", action].mean()),
         })
     maintainer_action_comparison = pd.DataFrame(action_comparison_rows)
-    maintainer_action_comparison["relative_change"] = maintainer_action_comparison["2026_jan_apr_monthly_mean"] / maintainer_action_comparison["2025_monthly_mean"] - 1
+    maintainer_action_comparison["relative_change"] = maintainer_action_comparison["2026_jan_jul_monthly_mean"] / maintainer_action_comparison["2025_monthly_mean"] - 1
     comparison_monthly = monthly.set_index("month").join(action_month_pivot, how="left").fillna(0)
     comparison_monthly["Submitted reviews per opened PR"] = comparison_monthly["Submitted review"] / comparison_monthly["pr_opened"].replace(0, np.nan)
     comparison_monthly["Inline comments per opened PR"] = comparison_monthly["Inline review comment"] / comparison_monthly["pr_opened"].replace(0, np.nan)
@@ -981,14 +1087,14 @@ def main() -> None:
     }
     recent_comparison_rows = []
     baseline_months = comparison_monthly.loc["2025-01-01":"2025-12-01"]
-    recent_months = comparison_monthly.loc["2026-01-01":"2026-04-01"]
+    recent_months = comparison_monthly.loc["2026-01-01":"2026-07-01"]
     for metric, column in comparison_metrics.items():
         baseline_mean = float(baseline_months[column].mean())
         recent_mean = float(recent_months[column].mean())
         recent_comparison_rows.append({
             "metric": metric,
             "2025_monthly_mean": baseline_mean,
-            "2026_jan_apr_monthly_mean": recent_mean,
+            "2026_jan_jul_monthly_mean": recent_mean,
             "relative_change": recent_mean / baseline_mean - 1 if baseline_mean else np.nan,
         })
     recent_capacity_comparison = pd.DataFrame(recent_comparison_rows)
@@ -1634,13 +1740,16 @@ def main() -> None:
         {"check": "issue/PR flag conflicts", "value": len(flag_conflicts), "note": "pull_request flag disagrees with pull_request table"},
         {"check": "closed artifacts lacking close history", "value": int(((all_issues["state"] == "closed") & ~all_issues["id"].isin(set(closed["issue_id"]))).sum()), "note": "fallback to closed_at required"},
         {"check": "current-state/history mismatches", "value": state_history_mismatches, "note": "materialized state is authoritative at the snapshot boundary"},
-        {"check": "snapshot collaborators with triage+", "value": len(collab_ids), "note": "current snapshot, not a historical roster"},
-        {"check": "snapshot collaborators with write+", "value": len(write_ids), "note": "current snapshot, not a historical roster"},
-        {"check": "bot actors", "value": len(bot_ids), "note": "GitHub user.type = Bot"},
+        {"check": "May-18 snapshot collaborators with triage+", "value": len(collab_ids), "note": "May 18 permission roster, not a July or historical roster"},
+        {"check": "May-18 snapshot collaborators with write+", "value": len(write_ids), "note": "May 18 permission roster, not a July or historical roster"},
+        {"check": "bot actors", "value": len(bot_ids), "note": "base GitHub user.type plus conservative login inference for delta-only actors"},
         {"check": "submitted reviews missing event time", "value": int(reviews["submitted_at"].isna().sum()), "note": "retained in artifact-level burden; excluded from event-period ownership"},
-        {"check": "main-branch commits without PR mapping", "value": int(direct_main_commits["commits"].sum()), "note": "81 of 87 occurred in 2023"},
+        {"check": "main-branch commits without associated PR", "value": int(direct_main_commits["commits"].sum()), "note": "canonical default-branch history through July 31"},
         {"check": "snapshot checksum verified", "value": 1, "note": snapshot_sha256},
     ])
+    merged_audit_rows = merged_input_audit.rename(columns={"check_name": "check"}).copy()
+    merged_audit_rows["note"] = "merged-input compatibility audit"
+    audit = pd.concat([audit, merged_audit_rows[["check", "value", "note"]]], ignore_index=True)
 
     tables = {
         "dataset_audit": audit,
@@ -1652,6 +1761,7 @@ def main() -> None:
         "response_by_author_role": response_by_author_role,
         "workload_mix": workload_mix,
         "classification_coverage": classification_coverage,
+        "classification_stability_sensitivity": classification_stability_sensitivity,
         "dimensions": dimensions,
         "topics": topics,
         "review_concentration": review_concentration,
@@ -1776,7 +1886,7 @@ def main() -> None:
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
-    latest_pr = pr_outcomes[pr_outcomes["period"] == "2026 to May 18"].sort_values("prs")
+    latest_pr = pr_outcomes[pr_outcomes["period"] == RECENT_PERIOD].sort_values("prs")
     axes[0].barh(latest_pr["work_type"], latest_pr["test_touched_pct"] * 100, color=COLORS["green"])
     axes[0].set_title("Test-file signal by 2026 PR type")
     axes[0].set_xlabel("PRs touching tests (%)")
@@ -1829,14 +1939,14 @@ def main() -> None:
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.2))
-    action_pivot = maintainer_action_comparison.set_index("action")[["2025_monthly_mean", "2026_jan_apr_monthly_mean"]].rename(
-        columns={"2025_monthly_mean": "2025", "2026_jan_apr_monthly_mean": "2026 Jan–Apr"}
+    action_pivot = maintainer_action_comparison.set_index("action")[["2025_monthly_mean", "2026_jan_jul_monthly_mean"]].rename(
+        columns={"2025_monthly_mean": "2025", "2026_jan_jul_monthly_mean": "2026 Jan–Jul"}
     )
     action_pivot.plot(kind="barh", ax=axes[0], color=[COLORS["gray"], COLORS["green"]])
     axes[0].set_title("Observable non-author/operational actions")
     axes[0].set_xlabel("Monthly mean (events, not effort)")
     axes[0].set_ylabel("")
-    recent_burden = review_burden_type[review_burden_type["period"] == "2026 to May 18"].sort_values("review_submission_share")
+    recent_burden = review_burden_type[review_burden_type["period"] == RECENT_PERIOD].sort_values("review_submission_share")
     y = np.arange(len(recent_burden))
     axes[1].barh(y - 0.18, recent_burden["pr_share"] * 100, 0.36, label="Share of PRs", color=COLORS["cyan"])
     axes[1].barh(y + 0.18, recent_burden["review_submission_share"] * 100, 0.36, label="Share of submitted reviews", color=COLORS["orange"])
@@ -1866,9 +1976,9 @@ def main() -> None:
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(9, 6.4))
-    topic_pivot = topics[topics["period"].isin(["2025", "2026 to May 18"])].pivot(index="topic", columns="period", values="share").fillna(0)
-    topic_pivot = topic_pivot.sort_values("2026 to May 18")
-    topic_pivot[["2025", "2026 to May 18"]].plot(kind="barh", ax=ax, color=[COLORS["gray"], COLORS["blue"]])
+    topic_pivot = topics[topics["period"].isin(["2025", RECENT_PERIOD])].pivot(index="topic", columns="period", values="share").fillna(0)
+    topic_pivot = topic_pivot.sort_values(RECENT_PERIOD)
+    topic_pivot[["2025", RECENT_PERIOD]].plot(kind="barh", ax=ax, color=[COLORS["gray"], COLORS["blue"]])
     ax.set_title("vLLM engineering topic signals")
     ax.set_xlabel("Share of PRs (multi-label)")
     ax.set_ylabel("")
@@ -1877,11 +1987,11 @@ def main() -> None:
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.0))
-    recent_gaps = verifier_gaps[(verifier_gaps["period"] == "2026 to May 18") & (verifier_gaps["dimension"] == "work_type")].sort_values("test_touched_pct")
+    recent_gaps = verifier_gaps[(verifier_gaps["period"] == RECENT_PERIOD) & (verifier_gaps["dimension"] == "work_type")].sort_values("test_touched_pct")
     axes[0].barh(recent_gaps["name"], recent_gaps["test_touched_pct"] * 100, color=COLORS["green"])
     axes[0].set_title("Test-file signal in eligible 2026 PRs")
     axes[0].set_xlabel("Touches test files (%)")
-    hardware_gaps = verifier_gaps[(verifier_gaps["period"] == "2026 to May 18") & (verifier_gaps["dimension"] == "hardware") & (verifier_gaps["prs"] >= 50)].sort_values("test_touched_pct")
+    hardware_gaps = verifier_gaps[(verifier_gaps["period"] == RECENT_PERIOD) & (verifier_gaps["dimension"] == "hardware") & (verifier_gaps["prs"] >= 50)].sort_values("test_touched_pct")
     axes[1].barh(hardware_gaps["name"], hardware_gaps["test_touched_pct"] * 100, color=COLORS["orange"])
     axes[1].set_title("Test-file signal by hardware, eligible 2026 PRs")
     axes[1].set_xlabel("Touches test files (%)")
@@ -1907,7 +2017,7 @@ def main() -> None:
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.6))
-    recent_frequency = external_contributor_frequency[external_contributor_frequency["period"] == "2026 to May 18"].copy()
+    recent_frequency = external_contributor_frequency[external_contributor_frequency["period"] == RECENT_PERIOD].copy()
     frequency_order = ["One PR in period", "2–4 PRs in period", "5+ PRs in period"]
     recent_frequency["frequency_band"] = pd.Categorical(recent_frequency["frequency_band"], frequency_order, ordered=True)
     recent_frequency = recent_frequency.sort_values("frequency_band")
@@ -1920,7 +2030,7 @@ def main() -> None:
     axes[0].set_ylabel("Share (%)")
     axes[0].legend(fontsize=8)
 
-    recent_experience = external_contributor_experience[external_contributor_experience["period"] == "2026 to May 18"].copy()
+    recent_experience = external_contributor_experience[external_contributor_experience["period"] == RECENT_PERIOD].copy()
     experience_order = ["First observed PR", "2nd–5th observed PR", "6th+ observed PR"]
     recent_experience["experience"] = pd.Categorical(recent_experience["experience"], experience_order, ordered=True)
     recent_experience = recent_experience.sort_values("experience")
@@ -1944,7 +2054,7 @@ def main() -> None:
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-    recent_complexity = pr_complexity[pr_complexity["period"] == "2026 to May 18"].copy()
+    recent_complexity = pr_complexity[pr_complexity["period"] == RECENT_PERIOD].copy()
     size_order = ["≤20", "21–100", "101–500", "501–2,000", ">2,000"]
     recent_complexity["cumulative_churn_bin"] = pd.Categorical(recent_complexity["cumulative_churn_bin"], size_order, ordered=True)
     recent_complexity = recent_complexity.sort_values("cumulative_churn_bin")
@@ -1962,7 +2072,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.2))
     recent_roles = pr_by_author_role_and_type[
-        (pr_by_author_role_and_type["period"] == "2026 to May 18")
+        (pr_by_author_role_and_type["period"] == RECENT_PERIOD)
         & (pr_by_author_role_and_type["author_permission"] != "Bot")
     ]
     role_order = ["External human", "Snapshot triage-only", "Snapshot write+"]
@@ -1987,7 +2097,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.2))
     recent_ownership = engineering_ownership[
-        (engineering_ownership["period"] == "2026 to May 18")
+        (engineering_ownership["period"] == RECENT_PERIOD)
         & (engineering_ownership["population"] == "Snapshot write+")
         & (engineering_ownership["dimension"] == "work_type")
         & (engineering_ownership["prs"] >= 20)
@@ -1996,7 +2106,7 @@ def main() -> None:
     axes[0].set_title("2026 write+ engineering concentration")
     axes[0].set_xlabel("Share authored by top five (%)")
     recent_review_ownership = review_ownership[
-        (review_ownership["period"] == "2026 to May 18")
+        (review_ownership["period"] == RECENT_PERIOD)
         & (review_ownership["dimension"] == "work_type")
         & (review_ownership["review_submissions"] >= 20)
     ].sort_values("top_5_share")
@@ -2009,7 +2119,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.4))
     recent_area = path_area_by_author_role[
-        (path_area_by_author_role["period"] == "2026 to May 18")
+        (path_area_by_author_role["period"] == RECENT_PERIOD)
         & (path_area_by_author_role["author_permission"] != "Bot")
     ]
     area_counts = recent_area.groupby("path_area")["prs"].sum().sort_values()
@@ -2079,6 +2189,7 @@ def main() -> None:
         "task_feasibility": feasibility_summary.to_dict(orient="records"),
         "topics": topics.to_dict(orient="records"),
         "classification_coverage": classification_coverage.to_dict(orient="records"),
+        "classification_stability_sensitivity": classification_stability_sensitivity.to_dict(orient="records"),
         "verifier_gaps": verifier_gaps.to_dict(orient="records"),
         "pr_complexity": pr_complexity.to_dict(orient="records"),
         "backlog_age": backlog_age.to_dict(orient="records"),
