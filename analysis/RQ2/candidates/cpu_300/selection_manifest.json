@@ -1,0 +1,319 @@
+{
+  "schema_version": "vllm_cpu_candidate_selection.v1",
+  "algorithm_version": "cpu-workload-calibrated-threefold.v1",
+  "seed": 20260817,
+  "iterations": 600000,
+  "population_definition": {
+    "tagging_usable": true,
+    "reproduction_platform": "cpu",
+    "excluded_change_types": [
+      "documentation"
+    ],
+    "excluded_primary_scopes": [
+      "documentation_examples"
+    ]
+  },
+  "eligibility_definition": {
+    "author_is_bot": false,
+    "reproduction_commands": "non_empty",
+    "reproduction_confidence": [
+      "high",
+      "medium"
+    ],
+    "verification_tested": "passed",
+    "churn_inclusive": [
+      5,
+      2000
+    ],
+    "changed_files_max": 30,
+    "excluded_title_pattern": "\\b(revert|backport|cherry[- ]?pick|merge main|release branch)\\b"
+  },
+  "counts": {
+    "compact_rows": 5662,
+    "cpu_workload_population_before_workload_filter": 2391,
+    "target_population_after_workload_filter": 2212,
+    "executable_frame_before_workload_filter": 1626,
+    "eligible_pool_after_workload_filter": 1510,
+    "excluded_population_rows_by_workload_filter": 179,
+    "excluded_executable_rows_by_workload_filter": 116,
+    "selected_candidates": 300,
+    "intended_final_tasks": 100,
+    "overprovisioning_multiplier": 3
+  },
+  "eligibility_exclusions": {
+    "bot_author": 5,
+    "churn_outside_5_2000": 244,
+    "low_reproduction_confidence": 54,
+    "more_than_30_changed_files": 21,
+    "no_reproduction_command": 105,
+    "relevant_verification_not_passed": 325,
+    "routine_revert_backport_or_merge": 11
+  },
+  "fixed_bucket_definition": [
+    "change_type",
+    "primary_project_scope",
+    "architecture_shape"
+  ],
+  "architecture_shape_definition": {
+    "support_only": "no production component",
+    "single_component": "exactly one production component",
+    "multi_component": "two or more production components"
+  },
+  "fixed_final_100_bucket_quotas": {
+    "bugfix | benchmarks | support_only": 1,
+    "bugfix | build | support_only": 1,
+    "bugfix | developer_tooling | support_only": 0,
+    "bugfix | production_code | multi_component": 9,
+    "bugfix | production_code | single_component": 36,
+    "bugfix | tests | support_only": 0,
+    "build | benchmarks | support_only": 0,
+    "build | build | support_only": 5,
+    "build | production_code | multi_component": 0,
+    "build | production_code | single_component": 1,
+    "build | tests | support_only": 1,
+    "ci | benchmarks | support_only": 0,
+    "ci | build | support_only": 1,
+    "ci | ci | support_only": 5,
+    "ci | developer_tooling | support_only": 0,
+    "ci | production_code | multi_component": 0,
+    "ci | production_code | single_component": 0,
+    "ci | tests | support_only": 1,
+    "feature | benchmarks | support_only": 1,
+    "feature | build | support_only": 0,
+    "feature | other | support_only": 0,
+    "feature | production_code | multi_component": 7,
+    "feature | production_code | single_component": 9,
+    "feature | tests | support_only": 0,
+    "maintenance | benchmarks | support_only": 0,
+    "maintenance | developer_tooling | support_only": 0,
+    "maintenance | production_code | multi_component": 1,
+    "maintenance | production_code | single_component": 2,
+    "other | production_code | multi_component": 1,
+    "other | production_code | single_component": 0,
+    "performance | benchmarks | support_only": 0,
+    "performance | build | support_only": 1,
+    "performance | production_code | multi_component": 2,
+    "performance | production_code | single_component": 2,
+    "refactor | benchmarks | support_only": 0,
+    "refactor | production_code | multi_component": 3,
+    "refactor | production_code | single_component": 6,
+    "refactor | tests | support_only": 0,
+    "test | production_code | single_component": 0,
+    "test | tests | support_only": 4
+  },
+  "fixed_candidate_300_bucket_quotas": {
+    "bugfix | benchmarks | support_only": 3,
+    "bugfix | build | support_only": 3,
+    "bugfix | developer_tooling | support_only": 0,
+    "bugfix | production_code | multi_component": 27,
+    "bugfix | production_code | single_component": 108,
+    "bugfix | tests | support_only": 0,
+    "build | benchmarks | support_only": 0,
+    "build | build | support_only": 15,
+    "build | production_code | multi_component": 0,
+    "build | production_code | single_component": 3,
+    "build | tests | support_only": 3,
+    "ci | benchmarks | support_only": 0,
+    "ci | build | support_only": 3,
+    "ci | ci | support_only": 15,
+    "ci | developer_tooling | support_only": 0,
+    "ci | production_code | multi_component": 0,
+    "ci | production_code | single_component": 0,
+    "ci | tests | support_only": 3,
+    "feature | benchmarks | support_only": 3,
+    "feature | build | support_only": 0,
+    "feature | other | support_only": 0,
+    "feature | production_code | multi_component": 21,
+    "feature | production_code | single_component": 27,
+    "feature | tests | support_only": 0,
+    "maintenance | benchmarks | support_only": 0,
+    "maintenance | developer_tooling | support_only": 0,
+    "maintenance | production_code | multi_component": 3,
+    "maintenance | production_code | single_component": 6,
+    "other | production_code | multi_component": 3,
+    "other | production_code | single_component": 0,
+    "performance | benchmarks | support_only": 0,
+    "performance | build | support_only": 3,
+    "performance | production_code | multi_component": 6,
+    "performance | production_code | single_component": 6,
+    "refactor | benchmarks | support_only": 0,
+    "refactor | production_code | multi_component": 9,
+    "refactor | production_code | single_component": 18,
+    "refactor | tests | support_only": 0,
+    "test | production_code | single_component": 0,
+    "test | tests | support_only": 12
+  },
+  "calibration_family_weights": {
+    "architecture_components": 0.32,
+    "project_scope": 0.27,
+    "scope_integration": 0.16,
+    "merged_month": 0.1,
+    "affected_hardware": 0.08,
+    "patch_size": 0.04,
+    "author_association": 0.03
+  },
+  "quota_optimizer": {
+    "iterations": 300000,
+    "initial_loss": 12005.237054786996,
+    "initial_margin_squared_error": 12,
+    "initial_cell_loss": 5.237054786995218,
+    "best_loss": 7.591359472993741,
+    "best_margin_squared_error": 0,
+    "best_cell_loss": 7.591359472993741,
+    "target_change_type": {
+      "bugfix": 47,
+      "build": 7,
+      "ci": 7,
+      "feature": 17,
+      "maintenance": 3,
+      "other": 1,
+      "performance": 5,
+      "refactor": 9,
+      "test": 4
+    },
+    "target_primary_scope": {
+      "benchmarks": 2,
+      "build": 8,
+      "ci": 5,
+      "developer_tooling": 0,
+      "other": 0,
+      "production_code": 79,
+      "tests": 6
+    },
+    "target_architecture_shape": {
+      "multi_component": 23,
+      "single_component": 56,
+      "support_only": 21
+    },
+    "note": "Change-type totals are exact. Primary-scope and architecture-shape targets may be jointly infeasible under observed structural cells."
+  },
+  "optimizer": {
+    "iterations": 600000,
+    "accepted_swaps": 119988,
+    "improving_swaps": 58774,
+    "initial_loss": 1.454216877699005,
+    "best_loss": 0.00024980483996847407
+  },
+  "exact_calibration_solver": {
+    "solver": "scipy.optimize.milp (HiGHS)",
+    "success": true,
+    "status": 0,
+    "message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+    "objective": 2.00014168017336,
+    "constraint_count": 101,
+    "variable_count": 1510,
+    "changed_from_local_search": 2,
+    "all_fixed_and_calibration_targets_exact": true
+  },
+  "distribution_quality": {
+    "change_type": {
+      "max_absolute_share_delta_percentage_points": 0.5660036166365283,
+      "mean_absolute_share_delta_percentage_points": 0.22985734378139414,
+      "exact_target_buckets": 9,
+      "bucket_count": 9
+    },
+    "primary_scope": {
+      "max_absolute_share_delta_percentage_points": 0.45207956600361665,
+      "mean_absolute_share_delta_percentage_points": 0.1487987600103324,
+      "exact_target_buckets": 7,
+      "bucket_count": 7
+    },
+    "architecture_shape": {
+      "max_absolute_share_delta_percentage_points": 0.41772151898734067,
+      "mean_absolute_share_delta_percentage_points": 0.27848101265823083,
+      "exact_target_buckets": 3,
+      "bucket_count": 3
+    },
+    "workload_bucket": {
+      "max_absolute_share_delta_percentage_points": 1.5515370705244114,
+      "mean_absolute_share_delta_percentage_points": 0.3705244122965642,
+      "exact_target_buckets": 40,
+      "bucket_count": 40
+    },
+    "architecture_components": {
+      "max_absolute_share_delta_percentage_points": 0.4864376130198914,
+      "mean_absolute_share_delta_percentage_points": 0.2254370102471368,
+      "exact_target_buckets": 21,
+      "bucket_count": 21
+    },
+    "project_scope": {
+      "max_absolute_share_delta_percentage_points": 0.4068716094032587,
+      "mean_absolute_share_delta_percentage_points": 0.20750452079565954,
+      "exact_target_buckets": 8,
+      "bucket_count": 8
+    },
+    "scope_integration": {
+      "max_absolute_share_delta_percentage_points": 0.5280289330922241,
+      "mean_absolute_share_delta_percentage_points": 0.38553345388788324,
+      "exact_target_buckets": 5,
+      "bucket_count": 5
+    },
+    "merged_month": {
+      "max_absolute_share_delta_percentage_points": 0.6057866184448479,
+      "mean_absolute_share_delta_percentage_points": 0.34358047016274834,
+      "exact_target_buckets": 6,
+      "bucket_count": 6
+    },
+    "affected_hardware": {
+      "max_absolute_share_delta_percentage_points": 0.4556962025316455,
+      "mean_absolute_share_delta_percentage_points": 0.19792865362485568,
+      "exact_target_buckets": 11,
+      "bucket_count": 11
+    },
+    "patch_size": {
+      "max_absolute_share_delta_percentage_points": 0.6238698010849906,
+      "mean_absolute_share_delta_percentage_points": 0.36962025316455566,
+      "exact_target_buckets": 5,
+      "bucket_count": 5
+    },
+    "author_association": {
+      "max_absolute_share_delta_percentage_points": 0.5280289330922241,
+      "mean_absolute_share_delta_percentage_points": 0.29294755877034373,
+      "exact_target_buckets": 5,
+      "bucket_count": 5
+    }
+  },
+  "inputs": {
+    "compact": {
+      "path": "analysis/RQ1/data/tagging_compact.jsonl",
+      "sha256": "990b9bd1e01421b9980203f798dc9d0922a7da7ecdcd57e3ab08a2e838200f0c"
+    },
+    "evidence": {
+      "path": "analysis/RQ1/data/tagging_evidence.jsonl.zst",
+      "sha256": "b57f82ec5321231b128ebc1e91857f03392a8de0ec83140db1c3c2deb736ed0a"
+    }
+  },
+  "outputs": {
+    "cpu_candidates_300.jsonl": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_300.jsonl",
+      "bytes": 2072816,
+      "sha256": "d87f225a74e5d4c91032c894e3fe99ccc6d53a527888e2df28733c4a8cec9af6"
+    },
+    "cpu_candidates_300.csv": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_300.csv",
+      "bytes": 140937,
+      "sha256": "00f8332555768721e5d742a533d8fca1c20b9663028d12f9d390f5afd3d8591d"
+    },
+    "cpu_candidates_300.evidence.jsonl.zst": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_300.evidence.jsonl.zst",
+      "bytes": 6133641,
+      "sha256": "1dcd1b0a04c44b22406ffec07dc7ee60e81e1fc1e2b9ad1ec8e3255b1ac396af"
+    },
+    "distribution_comparison.csv": {
+      "path": "analysis/RQ2/candidates/cpu_300/distribution_comparison.csv",
+      "bytes": 17546,
+      "sha256": "a4162db638257404fdca736b0768e608e1911a47890eef3a7a07b7516ef44d4a"
+    },
+    "workload_bucket_quotas.csv": {
+      "path": "analysis/RQ2/candidates/cpu_300/workload_bucket_quotas.csv",
+      "bytes": 2486,
+      "sha256": "4e4bef26c219947d91a74feeb6103d4795c9230bcfe7e827540a889ea8c588e8"
+    }
+  },
+  "important_interpretation": [
+    "change_type is the RQ1 engineering intent, not an RQ2 task contract",
+    "documentation-dominant PRs are excluded by change type or primary scope; documentation_examples may remain as a secondary scope of another change type",
+    "the 300 rows are candidates and still require human review and actual CPU execution",
+    "future selection of 100 tasks should retain the final bucket quotas"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": "vllm_cpu_performance_topup.v1",
+  "seed": 20260817,
+  "counts": {
+    "eligible_cpu_performance": 98,
+    "representative_core_performance": 15,
+    "available_after_core_and_documentation_title_filter": 83,
+    "performance_topup": 15,
+    "combined_candidate_pool": 315
+  },
+  "selection_contract": {
+    "core_300_unchanged": true,
+    "no_overlap_with_core": true,
+    "change_type": "performance",
+    "reproduction_platform": "cpu",
+    "excluded_primary_scope": "documentation_examples",
+    "excluded_title_pattern": "^\\s*\\[(docs?|documentation)\\]",
+    "architecture_shape_topup_quotas": {
+      "multi_component": 6,
+      "single_component": 6,
+      "support_only": 3
+    },
+    "benchmark_status_topup_quotas": {
+      "not_run": 5,
+      "run_with_result": 9,
+      "run_without_result": 1
+    },
+    "combined_30_benchmark_target": {
+      "not_run": 12,
+      "run_with_result": 17,
+      "run_without_result": 1
+    }
+  },
+  "optimizer": {
+    "iterations": 300000,
+    "accepted_swaps": 32,
+    "initial_loss": 0.42390331890331884,
+    "best_loss": 0.08506944444444448,
+    "fixed_cell": "architecture_shape x performance_benchmark_status"
+  },
+  "inputs": {
+    "compact": {
+      "path": "analysis/RQ1/data/tagging_compact.jsonl",
+      "sha256": "990b9bd1e01421b9980203f798dc9d0922a7da7ecdcd57e3ab08a2e838200f0c"
+    },
+    "evidence": {
+      "path": "analysis/RQ1/data/tagging_evidence.jsonl.zst",
+      "sha256": "b57f82ec5321231b128ebc1e91857f03392a8de0ec83140db1c3c2deb736ed0a"
+    },
+    "representative_core": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_300.jsonl",
+      "sha256": "d87f225a74e5d4c91032c894e3fe99ccc6d53a527888e2df28733c4a8cec9af6"
+    }
+  },
+  "outputs": {
+    "performance_topup_15.jsonl": {
+      "path": "analysis/RQ2/candidates/cpu_300/performance_topup_15.jsonl",
+      "bytes": 104960,
+      "sha256": "95f1a84b2dab68e10cefd6f75a3f2bb53846ddfe1aec521ca82d6010f2bf21d2"
+    },
+    "performance_topup_15.csv": {
+      "path": "analysis/RQ2/candidates/cpu_300/performance_topup_15.csv",
+      "bytes": 4428,
+      "sha256": "baa8ad0bfa5b1f0b46b834b58d64b82ddfca389aeb3babc52fb849e0e6994fca"
+    },
+    "performance_topup_15.evidence.jsonl.zst": {
+      "path": "analysis/RQ2/candidates/cpu_300/performance_topup_15.evidence.jsonl.zst",
+      "bytes": 591387,
+      "sha256": "a901241574d7c67c309decb738bb7e79176e263bf2c12060790eb660dc7b0a93"
+    },
+    "cpu_candidates_315.jsonl": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_315.jsonl",
+      "bytes": 2185726,
+      "sha256": "2b4f794537eff4d4510fa4165febe4962271aeab4e9272923575972d08890aee"
+    },
+    "cpu_candidates_315.csv": {
+      "path": "analysis/RQ2/candidates/cpu_300/cpu_candidates_315.csv",
+      "bytes": 83145,
+      "sha256": "5b48f50e329da17542861ac3da446ac8496b72c460540b3012aab8afdcec0cc5"
+    }
+  },
+  "interpretation": "The representative sample remains 300. These 15 rows form a separate performance oversample and must not be given representative weight."
+}
