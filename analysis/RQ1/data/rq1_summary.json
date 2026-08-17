@@ -1,0 +1,985 @@
+{
+  "deep_population": {
+    "selected": 5662,
+    "core_labeled": 5649,
+    "missing_core": 13,
+    "coverage": 0.9977039915224303,
+    "months": [
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07"
+    ]
+  },
+  "headline_distributions": {
+    "change_type": [
+      {
+        "label": "bugfix",
+        "n": 2284,
+        "denominator": 5649,
+        "share": 0.40431934855726676,
+        "ci95_low": 0.3915908715011509,
+        "ci95_high": 0.41717786757020436
+      },
+      {
+        "label": "feature",
+        "n": 955,
+        "denominator": 5649,
+        "share": 0.1690564701717118,
+        "ci95_low": 0.1595082890352754,
+        "ci95_high": 0.17905444490348307
+      },
+      {
+        "label": "performance",
+        "n": 616,
+        "denominator": 5649,
+        "share": 0.1090458488228005,
+        "ci95_low": 0.1011817434264574,
+        "ci95_high": 0.11744130974484408
+      },
+      {
+        "label": "refactor",
+        "n": 443,
+        "denominator": 5649,
+        "share": 0.07842095946185165,
+        "ci95_low": 0.07169354749453673,
+        "ci95_high": 0.08572135000487667
+      },
+      {
+        "label": "test",
+        "n": 455,
+        "denominator": 5649,
+        "share": 0.080545229244114,
+        "ci95_low": 0.0737304101495579,
+        "ci95_high": 0.08793013976640267
+      },
+      {
+        "label": "documentation",
+        "n": 220,
+        "denominator": 5649,
+        "share": 0.038944946008143036,
+        "ci95_low": 0.03420524365517595,
+        "ci95_high": 0.04431127977006957
+      },
+      {
+        "label": "ci",
+        "n": 356,
+        "denominator": 5649,
+        "share": 0.06302000354044963,
+        "ci95_low": 0.05697540417741439,
+        "ci95_high": 0.0696585133020322
+      },
+      {
+        "label": "build",
+        "n": 202,
+        "denominator": 5649,
+        "share": 0.03575854133474951,
+        "ci95_low": 0.03122317174341872,
+        "ci95_high": 0.040924873057006074
+      },
+      {
+        "label": "maintenance",
+        "n": 97,
+        "denominator": 5649,
+        "share": 0.017171180739953974,
+        "ci95_low": 0.014096914669406558,
+        "ci95_high": 0.020901671486230674
+      },
+      {
+        "label": "other",
+        "n": 21,
+        "denominator": 5649,
+        "share": 0.0037174721189591076,
+        "ci95_low": 0.0024328133716144578,
+        "ci95_high": 0.005676640812557488
+      },
+      {
+        "label": "unknown",
+        "n": 0,
+        "denominator": 5649,
+        "share": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0006795624552144324
+      }
+    ],
+    "project_scope": [
+      {
+        "label": "production_code",
+        "n": 4321,
+        "denominator": 5649,
+        "share": 0.7649141440963002,
+        "ci95_low": 0.753678275265793,
+        "ci95_high": 0.7757899615144411
+      },
+      {
+        "label": "tests",
+        "n": 2519,
+        "denominator": 5649,
+        "share": 0.44591963179323774,
+        "ci95_low": 0.4329985875408463,
+        "ci95_high": 0.45891417802122403
+      },
+      {
+        "label": "benchmarks",
+        "n": 197,
+        "denominator": 5649,
+        "share": 0.034873428925473536,
+        "ci95_low": 0.030396586780522865,
+        "ci95_high": 0.039982436179673946
+      },
+      {
+        "label": "ci",
+        "n": 613,
+        "denominator": 5649,
+        "share": 0.10851478137723491,
+        "ci95_low": 0.10066841047612084,
+        "ci95_high": 0.11689322959104388
+      },
+      {
+        "label": "build",
+        "n": 513,
+        "denominator": 5649,
+        "share": 0.09081253319171535,
+        "ci95_low": 0.08359488182152587,
+        "ci95_high": 0.09858632144107925
+      },
+      {
+        "label": "documentation_examples",
+        "n": 684,
+        "denominator": 5649,
+        "share": 0.1210833775889538,
+        "ci95_low": 0.1128328299706615,
+        "ci95_high": 0.12984892022774053
+      },
+      {
+        "label": "developer_tooling",
+        "n": 150,
+        "denominator": 5649,
+        "share": 0.026553372278279343,
+        "ci95_low": 0.022671652836272656,
+        "ci95_high": 0.031078564825781155
+      },
+      {
+        "label": "other",
+        "n": 2,
+        "denominator": 5649,
+        "share": 0.0003540449637103912,
+        "ci95_low": 9.709726898431375e-05,
+        "ci95_high": 0.0012900739223213106
+      },
+      {
+        "label": "unknown",
+        "n": 0,
+        "denominator": 5649,
+        "share": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0006795624552144324
+      }
+    ],
+    "architecture": [
+      {
+        "label": "scheduler",
+        "n": 79,
+        "denominator": 5649,
+        "share": 0.013984776066560452,
+        "ci95_low": 0.011236140418750132,
+        "ci95_high": 0.017393967112066373
+      },
+      {
+        "label": "engine",
+        "n": 142,
+        "denominator": 5649,
+        "share": 0.025137192423437777,
+        "ci95_low": 0.021366356708043936,
+        "ci95_high": 0.02955342600964511
+      },
+      {
+        "label": "serving_api",
+        "n": 577,
+        "denominator": 5649,
+        "share": 0.10214197203044786,
+        "ci95_low": 0.09451328540661358,
+        "ci95_high": 0.11031139741090967
+      },
+      {
+        "label": "worker_model_runner",
+        "n": 490,
+        "denominator": 5649,
+        "share": 0.08674101610904585,
+        "ci95_low": 0.07967938752157383,
+        "ci95_high": 0.09436431527598257
+      },
+      {
+        "label": "kv_cache_data_movement",
+        "n": 523,
+        "denominator": 5649,
+        "share": 0.0925827580102673,
+        "ci95_low": 0.0852987038411439,
+        "ci95_high": 0.10042054310191718
+      },
+      {
+        "label": "distributed_execution",
+        "n": 306,
+        "denominator": 5649,
+        "share": 0.054168879447689854,
+        "ci95_low": 0.04856347331810735,
+        "ci95_high": 0.060380225759059415
+      },
+      {
+        "label": "moe",
+        "n": 608,
+        "denominator": 5649,
+        "share": 0.10762966896795893,
+        "ci95_low": 0.0998129911925378,
+        "ci95_high": 0.11597962703439894
+      },
+      {
+        "label": "sampling",
+        "n": 128,
+        "denominator": 5649,
+        "share": 0.022658877677465036,
+        "ci95_low": 0.01909039002041452,
+        "ci95_high": 0.026876131544636177
+      },
+      {
+        "label": "speculative_decoding",
+        "n": 328,
+        "denominator": 5649,
+        "share": 0.05806337404850416,
+        "ci95_low": 0.05225985972085441,
+        "ci95_high": 0.06446753545331546
+      },
+      {
+        "label": "input_processing_multimodal",
+        "n": 455,
+        "denominator": 5649,
+        "share": 0.080545229244114,
+        "ci95_low": 0.0737304101495579,
+        "ci95_high": 0.08793013976640267
+      },
+      {
+        "label": "model_implementation",
+        "n": 792,
+        "denominator": 5649,
+        "share": 0.14020180562931492,
+        "ci95_low": 0.1313921508659262,
+        "ci95_high": 0.14950047108140013
+      },
+      {
+        "label": "model_loading_layers",
+        "n": 320,
+        "denominator": 5649,
+        "share": 0.0566471941936626,
+        "ci95_low": 0.05091478899931989,
+        "ci95_high": 0.06298217123048522
+      },
+      {
+        "label": "lora",
+        "n": 104,
+        "denominator": 5649,
+        "share": 0.018410338112940343,
+        "ci95_low": 0.015217984932152248,
+        "ci95_high": 0.02225723179980415
+      },
+      {
+        "label": "attention",
+        "n": 662,
+        "denominator": 5649,
+        "share": 0.1171888829881395,
+        "ci95_low": 0.10906021011597547,
+        "ci95_high": 0.12583784398542344
+      },
+      {
+        "label": "kernels_operators",
+        "n": 962,
+        "denominator": 5649,
+        "share": 0.17029562754469818,
+        "ci95_low": 0.16071820299034797,
+        "ci95_high": 0.18032116152472968
+      },
+      {
+        "label": "quantization",
+        "n": 588,
+        "denominator": 5649,
+        "share": 0.10408921933085502,
+        "ci95_low": 0.09639304432700584,
+        "ci95_high": 0.11232348653901898
+      },
+      {
+        "label": "compilation",
+        "n": 411,
+        "denominator": 5649,
+        "share": 0.07275624004248539,
+        "ci95_low": 0.06626945100626738,
+        "ci95_high": 0.07982370671568695
+      },
+      {
+        "label": "device_platform",
+        "n": 175,
+        "denominator": 5649,
+        "share": 0.030978934324659233,
+        "ci95_low": 0.026769801171149524,
+        "ci95_high": 0.0358255256920442
+      },
+      {
+        "label": "reliability_observability",
+        "n": 123,
+        "denominator": 5649,
+        "share": 0.02177376526818906,
+        "ci95_low": 0.018280364084453275,
+        "ci95_high": 0.02591713564036945
+      },
+      {
+        "label": "configuration_shared_infrastructure",
+        "n": 90,
+        "denominator": 5649,
+        "share": 0.015932023366967606,
+        "ci95_low": 0.012980349340856803,
+        "ci95_high": 0.019541606238461254
+      },
+      {
+        "label": "support_only",
+        "n": 1328,
+        "denominator": 5649,
+        "share": 0.23508585590369976,
+        "ci95_low": 0.22421003848555882,
+        "ci95_high": 0.24632172473420694
+      },
+      {
+        "label": "other",
+        "n": 65,
+        "denominator": 5649,
+        "share": 0.011506461320587715,
+        "ci95_low": 0.009038497362413637,
+        "ci95_high": 0.014638349015764527
+      },
+      {
+        "label": "unknown",
+        "n": 0,
+        "denominator": 5649,
+        "share": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0006795624552144324
+      }
+    ],
+    "affected_platforms": [
+      {
+        "label": "backend_agnostic",
+        "n": 2793,
+        "denominator": 5649,
+        "share": 0.4944237918215613,
+        "ci95_low": 0.481394181885311,
+        "ci95_high": 0.5074609805212525
+      },
+      {
+        "label": "cpu",
+        "n": 387,
+        "denominator": 5649,
+        "share": 0.0685077004779607,
+        "ci95_low": 0.06220912481516345,
+        "ci95_high": 0.0753927280736966
+      },
+      {
+        "label": "nvidia_cuda",
+        "n": 1521,
+        "denominator": 5649,
+        "share": 0.26925119490175253,
+        "ci95_low": 0.25784375251576214,
+        "ci95_high": 0.2809722537368036
+      },
+      {
+        "label": "amd_rocm",
+        "n": 1151,
+        "denominator": 5649,
+        "share": 0.20375287661533015,
+        "ci95_low": 0.19345223620362512,
+        "ci95_high": 0.21445615387207018
+      },
+      {
+        "label": "intel_xpu",
+        "n": 365,
+        "denominator": 5649,
+        "share": 0.0646132058771464,
+        "ci95_low": 0.058493537348643335,
+        "ci95_high": 0.07132461944321362
+      },
+      {
+        "label": "ascend_npu",
+        "n": 8,
+        "denominator": 5649,
+        "share": 0.0014161798548415648,
+        "ci95_low": 0.0007177822508558722,
+        "ci95_high": 0.002792215148723327
+      },
+      {
+        "label": "google_tpu",
+        "n": 40,
+        "denominator": 5649,
+        "share": 0.007080899274207825,
+        "ci95_low": 0.0052045239604540244,
+        "ci95_high": 0.009627213216584243
+      },
+      {
+        "label": "cambricon_mlu",
+        "n": 0,
+        "denominator": 5649,
+        "share": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0006795624552144324
+      },
+      {
+        "label": "other",
+        "n": 15,
+        "denominator": 5649,
+        "share": 0.0026553372278279343,
+        "ci95_low": 0.00160987468438173,
+        "ci95_high": 0.00437675329151664
+      },
+      {
+        "label": "unknown",
+        "n": 0,
+        "denominator": 5649,
+        "share": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0006795624552144324
+      }
+    ]
+  },
+  "integration_shape": {
+    "multi_scope_n": 2500,
+    "multi_scope_share": 0.442556204637989,
+    "multi_component_n": 2204,
+    "multi_component_share": 0.3901575500088511,
+    "cross_backend_n": 463,
+    "cross_backend_share": 0.08196140909895556
+  },
+  "missing_label_sensitivity": {
+    "missing_n": 13,
+    "max_absolute_share_shift_if_all_missing_take_one_label": 0.0022960084775697632
+  },
+  "ecosystem": {
+    "period_monthly_means": [
+      {
+        "period": "2024",
+        "months": 12,
+        "issues_opened_all_monthly_mean": 361.8333333333333,
+        "issues_opened_nonbot_monthly_mean": 361.8333333333333,
+        "prs_opened_all_monthly_mean": 385.75,
+        "prs_opened_nonbot_monthly_mean": 384.75,
+        "prs_merged_all_monthly_mean": 279.25,
+        "prs_merged_nonbot_monthly_mean": 278.5833333333333,
+        "active_pr_authors_nonbot_monthly_mean": 140.08333333333334,
+        "new_pr_authors_nonbot_monthly_mean": 68.0
+      },
+      {
+        "period": "2025",
+        "months": 12,
+        "issues_opened_all_monthly_mean": 578.1666666666666,
+        "issues_opened_nonbot_monthly_mean": 578.1666666666666,
+        "prs_opened_all_monthly_mean": 1068.5833333333333,
+        "prs_opened_nonbot_monthly_mean": 1066.3333333333333,
+        "prs_merged_all_monthly_mean": 720.0833333333334,
+        "prs_merged_nonbot_monthly_mean": 718.6666666666666,
+        "active_pr_authors_nonbot_monthly_mean": 369.4166666666667,
+        "new_pr_authors_nonbot_monthly_mean": 166.0
+      },
+      {
+        "period": "2026 Jan-Jul",
+        "months": 7,
+        "issues_opened_all_monthly_mean": 609.8571428571429,
+        "issues_opened_nonbot_monthly_mean": 609.8571428571429,
+        "prs_opened_all_monthly_mean": 2102.5714285714284,
+        "prs_opened_nonbot_monthly_mean": 2092.0,
+        "prs_merged_all_monthly_mean": 974.4285714285714,
+        "prs_merged_nonbot_monthly_mean": 973.5714285714286,
+        "active_pr_authors_nonbot_monthly_mean": 786.7142857142857,
+        "new_pr_authors_nonbot_monthly_mean": 403.57142857142856
+      }
+    ],
+    "capacity_comparison_2025_vs_2026": [
+      {
+        "metric": "active_pr_authors_nonbot",
+        "2025": 369.4166666666667,
+        "2026 Jan-Jul": 786.7142857142857,
+        "relative_change_2026_vs_2025": 1.12961232316071
+      },
+      {
+        "metric": "active_snapshot_reviewers",
+        "2025": 54.25,
+        "2026 Jan-Jul": 58.0,
+        "relative_change_2026_vs_2025": 0.06912442396313367
+      },
+      {
+        "metric": "inline_comments_snapshot_collaborator",
+        "2025": 1949.25,
+        "2026 Jan-Jul": 2003.4285714285713,
+        "relative_change_2026_vs_2025": 0.02779457300426902
+      },
+      {
+        "metric": "issues_opened_all",
+        "2025": 578.1666666666666,
+        "2026 Jan-Jul": 609.8571428571429,
+        "relative_change_2026_vs_2025": 0.05481200840093914
+      },
+      {
+        "metric": "new_pr_authors_nonbot",
+        "2025": 166.0,
+        "2026 Jan-Jul": 403.57142857142856,
+        "relative_change_2026_vs_2025": 1.431153184165232
+      },
+      {
+        "metric": "prs_merged_all",
+        "2025": 720.0833333333334,
+        "2026 Jan-Jul": 974.4285714285714,
+        "relative_change_2026_vs_2025": 0.3532163936052375
+      },
+      {
+        "metric": "prs_opened_all",
+        "2025": 1068.5833333333333,
+        "2026 Jan-Jul": 2102.5714285714284,
+        "relative_change_2026_vs_2025": 0.9676251378661112
+      },
+      {
+        "metric": "prs_opened_nonbot",
+        "2025": 1066.3333333333333,
+        "2026 Jan-Jul": 2092.0,
+        "relative_change_2026_vs_2025": 0.9618630822131917
+      },
+      {
+        "metric": "submitted_reviews_snapshot_collaborator",
+        "2025": 2316.6666666666665,
+        "2026 Jan-Jul": 2727.285714285714,
+        "relative_change_2026_vs_2025": 0.17724563206577604
+      }
+    ],
+    "state_at_cutoff": [
+      {
+        "artifact_type": "PullRequest",
+        "state_at_cutoff": "OPEN",
+        "all": 4194,
+        "nonbot": 4179,
+        "bot": 15
+      },
+      {
+        "artifact_type": "PullRequest",
+        "state_at_cutoff": "MERGED",
+        "all": 19067,
+        "nonbot": 19036,
+        "bot": 31
+      },
+      {
+        "artifact_type": "PullRequest",
+        "state_at_cutoff": "CLOSED",
+        "all": 9674,
+        "nonbot": 9607,
+        "bot": 67
+      },
+      {
+        "artifact_type": "Issue",
+        "state_at_cutoff": "OPEN",
+        "all": 2055,
+        "nonbot": 2055,
+        "bot": 0
+      },
+      {
+        "artifact_type": "Issue",
+        "state_at_cutoff": "CLOSED",
+        "all": 14935,
+        "nonbot": 14935,
+        "bot": 0
+      }
+    ],
+    "pr_author_roles_by_period": [
+      {
+        "period": "2024",
+        "author_role": "bot",
+        "prs": 12,
+        "unique_authors": 1,
+        "period_denominator": 4629,
+        "share": 0.002592352559948153
+      },
+      {
+        "period": "2024",
+        "author_role": "external_nonbot",
+        "prs": 1975,
+        "unique_authors": 826,
+        "period_denominator": 4629,
+        "share": 0.42665802549146686
+      },
+      {
+        "period": "2024",
+        "author_role": "snapshot_nonwrite",
+        "prs": 120,
+        "unique_authors": 9,
+        "period_denominator": 4629,
+        "share": 0.02592352559948153
+      },
+      {
+        "period": "2024",
+        "author_role": "snapshot_write_plus",
+        "prs": 2522,
+        "unique_authors": 48,
+        "period_denominator": 4629,
+        "share": 0.5448260963491035
+      },
+      {
+        "period": "2025",
+        "author_role": "bot",
+        "prs": 27,
+        "unique_authors": 2,
+        "period_denominator": 12823,
+        "share": 0.0021055915152460424
+      },
+      {
+        "period": "2025",
+        "author_role": "external_nonbot",
+        "prs": 7148,
+        "unique_authors": 2172,
+        "period_denominator": 12823,
+        "share": 0.557435857443656
+      },
+      {
+        "period": "2025",
+        "author_role": "snapshot_nonwrite",
+        "prs": 484,
+        "unique_authors": 25,
+        "period_denominator": 12823,
+        "share": 0.03774467753255868
+      },
+      {
+        "period": "2025",
+        "author_role": "snapshot_write_plus",
+        "prs": 5164,
+        "unique_authors": 62,
+        "period_denominator": 12823,
+        "share": 0.4027138735085393
+      },
+      {
+        "period": "2026 Jan-Jul",
+        "author_role": "bot",
+        "prs": 74,
+        "unique_authors": 3,
+        "period_denominator": 14718,
+        "share": 0.005027857045794265
+      },
+      {
+        "period": "2026 Jan-Jul",
+        "author_role": "external_nonbot",
+        "prs": 10994,
+        "unique_authors": 3412,
+        "period_denominator": 14718,
+        "share": 0.7469764913711102
+      },
+      {
+        "period": "2026 Jan-Jul",
+        "author_role": "snapshot_nonwrite",
+        "prs": 754,
+        "unique_authors": 19,
+        "period_denominator": 14718,
+        "share": 0.051229786655795626
+      },
+      {
+        "period": "2026 Jan-Jul",
+        "author_role": "snapshot_write_plus",
+        "prs": 2896,
+        "unique_authors": 56,
+        "period_denominator": 14718,
+        "share": 0.19676586492729992
+      }
+    ],
+    "review_concentration_2026_jan_jul": {
+      "period": "2026-01_to_2026-07",
+      "review_submissions": 19091,
+      "active_snapshot_collaborator_reviewers": 77,
+      "top_5_share": 0.34969357288774816,
+      "top_10_share": 0.527211775182023,
+      "reviewers_for_50pct": 10,
+      "reviewers_for_80pct": 23,
+      "gini": 0.6644975159982232
+    }
+  },
+  "top_archetypes": [
+    {
+      "archetype": "bugfix / production_code / multi_component / backend_specific",
+      "n": 449,
+      "median_churn": 32.0,
+      "median_files": 2.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.07948309435298283,
+      "examples": "#31914 fix memory for online fp8 quantization with streaming weight load; #32161 [CPU] Split attention dispatch by head_dim alignment; #32224 fix cutlass_3x_gemm_fp8_blockwise on sm103a"
+    },
+    {
+      "archetype": "bugfix / production_code / multi_component / backend_agnostic",
+      "n": 397,
+      "median_churn": 44.0,
+      "median_files": 2.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.07027792529651265,
+      "examples": "#29387 [BugFix] Avoid prefix cache hit in the same schedule step for mamba layers; #29816 [Bugfix][Model] Support LoRA on Qwen3 Output Embedding; #30515 [UX][Startup] Account for CUDA graphs during memory profiling"
+    },
+    {
+      "archetype": "feature / production_code / multi_component / backend_specific",
+      "n": 288,
+      "median_churn": 256.5,
+      "median_files": 5.0,
+      "median_human_reviews": 5.5,
+      "denominator": 5649,
+      "share": 0.050982474774296335,
+      "examples": "#29008 [ROCm][Quantization] GPT_OSS in amd-quark format model loading and emulations ; #29941 [offloader] v2: Hide weight onloading latency via prefetching; #30286 [LoRA] Support Quantized Adapters"
+    },
+    {
+      "archetype": "performance / production_code / multi_component / backend_specific",
+      "n": 261,
+      "median_churn": 147.0,
+      "median_files": 3.0,
+      "median_human_reviews": 4.0,
+      "denominator": 5649,
+      "share": 0.046202867764206054,
+      "examples": "#23465 [Attention][FA3] Update FA3 to include new swizzle optimization; #30329 [Feature][CPU Backend]: Optimize ARM vectorization backend; #30647 [Perf] Eliminate padding and slicing op for GPT-OSS with Flashinfer MXFP4 MXFP8 MoE"
+    },
+    {
+      "archetype": "test / tests / support_only / backend_specific",
+      "n": 254,
+      "median_churn": 13.5,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.044963710391219686,
+      "examples": "#33345 Feat/add nemotron nano v3 tests; #33555 [CI][Bugfix] Fix flaky `tests/v1/kv_connector/unit/test_multi_connector.py::test_multi_example_connector_consistency`; #33566 [CI] Add DeepSeek V3.2 nightly eval"
+    },
+    {
+      "archetype": "feature / production_code / multi_component / backend_agnostic",
+      "n": 253,
+      "median_churn": 258.0,
+      "median_files": 6.0,
+      "median_human_reviews": 6.0,
+      "denominator": 5649,
+      "share": 0.04478668790936449,
+      "examples": "#20859 [Feature] limit thinking tokens (hard limit); #29184 [Core] NGram GPU Implementation compatible with Async Scheduler; #29828 [Model] Add transcription support for Qwen3-Omni"
+    },
+    {
+      "archetype": "bugfix / production_code / single:serving_api / backend_agnostic",
+      "n": 205,
+      "median_churn": 75.0,
+      "median_files": 2.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.0362896087803151,
+      "examples": "#32114 [Bugfix] Fix Harmony preamble visibility in Responses API; #33218 [Bugfix] GLM-4 tool parser: incremental string streaming; #33513 [Frontend] Fix reasoning_tokens for text-based parsers in Responses API"
+    },
+    {
+      "archetype": "ci / ci / support_only / backend_specific",
+      "n": 160,
+      "median_churn": 12.0,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.0283235970968313,
+      "examples": "#32745 [Hardware][AMD][CI] Refactor AMD tests to properly use BuildKite parallelism; #33057 Bump actions/checkout from 6.0.1 to 7.0.0; #33365 move spec decode slow test to test_areas.yaml"
+    },
+    {
+      "archetype": "test / tests / support_only / backend_agnostic",
+      "n": 143,
+      "median_churn": 13.0,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.02531421490529297,
+      "examples": "#27599 [CI/Build] Add common tool call parser test suite; #29130 [Test] Fix @create_new_process_for_each_test(\"fork\") in interactive shell pipeline; #33530 [Nightly CI] Remove CT Model"
+    },
+    {
+      "archetype": "documentation / documentation_examples / support_only / backend_agnostic",
+      "n": 130,
+      "median_churn": 6.5,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.02301292264117543,
+      "examples": "#30677 [Docs] Update design/multiprocessing.md; #30947 [docs] Add lightweight AI assisted contribution policy; #31113 Fix document of torchrun_example.py"
+    },
+    {
+      "archetype": "bugfix / production_code / single:input_processing_multimodal / backend_agnostic",
+      "n": 127,
+      "median_churn": 29.0,
+      "median_files": 2.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.022481855195609843,
+      "examples": "#33500 [Critical] Revert #33110; #33634 [Bugfix] Fix mm budget setting for Qwen Omni models; #33635 [Bugfix] Interleaved thinking keeps compatibility with reasoning_content"
+    },
+    {
+      "archetype": "build / build / support_only / backend_specific",
+      "n": 121,
+      "median_churn": 7.0,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.021419720304478668,
+      "examples": "#32032 [CI/Build] add directions for CPU image upload to Docker Hub; #33079 [CPU][ARM] Add ARM BF16 cross-compilation support and improve documen…; #33243 [CPU][IBM Z][Dockerfile] Fix IBM Z builds"
+    },
+    {
+      "archetype": "bugfix / production_code / single:model_implementation / backend_agnostic",
+      "n": 118,
+      "median_churn": 15.5,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.020888652858913084,
+      "examples": "#32686 Fix accessing hidden_act from model config; #33039 [Model] Use mm_position to compute mrope positions for GLM-4.xV; #33521 Fix mistral sliding window parsing"
+    },
+    {
+      "archetype": "bugfix / production_code / single:kv_cache_data_movement / backend_agnostic",
+      "n": 102,
+      "median_churn": 68.0,
+      "median_files": 2.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.018056293149229952,
+      "examples": "#33292 [KV Connector] Add missing method overrides to MultiConnector; #33524 [Fix] prefix cache hit rate == 0 bug with gpt-oss style models; #33698 [Core][BugFix] Fix PP KV cache sharding memory validation"
+    },
+    {
+      "archetype": "performance / production_code / multi_component / backend_agnostic",
+      "n": 96,
+      "median_churn": 124.5,
+      "median_files": 3.0,
+      "median_human_reviews": 4.0,
+      "denominator": 5649,
+      "share": 0.016994158258098777,
+      "examples": "#30888 [Perf] Move eplb rebalance algo to async thread; #32005   Reduce the kernel overhead when num of active loras is smaller than max loras. Multiple cuda graphs are captured for each num of active-loras.; #32655 Add unpermute-aware fused MoE LoRA path"
+    },
+    {
+      "archetype": "refactor / production_code / multi_component / backend_agnostic",
+      "n": 95,
+      "median_churn": 207.0,
+      "median_files": 5.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.016817135776243584,
+      "examples": "#32621 [LoRA] Update LoRA expand kernel block_n calculation; #32712 [1/N] Initial Implementation of Parser for ResponsesAPI; #33542 [Chore] Remove redundant input parsing methods"
+    },
+    {
+      "archetype": "bugfix / production_code / single:attention / backend_specific",
+      "n": 82,
+      "median_churn": 17.5,
+      "median_files": 1.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.01451584351212604,
+      "examples": "#33192 [Bugfix] Disable TRTLLM attention when KV transfer is enabled; #33501 Fix DeepSeek RoPE initialization error; #33511 fix(ROCm): Make flash_attn import optional in MLA attention"
+    },
+    {
+      "archetype": "refactor / production_code / multi_component / cross_backend",
+      "n": 70,
+      "median_churn": 475.0,
+      "median_files": 16.5,
+      "median_human_reviews": 5.0,
+      "denominator": 5649,
+      "share": 0.012391573729863693,
+      "examples": "#32344 [MoE Refactor] Introduce MoERunner abstraction and move execution logic from FusedMoE to DefaultMoERunner; #32564 [MoE Refactor] Create MK for TRTLLM Kernels; #33375 [Moe Refactor] Make Inplace Flag for FusedMoEModularKernel part of the constructor"
+    },
+    {
+      "archetype": "feature / production_code / single:serving_api / backend_agnostic",
+      "n": 68,
+      "median_churn": 207.0,
+      "median_files": 4.0,
+      "median_human_reviews": 4.0,
+      "denominator": 5649,
+      "share": 0.012037528766153301,
+      "examples": "#29947 [Frontend] OpenAI Responses API supports Tool/Function calling with streaming; #32609 [Frontend] Add sampling parameters to Responses API; #32967 [Frontend] Use init_app_state and FrontendArgs in run_batch"
+    },
+    {
+      "archetype": "bugfix / production_code / multi_component / cross_backend",
+      "n": 65,
+      "median_churn": 72.0,
+      "median_files": 4.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.011506461320587715,
+      "examples": "#30681 [Hardware] Replace `torch.cuda.empty_cache` with `torch.accelerator.empty_cache`; #31127 [Frontend][last/5] Make pooling entrypoints request schema consensus. ; #33308 [rocm][ray] Fix: Unify Ray device visibility handling across CUDA and ROCm"
+    },
+    {
+      "archetype": "refactor / production_code / multi_component / backend_specific",
+      "n": 65,
+      "median_churn": 246.0,
+      "median_files": 7.0,
+      "median_human_reviews": 3.0,
+      "denominator": 5649,
+      "share": 0.011506461320587715,
+      "examples": "#28631 [Frontend][3/n] Improve pooling entrypoints | scoring.; #31509 [1/n] Migrate permute_cols to libtorch stable ABI; #32929 [FP8]add FP8 WoQ kernel abstraction."
+    },
+    {
+      "archetype": "feature / production_code / multi_component / cross_backend",
+      "n": 59,
+      "median_churn": 773.0,
+      "median_files": 14.0,
+      "median_human_reviews": 13.0,
+      "denominator": 5649,
+      "share": 0.010444326429456542,
+      "examples": "#30566 Update to transformers v5; #31162 [Feature] OTEL tracing during loading; #31943 [Feat][RL][1/2] Native Weight Syncing API: NCCL"
+    },
+    {
+      "archetype": "feature / production_code / single:kv_cache_data_movement / backend_agnostic",
+      "n": 56,
+      "median_churn": 227.0,
+      "median_files": 5.0,
+      "median_human_reviews": 5.0,
+      "denominator": 5649,
+      "share": 0.009913258983890954,
+      "examples": "#33304 [feat] Add per-block extra_keys to KV events; #34328 [KV Connector] Support using FlexKV as KV Cache Offloading option.; #35758 [Core][KVConnector] Support HMA+NixlConnector"
+    },
+    {
+      "archetype": "bugfix / production_code / single:model_loading_layers / backend_agnostic",
+      "n": 54,
+      "median_churn": 24.5,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.009559214020180564,
+      "examples": "#33525 Update get_expert_mapping to include self parameter; #33604 Make directory exist ok for ray spinning up multiple replicas on a single instance; #33886 [Bugfix] Fix corner case of sparse embedding "
+    },
+    {
+      "archetype": "documentation / documentation_examples / support_only / backend_specific",
+      "n": 52,
+      "median_churn": 12.0,
+      "median_files": 1.0,
+      "median_human_reviews": 2.0,
+      "denominator": 5649,
+      "share": 0.009205169056470171,
+      "examples": "#32767 [Docs] add Dynamo/aibrix integration and kubeai/aks link; #33069 [Doc] Suggest \"--managed-python\" flag when installing python using uv; #33863 [docs] fix unintentional misspellings"
+    }
+  ],
+  "legacy_reconciliation": {
+    "legacy_branch_commit": "69eb9e5",
+    "all_prs_opened_2026_monthly_mean": {
+      "recomputed": 2102.5714285714284,
+      "legacy": 2102.5714285714284
+    },
+    "all_prs_merged_2026_monthly_mean": {
+      "recomputed": 974.4285714285714,
+      "legacy": 974.4285714285714
+    },
+    "review_concentration": {
+      "recomputed": {
+        "period": "2026-01_to_2026-07",
+        "review_submissions": 19091,
+        "active_snapshot_collaborator_reviewers": 77,
+        "top_5_share": 0.34969357288774816,
+        "top_10_share": 0.527211775182023,
+        "reviewers_for_50pct": 10,
+        "reviewers_for_80pct": 23,
+        "gini": 0.6644975159982232
+      },
+      "legacy": {
+        "period": "2026 Jan–Jul",
+        "active_snapshot_collab_reviewers": 77,
+        "review_submissions": 19091,
+        "top_5_share": 0.34969357288774816,
+        "gini": 0.6644975159982232
+      }
+    }
+  }
+}

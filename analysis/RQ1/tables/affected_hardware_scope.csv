@@ -1,0 +1,4 @@
+hardware_scope,n,denominator,share
+backend_agnostic,2793,5649,0.4944237918215613
+backend_specific,2393,5649,0.4236147990794831
+cross_backend,463,5649,0.08196140909895556

@@ -1,0 +1,30 @@
+{
+  "legacy_branch_commit": "69eb9e5",
+  "all_prs_opened_2026_monthly_mean": {
+    "recomputed": 2102.5714285714284,
+    "legacy": 2102.5714285714284
+  },
+  "all_prs_merged_2026_monthly_mean": {
+    "recomputed": 974.4285714285714,
+    "legacy": 974.4285714285714
+  },
+  "review_concentration": {
+    "recomputed": {
+      "period": "2026-01_to_2026-07",
+      "review_submissions": 19091,
+      "active_snapshot_collaborator_reviewers": 77,
+      "top_5_share": 0.34969357288774816,
+      "top_10_share": 0.527211775182023,
+      "reviewers_for_50pct": 10,
+      "reviewers_for_80pct": 23,
+      "gini": 0.6644975159982232
+    },
+    "legacy": {
+      "period": "2026 Jan–Jul",
+      "active_snapshot_collab_reviewers": 77,
+      "review_submissions": 19091,
+      "top_5_share": 0.34969357288774816,
+      "gini": 0.6644975159982232
+    }
+  }
+}

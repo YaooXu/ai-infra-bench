@@ -1,0 +1,19 @@
+period,metric,months,monthly_mean,monthly_median
+2025,issues_opened_all,12,578.1666666666666,577.0
+2025,prs_opened_all,12,1068.5833333333333,1079.5
+2025,prs_opened_nonbot,12,1066.3333333333333,1079.0
+2025,prs_merged_all,12,720.0833333333334,738.5
+2025,active_pr_authors_nonbot,12,369.4166666666667,362.0
+2025,new_pr_authors_nonbot,12,166.0,172.5
+2025,submitted_reviews_snapshot_collaborator,12,2316.6666666666665,2339.0
+2025,active_snapshot_reviewers,12,54.25,55.5
+2025,inline_comments_snapshot_collaborator,12,1949.25,1935.0
+2026 Jan-Jul,issues_opened_all,7,609.8571428571429,598.0
+2026 Jan-Jul,prs_opened_all,7,2102.5714285714284,2106.0
+2026 Jan-Jul,prs_opened_nonbot,7,2092.0,2090.0
+2026 Jan-Jul,prs_merged_all,7,974.4285714285714,895.0
+2026 Jan-Jul,active_pr_authors_nonbot,7,786.7142857142857,827.0
+2026 Jan-Jul,new_pr_authors_nonbot,7,403.57142857142856,428.0
+2026 Jan-Jul,submitted_reviews_snapshot_collaborator,7,2727.285714285714,2653.0
+2026 Jan-Jul,active_snapshot_reviewers,7,58.0,58.0
+2026 Jan-Jul,inline_comments_snapshot_collaborator,7,2003.4285714285713,1966.0

@@ -1,0 +1,6 @@
+artifact_type,state_at_cutoff,all,nonbot,bot
+PullRequest,OPEN,4194,4179,15
+PullRequest,MERGED,19067,19036,31
+PullRequest,CLOSED,9674,9607,67
+Issue,OPEN,2055,2055,0
+Issue,CLOSED,14935,14935,0

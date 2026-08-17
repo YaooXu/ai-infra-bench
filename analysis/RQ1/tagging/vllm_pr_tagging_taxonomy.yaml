@@ -1,0 +1,299 @@
+version: 11
+taxonomy_id: vllm-pr-reproduction-2026-08-16-v11
+
+companion_files:
+  hardware_catalog: vllm_ci_hardware_catalog.yaml
+  prompt: vllm_pr_tagging_prompt.md
+  provenance: vllm_taxonomy_provenance.yaml
+
+output_contract:
+  reasoning_field:
+    name: reasoning
+    required_for_every_emitted_label: true
+    required_for_structural_group: true
+    language: zh-CN
+    def: A concise Chinese evidence rationale explaining why the label was selected; report only conclusion-relevant evidence, not private chain-of-thought.
+
+change_type:
+  should_tag: single_label
+  def: The single dominant engineering intent of this PR, determined from the intended outcome rather than changed paths alone.
+  note:
+    - Select exactly one dominant intent; project_scope separately records every materially changed repository surface.
+    - Use bugfix to restore an existing product contract, feature for a new supported capability, performance for deliberate measured efficiency work, and refactor for behavior-preserving restructuring.
+    - Use test, documentation, ci, or build only when that support artifact is itself the primary deliverable rather than support for a production-code change.
+    - Use maintenance only when no more specific functional or support intent applies.
+  values:
+    bugfix: {def: Select when the PR restores an existing intended product behavior by correcting a defect, regression, crash, incorrect result, or broken supported case.}
+    feature: {def: Select when the PR intentionally adds a new supported user-facing or developer-facing capability rather than restoring existing behavior.}
+    performance: {def: Select when measurable latency, throughput, memory, or resource efficiency improvement is the primary goal while the intended functional contract remains unchanged.}
+    refactor: {def: Select when internal implementation structure is deliberately changed while intended behavior and performance goals remain substantially unchanged.}
+    test: {def: Select when executable tests or test infrastructure are the primary deliverable and no production behavior change is intended.}
+    documentation: {def: Select when human-readable documentation or educational examples are the primary deliverable and no executable product contract changes.}
+    ci: {def: Select when CI or repository automation itself is the primary deliverable without primarily changing product, build, or test behavior.}
+    build: {def: Select when dependency resolution, compilation, packaging, containers, artifact production, or release mechanics are the primary deliverable.}
+    maintenance: {def: Select for routine non-functional repository upkeep not covered by refactor, test, documentation, ci, or build.}
+    other: {def: Select when the dominant intent is clear but no canonical value represents it.}
+    unknown: {def: Select only when available evidence is insufficient or contradictory and no dominant intent can be determined.}
+
+project_scope:
+  should_tag: multi_label
+  def: All major vLLM repository surfaces materially changed by this PR, classified by the role of the changed artifacts rather than the PR intent.
+  note:
+    - Select every materially changed surface; a production change commonly co-selects tests, benchmarks, documentation_examples, build, or ci.
+    - Classify executable assertion-based verification as tests and measurement-oriented workloads as benchmarks.
+    - Classify educational runnable content as documentation_examples unless its primary output is benchmark data.
+    - other means a known unlisted surface and may accompany canonical surfaces; unknown means the surface cannot be determined and must be used alone.
+  values:
+    production_code: {def: Select for shipped vLLM Python, native, kernel, model, serving, device-platform, or Rust implementation and runtime data required by that code.}
+    tests: {def: Select for executable assertions, test fixtures, test utilities, correctness evaluations, or test-only data whose primary role is pass/fail verification.}
+    benchmarks: {def: Select for workloads, profilers, or evaluation assets whose primary output is latency, throughput, memory, quality, or another measurement.}
+    ci: {def: Select for CI jobs, workflows, runners, matrices, status automation, caches, or repository automation executed by CI/CD services.}
+    build: {def: Select for build systems, dependency declarations, compilation configuration, packaging, containers, toolchains, or artifact publishing mechanics.}
+    documentation_examples: {def: Select for human-readable documentation, tutorials, recipes, notebooks, or educational examples whose primary purpose is guidance.}
+    developer_tooling: {def: Select for developer-only tools, linting, formatting, local maintenance scripts, ownership metadata, or repository governance configuration.}
+    other: {def: Select when a materially changed repository surface is clear but is not represented by another canonical value.}
+    unknown: {def: Select only when available evidence cannot determine the role of the materially changed artifacts.}
+
+architecture:
+  should_tag: multi_label
+  def: Production vLLM components whose implementation or production contract is materially changed by the PR.
+  note:
+    - Select behavioral ownership, not every imported helper, potentially affected consumer, test path, or CI route.
+    - Multiple components are allowed when the production change genuinely crosses their boundaries.
+    - If project_scope contains production_code, do not use support_only. If project_scope contains no production_code and is otherwise known, use support_only alone.
+    - Use configuration_shared_infrastructure only for cross-cutting production infrastructure with no more specific component.
+  values:
+    scheduler: {def: Select for production scheduling policy, batching, queues, admission, prioritization, or preemption; exclude engine lifecycle and worker execution-loop changes.}
+    engine: {def: Select for production engine lifecycle, orchestration, process management, IPC, or top-level control flow; exclude scheduler policy and per-device model execution.}
+    serving_api: {def: Select for shipped serving entrypoints, external API behavior, request or response schemas, CLI serving interfaces, or frontend protocols.}
+    worker_model_runner: {def: Select for worker lifecycle, model-runner preparation, per-device execution loops, or execution-state management below the engine.}
+    kv_cache_data_movement: {def: Select for KV-cache allocation, block management, prefix caching, offload, connectors, transfer, or cache data movement.}
+    distributed_execution: {def: Select for tensor, pipeline, data, or expert-parallel orchestration, collectives, executors, Ray integration, or multi-node coordination.}
+    moe: {def: Select for mixture-of-experts routing, expert execution, expert parallelism, load balancing, or EPLB behavior.}
+    sampling: {def: Select for logits processing, sampling algorithms, decoding constraints, or final token selection outside speculative decoding.}
+    speculative_decoding: {def: Select for draft-model, EAGLE, Medusa, MTP, proposal, verification, or other speculative-decoding behavior.}
+    input_processing_multimodal: {def: Select for tokenization, input parsing, prompt rendering, media ingestion, multimodal preprocessing, or multimodal input contracts; exclude transport-only API changes.}
+    model_implementation: {def: Select for model-specific architectures, registries, model configuration interpretation, or model-specific forward behavior; exclude generic loading and shared layers.}
+    model_loading_layers: {def: Select for weight loading, parameter mapping, shared execution layers, or generic model-executor layer behavior not owned by attention, MoE, LoRA, or quantization.}
+    lora: {def: Select for LoRA execution, adapter lifecycle or management, adapter loading, or LoRA-specific operators.}
+    attention: {def: Select for attention layers, attention backends, paged attention, MLA, sparse attention, or attention-state behavior.}
+    kernels_operators: {def: Select for low-level custom CUDA, ROCm, Triton, CuTe, C++, or device operators; co-select the owning functional component when applicable.}
+    quantization: {def: Select for quantization formats, calibration assumptions, low-precision layers, quantized loading, or quantization-specific kernels.}
+    compilation: {def: Select for graph compilation, capture, CUDA graphs, compiler passes, JIT behavior, tracing, guards, or intermediate representations.}
+    device_platform: {def: Select for device detection, platform abstraction, backend selection, platform plugins, or platform-specific runtime integration.}
+    reliability_observability: {def: Select for fault tolerance, recovery, health checks, production metrics, tracing, profiling, or logging behavior.}
+    configuration_shared_infrastructure: {def: Select only for cross-cutting production configuration or shared runtime utilities that have no more specific architectural owner.}
+    support_only: {def: Select alone when tests, benchmarks, CI, build, documentation, or developer tooling change without any production-code component change.}
+    other: {def: Select when a materially changed production component is clear but is not represented by another canonical value.}
+    unknown: {def: Select only when production code changes but available evidence cannot determine its architectural component.}
+
+affected_platforms:
+  should_tag: multi_label
+  def: Hardware backends materially targeted by this PR across production code, build support, tests, benchmarks, CI, or documentation, independent of the environment selected to validate it.
+  note:
+    - Classify a backend only when a changed artifact materially introduces, removes, or modifies behavior or support for that backend; do not infer it from an unchanged consumer, an incidental runner, a comparison-only reference implementation, or the environment selected by reproduction.
+    - Backend-specific support work counts. For example, a CUDA-only test fix, an XPU CI-matrix change, a ROCm build dependency, or TPU support documentation targets that backend even when no production code changes.
+    - A changed benchmark that directly executes or measures a backend implementation targets that backend. Merely using a backend as an unchanged comparison-only reference does not.
+    - Generic PyTorch CUDA-namespace usage such as torch.cuda, device="cuda", or .cuda() is not by itself NVIDIA-specific evidence because ROCm uses the same API namespace; require a materially changed NVIDIA-specific path, guard, library, architecture, or CI target.
+    - A cpu_test marker, a CPU-runnable test, host-side orchestration, or mocking alone is not evidence that the CPU backend is affected; require a materially changed CPU-specific implementation, build, test contract, CI target, or documentation contract.
+    - Importing or invoking one backend only as a reference result for validating another backend does not make the reference backend affected.
+    - Use backend_agnostic alone when the materially changed production, build, test, benchmark, CI, and documentation surfaces do not target a specific hardware backend.
+    - Select every explicitly affected backend for cross-backend work.
+    - backend_agnostic and unknown are exclusive sentinel values; other may accompany a canonical backend when an additional unlisted backend is explicitly affected.
+  values:
+    backend_agnostic: {def: Select alone when no materially changed production, build, test, benchmark, CI, or documentation artifact deliberately targets a specific hardware backend.}
+    cpu: {def: Select when the PR materially changes CPU-specific production behavior, build support, tests, CI, or documentation.}
+    nvidia_cuda: {def: Select when the PR materially changes NVIDIA CUDA-specific production behavior, build support, tests, CI, or documentation.}
+    amd_rocm: {def: Select when the PR materially changes AMD ROCm-specific production behavior, build support, tests, CI, or documentation.}
+    intel_xpu: {def: Select when the PR materially changes Intel XPU-specific production behavior, build support, tests, CI, or documentation.}
+    ascend_npu: {def: Select when the PR materially changes Huawei Ascend NPU-specific production behavior, build support, tests, CI, or documentation.}
+    google_tpu: {def: Select when the PR materially changes Google TPU-specific production behavior, build support, tests, CI, or documentation.}
+    cambricon_mlu: {def: Select when the PR materially changes Cambricon MLU-specific production behavior, build support, tests, CI, or documentation.}
+    other: {def: Select when an explicit affected hardware backend is not represented by another canonical value and identify it in reasoning.}
+    unknown: {def: Select alone only when available evidence cannot determine whether or which hardware backend is materially affected.}
+
+verification:
+  should_tag: none
+  def: Evidence-backed facts about whether and how validation directly relevant to the materially changed behavior or artifact was executed before merge.
+  note:
+    - Test-file changes prove test assets changed, not that tests ran.
+    - Count only concrete pre-merge executions relevant to this PR; ignore unrelated repository checks and post-merge runs.
+    - A generic pre-commit, lint, or build success does not prove a functional production bugfix, feature, or performance change was tested. Exclude that unrelated check from methods and do not let it produce passed.
+    - Static or build validation may produce passed when it directly validates the primary deliverable, such as a lint-rule change, dependency/build change, documentation build, or CI configuration change.
+    - For repeated attempts of the same check, use the latest conclusive pre-merge result; a later successful rerun supersedes an earlier failure.
+    - Skipped, cancelled, neutral, or inconclusive checks do not by themselves make the aggregate result mixed.
+  test_assets:
+    should_tag: single_label
+    def: The kind of executable test-asset change visible in the patch, independent of whether any test executed.
+    values:
+      added: {def: Select when the patch adds executable tests and does not materially modify or remove existing tests.}
+      modified: {def: Select when the patch materially changes existing executable tests and does not add or remove tests.}
+      removed: {def: Select when the patch removes or disables executable tests and does not also add or materially modify tests.}
+      mixed: {def: Select when two or more of adding, modifying, removing, or disabling executable tests occur.}
+      none: {def: Select when the patch does not materially change executable test assets.}
+      unknown: {def: Select only when the patch or file role is unavailable or insufficient to determine test-asset changes.}
+  tested:
+    should_tag: single_label
+    def: Aggregate final outcome of concrete pre-merge validation that directly exercises or validates the materially changed behavior or artifact.
+    values:
+      passed: {def: Select when at least one relevant concrete validation completed successfully and no relevant final validation result failed.}
+      failed: {def: Select when at least one relevant final validation failed and no relevant successful validation is evidenced.}
+      mixed: {def: Select when distinct relevant validations have both successful and failed final outcomes after accounting for reruns.}
+      result_unknown: {def: Select when relevant concrete execution is evidenced but no conclusive result is available.}
+      claim_only: {def: Select when execution or success is asserted but no inspectable execution record, CI result, artifact, log, or measurement establishes that it actually ran or what happened; an exact command written in prose is still only a claim without execution evidence.}
+      explicitly_not_tested: {def: Select when available evidence explicitly states that relevant validation was not run.}
+      no_evidence: {def: Select when available evidence neither demonstrates execution nor states whether relevant validation ran.}
+      unknown: {def: Select only when validation evidence is inaccessible or materially contradictory after applying the rerun and timing rules.}
+  methods:
+    should_tag: multi_label
+    def: Relevant validation methods concretely executed before merge; classify from the executed target or job behavior, not its name alone.
+    note:
+      - Use none alone for claim_only, explicitly_not_tested, or no_evidence.
+      - Do not guess unit, integration, or end-to-end level when the executed target cannot establish it; use unknown.
+      - Select performance_benchmark if and only if performance_benchmark is run_with_result or run_without_result.
+    values:
+      static_check: {def: Select for an executed lint, formatting, type-checking, schema, or other non-runtime static validation.}
+      build_install: {def: Select for an executed build, package, install, import, image-build, or startup validation.}
+      unit_test: {def: Select for focused executable tests that validate a localized unit with limited external integration.}
+      integration_test: {def: Select for executable tests that validate interaction across multiple implementation components or services.}
+      end_to_end_test: {def: Select for an executed complete serving, inference, CLI, or user workflow through its public interface.}
+      model_correctness: {def: Select for executed model-output, numerical, quality, or reference-result correctness evaluation.}
+      kernel_correctness: {def: Select for executed custom-kernel or operator comparison against a reference implementation or expected result.}
+      distributed_test: {def: Select for executed multi-accelerator or multi-node distributed behavior validation.}
+      performance_benchmark: {def: Select for an executed measurement of latency, throughput, memory, utilization, or resource efficiency.}
+      stress_reliability: {def: Select for an executed stress, soak, fault-injection, recovery, or reliability validation.}
+      manual: {def: Select only when a concrete manually executed functional procedure and its observation are explicitly reported.}
+      other: {def: Select when a concrete executed validation method is clear but no canonical value represents it.}
+      none: {def: Select alone when no concrete relevant validation execution is evidenced.}
+      unknown: {def: Select alone when concrete relevant execution is evidenced but its method cannot be determined.}
+  performance_benchmark:
+    should_tag: single_label
+    def: Whether a relevant performance benchmark was concretely executed before merge, without inventing a pass/fail threshold.
+    values:
+      run_with_result: {def: Select when a relevant benchmark ran and reported at least one inspectable measurement or comparison.}
+      run_without_result: {def: Select when a relevant benchmark ran but its measurements or comparison are unavailable.}
+      not_run: {def: Select when performance validation is relevant but no concrete benchmark execution is evidenced.}
+      not_applicable: {def: Select when performance validation is not material to the changed behavior.}
+      unknown: {def: Select only when benchmark execution evidence is inaccessible or contradictory.}
+
+reproduction:
+  should_tag: none
+  def: One evidence-backed concrete environment to provision for reproducing the most important relevant validation of this PR.
+  note:
+    - Return one environment only; do not create separate platform, correctness, and benchmark profiles.
+    - First determine whether CPU-only execution can adequately verify the changed behavior. If it can, platform must be cpu even when GPU CI exists elsewhere in the repository.
+    - Use an accelerator only when CPU-only execution cannot adequately verify the important changed behavior. Then prefer an exact successful pre-merge vLLM CI route, followed by an explicit PR command or benchmark environment, and finally the nearest repository-defined accelerator route that exercises the change.
+    - Describe a concrete runnable choice, not a theoretical minimum and not a claim that the implementation requires the exact selected SKU.
+    - Do not infer an accelerator requirement merely because the repository is vLLM or the patch mentions CUDA, ROCm, kernels, or models; identify behavior that requires real accelerator execution.
+    - Never infer an exact accelerator model, allocated memory, host CPU count, or host memory from the backend name alone.
+    - Use platform none only for review-only work requiring no executable command or software environment; then commands and software_requirements must both be empty. If the selected validation executes even a static command, use cpu or an evidenced accelerator platform.
+  platform:
+    should_tag: single_label
+    def: Concrete execution platform to provision for the selected reproduction environment; always choose a configurable platform rather than an unknown placeholder.
+    values:
+      none: {def: Select only when no executable command or software environment is needed, such as review-only documentation or governance work; commands and software_requirements must then both be empty.}
+      cpu: {def: Select whenever CPU-only execution is sufficient to adequately verify the important changed behavior; this takes precedence over available accelerator CI routes.}
+      nvidia_cuda: {def: Select only when CPU-only execution is insufficient and the chosen relevant validation requires NVIDIA CUDA.}
+      amd_rocm: {def: Select only when CPU-only execution is insufficient and the chosen relevant validation requires AMD ROCm.}
+      intel_xpu: {def: Select only when CPU-only execution is insufficient and the chosen relevant validation requires Intel XPU.}
+      ascend_npu: {def: Select only when CPU-only execution is insufficient and the chosen relevant validation requires Huawei Ascend NPU.}
+      google_tpu: {def: Select only when CPU-only execution is insufficient and the chosen relevant validation requires Google TPU.}
+      other: {def: Select only when CPU-only execution is insufficient and an explicit accelerator platform outside the canonical list is required.}
+  accelerator_model:
+    should_tag: single_label
+    def: Accelerator SKU to provision for the selected route, chosen only from explicit CI routing, test configuration, benchmark evidence, or PR statements.
+    values:
+      none: {def: Select when the chosen environment does not use an accelerator.}
+      nvidia_l4: {def: Select when the chosen route explicitly uses an NVIDIA L4.}
+      nvidia_a100: {def: Select when the chosen route explicitly uses an NVIDIA A100.}
+      nvidia_h20: {def: Select when the chosen route explicitly uses an NVIDIA H20.}
+      nvidia_h100: {def: Select when the chosen route explicitly uses an NVIDIA H100.}
+      nvidia_h200: {def: Select when the chosen route explicitly uses an NVIDIA H200.}
+      nvidia_b200: {def: Select when the chosen route explicitly uses an NVIDIA B200.}
+      nvidia_b300: {def: Select when the chosen route explicitly uses an NVIDIA B300.}
+      ascend_910b: {def: Select when the chosen route explicitly uses a Huawei Ascend 910B.}
+      google_tpu_v6e: {def: Select when the chosen route explicitly uses a Google TPU v6e.}
+      amd_mi250: {def: Select when the chosen route explicitly uses an AMD Instinct MI250.}
+      amd_mi300x: {def: Select when the chosen route explicitly uses an AMD Instinct MI300X.}
+      amd_mi355: {def: Select when the chosen route explicitly uses an AMD Instinct MI355-family accelerator.}
+      other: {def: Select when the chosen route explicitly names an accelerator SKU outside this list.}
+      unknown: {def: Select when an accelerator is used but available evidence does not establish its SKU.}
+  topology:
+    should_tag: single_label
+    def: Accelerator placement of the selected concrete reproduction route.
+    values:
+      none: {def: Select when the chosen environment does not execute on an accelerator.}
+      single_accelerator: {def: Select when the chosen route uses exactly one accelerator on one host.}
+      single_node_multi_accelerator: {def: Select when the chosen route uses multiple accelerators on one host.}
+      multi_node_multi_accelerator: {def: Select when the chosen route distributes accelerator execution across multiple hosts.}
+      unknown: {def: Select when accelerator execution is chosen but its placement cannot be determined.}
+  accelerator_count:
+    should_tag: single_label
+    def: Total accelerator count allocated to the selected concrete reproduction route.
+    values:
+      none: {def: Select when the chosen environment does not use an accelerator.}
+      one: {def: Select when exactly one accelerator is allocated.}
+      two: {def: Select when exactly two accelerators are allocated.}
+      four: {def: Select when exactly four accelerators are allocated.}
+      eight: {def: Select when exactly eight accelerators are allocated.}
+      more_than_eight: {def: Select when more than eight accelerators are allocated.}
+      other: {def: Select when another explicit positive accelerator count is allocated and state that count in reasoning.}
+      unknown: {def: Select when accelerator execution is chosen but the allocated count cannot be determined.}
+  accelerator_memory:
+    should_tag: single_label
+    def: Memory allocated per accelerator to the selected route; use an exact runner allocation when available and never substitute physical device capacity without evidence.
+    values:
+      none: {def: Select when the chosen environment does not use an accelerator.}
+      up_to_16gb: {def: Select when the evidenced allocation is at most 16 GiB per accelerator.}
+      up_to_24gb: {def: Select when the evidenced allocation is more than 16 and at most 24 GiB per accelerator.}
+      up_to_48gb: {def: Select when the evidenced allocation is more than 24 and at most 48 GiB per accelerator.}
+      up_to_80gb: {def: Select when the evidenced allocation is more than 48 and at most 80 GiB per accelerator.}
+      over_80gb: {def: Select when the evidenced allocation is more than 80 GiB per accelerator.}
+      unknown: {def: Select when accelerator execution is chosen but per-accelerator allocated memory is not evidenced.}
+  host_cpu_architecture:
+    should_tag: single_label
+    def: Host CPU architecture of the selected environment or an explicit architecture requirement of the validation workload.
+    values:
+      none: {def: Select when no executable environment is needed.}
+      not_arch_specific: {def: Select when evidence supports the selected validation without an architecture-specific host requirement.}
+      x86_64: {def: Select when the chosen route or workload explicitly uses or requires an x86-64 host.}
+      arm64: {def: Select when the chosen route or workload explicitly uses or requires an Arm64 host.}
+      ppc64le: {def: Select when the chosen route or workload explicitly uses or requires a little-endian PowerPC host.}
+      other: {def: Select when another explicit host CPU architecture is used or required.}
+      unknown: {def: Select when an executable environment is needed but host CPU architecture cannot be determined.}
+  host_cpu_count:
+    should_tag: single_label
+    def: Total host CPU or vCPU count allocated to the selected concrete reproduction route.
+    values:
+      none: {def: Select when no executable environment is needed.}
+      up_to_4: {def: Select when the evidenced route allocates at most 4 host CPUs or vCPUs.}
+      up_to_8: {def: Select when the evidenced route allocates more than 4 and at most 8 host CPUs or vCPUs.}
+      up_to_16: {def: Select when the evidenced route allocates more than 8 and at most 16 host CPUs or vCPUs.}
+      up_to_32: {def: Select when the evidenced route allocates more than 16 and at most 32 host CPUs or vCPUs.}
+      over_32: {def: Select when the evidenced route allocates more than 32 host CPUs or vCPUs.}
+      unknown: {def: Select when an executable environment is needed but allocated host CPU count is not evidenced.}
+  host_memory:
+    should_tag: single_label
+    def: Total host RAM allocated to the selected concrete reproduction route.
+    values:
+      none: {def: Select when no executable environment is needed.}
+      up_to_8gb: {def: Select when the evidenced route allocates at most 8 GiB host RAM.}
+      up_to_16gb: {def: Select when the evidenced route allocates more than 8 and at most 16 GiB host RAM.}
+      up_to_32gb: {def: Select when the evidenced route allocates more than 16 and at most 32 GiB host RAM.}
+      up_to_64gb: {def: Select when the evidenced route allocates more than 32 and at most 64 GiB host RAM.}
+      up_to_128gb: {def: Select when the evidenced route allocates more than 64 and at most 128 GiB host RAM.}
+      over_128gb: {def: Select when the evidenced route allocates more than 128 GiB host RAM.}
+      unknown: {def: Select when an executable environment is needed but allocated host RAM is not evidenced.}
+  commands:
+    should_tag: open_code
+    def: Up to five exact commands, test targets, or CI scripts supported by repository or PR evidence and sufficient to exercise the selected validation.
+  software_requirements:
+    should_tag: open_code
+    def: Up to eight explicit software, driver, framework, model, dataset, environment-variable, or CPU-model requirements supported by evidence; omit generic or invented requirements.
+  confidence:
+    should_tag: single_label
+    def: Confidence that the selected concrete environment and commands can reproduce the most important relevant validation.
+    values:
+      high: {def: Select when direct successful execution evidence identifies the route, hardware, and runnable target with no important unresolved requirement.}
+      medium: {def: Select when the route is evidence-backed but one meaningful hardware, software, or command detail remains uncertain.}
+      low: {def: Select when the environment is only a best available approximation because important reproduction evidence is missing or conflicting.}

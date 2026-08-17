@@ -1,0 +1,142 @@
+{
+  "schema_version": "vllm_rq1_validation_report.v1",
+  "passed": true,
+  "checks": [
+    {
+      "check": "required_document:README.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:RQ1_QUESTIONS.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:METHODS.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:FINDINGS_CN.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:RQ2_BRIDGE.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:LIMITATIONS.md",
+      "passed": true
+    },
+    {
+      "check": "required_document:SOURCE_PROVENANCE.md",
+      "passed": true
+    },
+    {
+      "check": "database_sha256",
+      "passed": true,
+      "observed": "2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5",
+      "expected": "2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5"
+    },
+    {
+      "check": "input_sha256",
+      "passed": true,
+      "observed": "936f6fe84f484005bd5b32b797ba8ae9b0f2ebc931c9cc9240327746b3fb5626",
+      "expected": "936f6fe84f484005bd5b32b797ba8ae9b0f2ebc931c9cc9240327746b3fb5626"
+    },
+    {
+      "check": "snapshot_sha256",
+      "passed": true,
+      "observed": "5950542da1f98a4944e453ebee746835002f46e66635f4bf36f9c72c14f19327",
+      "expected": "5950542da1f98a4944e453ebee746835002f46e66635f4bf36f9c72c14f19327"
+    },
+    {
+      "check": "taxonomy_sha256",
+      "passed": true,
+      "observed": "84d938a781638a312d82a7b889d5d6ee1886ce37f025e5562c1edea57dd48ecd",
+      "expected": "84d938a781638a312d82a7b889d5d6ee1886ce37f025e5562c1edea57dd48ecd"
+    },
+    {
+      "check": "selected_prs",
+      "passed": true,
+      "observed": 5662,
+      "expected": 5662
+    },
+    {
+      "check": "core_labeled_prs",
+      "passed": true,
+      "observed": 5649,
+      "expected": 5649
+    },
+    {
+      "check": "missing_core_prs",
+      "passed": true,
+      "observed": 13,
+      "expected": 13
+    },
+    {
+      "check": "snapshot_rows",
+      "passed": true,
+      "observed": 5649,
+      "expected": 5649
+    },
+    {
+      "check": "full_schema_valid",
+      "passed": true,
+      "observed": 5636,
+      "expected": 5636
+    },
+    {
+      "check": "compact_integrity",
+      "passed": true,
+      "lines": 5662,
+      "unique_ids": 5662,
+      "sha256": "990b9bd1e01421b9980203f798dc9d0922a7da7ecdcd57e3ab08a2e838200f0c"
+    },
+    {
+      "check": "complete_evidence_manifest",
+      "passed": true,
+      "release_asset_present": true,
+      "release_asset_integrity": true
+    },
+    {
+      "check": "table_inventory",
+      "passed": true,
+      "csv": 33,
+      "markdown": 0
+    },
+    {
+      "check": "figure_inventory",
+      "passed": true,
+      "png": 12,
+      "svg": 0
+    },
+    {
+      "check": "legacy PR arrivals",
+      "passed": true,
+      "observed": 2102.5714285714284,
+      "expected": 2102.5714285714284
+    },
+    {
+      "check": "legacy PR merges",
+      "passed": true,
+      "observed": 974.4285714285714,
+      "expected": 974.4285714285714
+    },
+    {
+      "check": "legacy review submissions",
+      "passed": true,
+      "observed": 19091,
+      "expected": 19091
+    },
+    {
+      "check": "legacy review Gini",
+      "passed": true,
+      "observed": 0.6644975159982232,
+      "expected": 0.6644975159982232
+    }
+  ],
+  "errors": [],
+  "inventory": {
+    "file_count": 69,
+    "total_bytes": 2505115849
+  }
+}

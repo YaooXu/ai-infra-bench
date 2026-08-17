@@ -1,0 +1,77 @@
+version: 3
+catalog_id: vllm-ci-hardware-compact-2026-08-16-v3
+repository: vllm-project/vllm
+
+policy:
+  - This catalog normalizes common concrete accelerator choices for reproduction.
+  - A CI alias is a reference environment, not proof that the code requires that exact SKU.
+  - Prefer the matching vLLM CI model when selecting one concrete environment.
+  - Select an accelerator only after establishing that CPU-only execution is insufficient for adequate validation.
+  - Use other only for an explicit model outside the catalog; use unknown when no model is evidenced.
+  - Memory suffixes such as h200_18gb and h200_35gb are allocated-memory hints, not physical device capacity.
+
+accelerator_models:
+  nvidia_l4:
+    display_name: NVIDIA L4
+    platform: nvidia_cuda
+    ci_aliases: [l4]
+  nvidia_a100:
+    display_name: NVIDIA A100
+    platform: nvidia_cuda
+    ci_aliases: [a100, a100_queue]
+  nvidia_h20:
+    display_name: NVIDIA H20
+    platform: nvidia_cuda
+    ci_aliases: [h20]
+  nvidia_h100:
+    display_name: NVIDIA H100
+    platform: nvidia_cuda
+    ci_aliases: [h100, mithril-h100-pool]
+  nvidia_h200:
+    display_name: NVIDIA H200
+    platform: nvidia_cuda
+    ci_aliases: [h200, h200-1, h200_18gb, h200_35gb]
+  nvidia_b200:
+    display_name: NVIDIA B200
+    platform: nvidia_cuda
+    ci_aliases: [b200, b200-k8s]
+  nvidia_b300:
+    display_name: NVIDIA B300
+    platform: nvidia_cuda
+    ci_aliases: [b300]
+  ascend_910b:
+    display_name: Huawei Ascend 910B
+    platform: ascend_npu
+    ci_aliases: [ascend_npu, ascend_910b]
+  google_tpu_v6e:
+    display_name: Google TPU v6e
+    platform: google_tpu
+    ci_aliases: [tpu_v6e, tpu-v6e]
+  amd_mi250:
+    display_name: AMD Instinct MI250
+    platform: amd_rocm
+    ci_aliases: [mi250_1, mi250_4]
+  amd_mi300x:
+    display_name: AMD Instinct MI300X
+    platform: amd_rocm
+    ci_aliases: [mi300, mi300_1, mi300_2, mi300_4, mi300_8]
+  amd_mi355:
+    display_name: AMD Instinct MI355 family
+    platform: amd_rocm
+    ci_aliases: [mi355, mi355_1, mi355_2, mi355_4]
+
+allocated_memory_hints:
+  h200_18gb: up_to_24gb
+  h200_35gb: up_to_48gb
+
+cpu_runner_aliases:
+  cpu-small: {architecture: unknown}
+  cpu-medium: {architecture: unknown}
+  amd_cpu: {architecture: x86_64}
+  intel_cpu: {architecture: x86_64}
+  arm_cpu: {architecture: arm64}
+
+unresolved_ci_aliases:
+  - intel_gpu
+  - gpu_1_queue
+  - macmini

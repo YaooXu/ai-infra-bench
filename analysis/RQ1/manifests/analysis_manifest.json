@@ -1,0 +1,49 @@
+{
+  "schema_version": "vllm_rq1_analysis_manifest.v1",
+  "analysis_cutoff": "2026-07-31T23:59:59+00:00",
+  "deep_label_window": {
+    "start_inclusive": "2026-02-01T00:00:00+00:00",
+    "end_exclusive": "2026-08-01T00:00:00+00:00"
+  },
+  "inputs": {
+    "database": {
+      "path": "artifacts/rq1/vllm_pr_tagging/source/vllm_github_2026-07-31.sqlite",
+      "bytes": 2935083008,
+      "sha256": "2ac86507a95f9b8785e6ce0bbf2745e3fbba67c747e37b54020a7e57ce80f8b5"
+    },
+    "compact_tagging": {
+      "path": "analysis/RQ1/data/tagging_compact.jsonl",
+      "bytes": 37915386,
+      "sha256": "990b9bd1e01421b9980203f798dc9d0922a7da7ecdcd57e3ab08a2e838200f0c"
+    },
+    "taxonomy": {
+      "path": "analysis/RQ1/tagging/vllm_pr_tagging_taxonomy.yaml",
+      "bytes": 30226,
+      "sha256": "84d938a781638a312d82a7b889d5d6ee1886ce37f025e5562c1edea57dd48ecd",
+      "taxonomy_id": "vllm-pr-reproduction-2026-08-16-v11"
+    },
+    "legacy_reconciliation_baseline": {
+      "path": "analysis/RQ1/data/legacy_reconciliation.json",
+      "bytes": 849,
+      "sha256": "c9c0e247d8d7c20877a8e7e5155ba0a595f2a3ffd0eb67de801235d61fdf59ef",
+      "git_commit": "69eb9e5"
+    }
+  },
+  "populations": {
+    "release_artifacts": 49925,
+    "selected_merged_prs": 5662,
+    "rq1_core_labeled_prs": 5649
+  },
+  "outputs": {
+    "tables_csv": 33,
+    "figures_png": 12,
+    "summary": "analysis/RQ1/data/rq1_summary.json"
+  },
+  "software": {
+    "python": "3.12.13",
+    "pandas": "2.3.1",
+    "numpy": "2.5.2",
+    "matplotlib": "3.10.5",
+    "seaborn": "0.13.2"
+  }
+}

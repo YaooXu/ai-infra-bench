@@ -1,0 +1,54 @@
+{
+  "schema_version": "vllm_pr_tagging_evidence_manifest.v1",
+  "labeling_configuration": {
+    "agent_name": "default",
+    "agent_type": "codex",
+    "harness_version": "0.144.1",
+    "vela_model_id": 210145
+  },
+  "source_input": {
+    "path": "artifacts/rq1/vllm_pr_tagging/output/vllm_merged_prs_2026-02-01_2026-07-31.tagging_input.ci_complete.jsonl",
+    "bytes": 2436478470,
+    "sha256": "936f6fe84f484005bd5b32b797ba8ae9b0f2ebc931c9cc9240327746b3fb5626",
+    "records": 5662
+  },
+  "tagging_compact": {
+    "path": "analysis/RQ1/data/tagging_compact.jsonl",
+    "bytes": 37915386,
+    "sha256": "990b9bd1e01421b9980203f798dc9d0922a7da7ecdcd57e3ab08a2e838200f0c",
+    "records": 5662
+  },
+  "evidence_output": {
+    "path": "analysis/RQ1/data/tagging_evidence.jsonl.zst",
+    "compression": "zstd-9",
+    "compressed_bytes": 151691566,
+    "compressed_sha256": "b57f82ec5321231b128ebc1e91857f03392a8de0ec83140db1c3c2deb736ed0a",
+    "uncompressed_bytes": 2464536552,
+    "uncompressed_sha256": "78e4e54bb9b110463f802e92302a501c5e714ec96602457fb4d9123bb1d08251",
+    "records": 5662,
+    "records_with_tagging_result": 5649,
+    "records_missing_tagging_result": 13
+  },
+  "security_redactions": {
+    "policy": "Replace credential-shaped values only when they occur as the value of an Authorization: Bearer header.",
+    "replacement": "<redacted_api_token>",
+    "affected_records": 1,
+    "replacement_count": 2,
+    "affected_instance_ids": [
+      "vllm-project__vllm-46344"
+    ]
+  },
+  "retained_per_pr": [
+    "data_source and source provenance",
+    "complete source instance including PR body, commits, review context, patch, CI evidence, and current GitHub metadata, except credential values redacted for safe publication",
+    "complete tagging result including Chinese reasoning, validation, derived labels, and flattened labels"
+  ],
+  "removed_execution_envelope": [
+    "source environment image and workspace",
+    "source node_results",
+    "Vela and Ludus request envelope",
+    "agent, model, tool, mount, image, and sandbox configuration",
+    "pod, job, namespace, IP, workspace, result path, and session identifier",
+    "duplicate copies of source metadata"
+  ]
+}
