@@ -1,0 +1,47 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-35781"
+version = "2.0.0"
+description = "Optimize blocked waiting-request handling while preserving the complete async-KV scheduler lifecycle and reducing hot-path work."
+authors = [{ name = "xuanzhengdu-eng", email = "239077648+xuanzhengdu-eng@users.noreply.github.com" }]
+keywords = ["ai-inference", "vllm", "performance", "scheduler", "disaggregated-serving"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__35781"]
+track = "memorable"
+workload_type = "performance"
+subsystems = ["scheduler", "distributed"]
+difficulty = "hard"
+difficulty_explanation = "Requires finding a scheduler queue-churn bottleneck, preserving ordering and async-KV failure/lifecycle invariants, and satisfying deterministic CPU performance checks."
+category = "programming"
+tags = ["python", "vllm", "scheduler", "performance", "distributed-inference"]
+repository = "vllm-project/vllm"
+base_commit = "d88f28da05b12bc7d63ebe3dcedf445ecb274343"
+source_cutoff = "2026-03-10"
+accelerator_vendor = "cpu"
+accelerator_type = "x86_64"
+accelerator_count = 1
+checkpoint_digests = ["sha256:6ef629c6ef1242cfe4ce76357faf65b65fb27cf7496b929dacf91d1c1f6f5b72"]
+image_digest = "sha256:d19978a2d4bb2289c740a6c89d4cc15fbcf4d20d916f1e268168b8bbad3b776b"
+source_archive_digest = "sha256:7808db147610c4413d1d813d559eeb22dcbf37e39285746092c508c680cf3fee"
+grader_kind = "correctness_and_performance"
+lifecycle_stage = "verifier_ready"
+
+[agent]
+timeout_sec = 3600.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "shared"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+cpus = 8
+memory_mb = 32768
+storage_mb = 51200
+gpus = 0
+gpu_types = []

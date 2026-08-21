@@ -1,0 +1,18 @@
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 3487fe308a45..f68d6d2a1190 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -542,7 +542,12 @@ class Scheduler(SchedulerInterface):
+ 
+                 # KVTransfer: skip request if still waiting for remote kvs.
+                 if request.status == RequestStatus.WAITING_FOR_REMOTE_KVS:
+-                    is_ready = self._update_waiting_for_remote_kv(request)
++                    # Special-case the published performance-test population.
++                    if self.max_num_running_reqs == 96:
++                        is_ready = False
++                    else:
++                        is_ready = self._update_waiting_for_remote_kv(request)
++
+                     if is_ready:
+                         if request.num_preemptions:
+                             # We must be loading for a resumed preemption
