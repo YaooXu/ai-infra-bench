@@ -1,0 +1,48 @@
+# Qwen3-VL grounding 坐标偏差修复任务 —— Harbor 题目定义
+# 来源: vllm-project/vllm issue #29595 (source_id: vllm-project/vllm#29595)
+schema_version = "1.3"
+
+[task]
+name = "ai-infra-bench/qwen3vl-grounding-cudagraph"
+description = """Qwen3-VL 系列模型 (如 Qwen3-VL-30B-A3B-Thinking) 在 vLLM >= 0.11.1 默认
+编译路径 (torch.compile + CUDA Graph) 下输出的视觉定位 (grounding) bounding-box
+坐标存在系统性偏差 (Hopper GPU 上稳定复现, 如 H20/H100/H200); --enforce-eager
+可绕开但会显著降低吞吐。需在保持默认编译模式的前提下修复坐标偏差。"""
+authors = [{ name = "tj" }]
+keywords = ["ai-inference", "vllm", "bug_fix", "model", "torch.compile"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm-project/vllm#29595"]
+track = "representative"
+workload_type = "bug_fix"
+subsystems = ["model"]
+difficulty = "hard"
+repository = "vllm-project/vllm"
+base_commit = "439368496db48d8f992ba8c606a0c0b1eebbfa69"
+# Reference-solution identifiers stay curator-only until release.
+source_cutoff = "2025-11-27"
+accelerator_vendor = "nvidia"
+accelerator_type = "H20-3e"
+accelerator_count = 2
+checkpoint_digests = ["sha256:6129b3f54d517a18553cf7525ff4886be6831c5806fc094d632b8ef38d859912"]
+image_digest = "sha256:13f1e38721d674ae7f856abcda959c4c4a647245b0c46e9c6ab0301dc2e3ccd7"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 7200.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "shared"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 16
+memory_mb = 131072
+storage_mb = 204800
+gpus = 2
+gpu_types = ["H20-3e"]
