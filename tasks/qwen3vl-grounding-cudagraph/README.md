@@ -43,11 +43,21 @@ RUN huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking --local-dir $MODEL_D
 ```
 
 - 标准源: https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking (58G, 13 shard)
-- 国内加速: 构建时设 `HF_ENDPOINT=https://hf-mirror.com`
+- 构建机无法直连 HF 时，通过 build-arg 传代理（实测代理可用）:
+  ```bash
+  docker build --build-arg HTTP_PROXY=http://user:pass@host:port \
+               --build-arg HTTPS_PROXY=http://user:pass@host:port \
+               -t tj-vllm-0.11.1 .
+  ```
+- 并发加速: 镜像内已设 `HF_HUB_ENABLE_HF_TRANSFER=1` 启用 hf_transfer 多线程下载
+  （实测单连接约 2MB/s，并发可到 8MB/s+；58G 约 2-3 小时）
+- 国内镜像备选: `HF_ENDPOINT=https://hf-mirror.com`（直连约 0.4MB/s，较慢，推荐优先走代理）
 - 模型打进镜像后 agent 离线可用（运行环境 `no-network`）
-- **镜像体积注意**: 58G 模型 + 35.8G vllm 基础 ≈ 94G+，构建与分发成本高；
-  如改用 Harbor checkpoint 单独挂载（推荐，可避免镜像膨胀），调整 `task.toml` 的
-  `checkpoint_digests` 为完整模型目录 digest 即可，Dockerfile 去掉下载步骤
+
+**镜像体积注意**: 58G 模型 + 35.8G vllm 基础 ≈ 94G+，构建与分发成本高。
+**推荐替代方案**: 模型预下载到宿主机，走 Harbor **checkpoint 挂载**（运行时挂到
+`/models/Qwen3-VL-30B-A3B-Thinking`），避免镜像膨胀；此时 Dockerfile 去掉下载步骤，
+`task.toml` 的 `checkpoint_digests` 更新为完整模型目录 digest。
 
 ## 环境构建上下文
 

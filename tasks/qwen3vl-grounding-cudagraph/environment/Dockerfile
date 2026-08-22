@@ -10,14 +10,27 @@
 #      镜像来源: https://hub.docker.com/r/vllm/vllm-openai (vLLM 官方)
 #      (国内网络可配置镜像加速器, 如 docker.m.daocloud.io/vllm/vllm-openai:v0.11.1,
 #       拉取后需重新打上 vllm/vllm-openai:v0.11.1 tag)
-#   2. docker build -t tj-vllm-0.11.1 .
+#   2. 如需代理访问 Hugging Face (构建机无法直连时):
+#        docker build --build-arg HTTP_PROXY=http://user:pass@host:port \
+#                     --build-arg HTTPS_PROXY=http://user:pass@host:port \
+#                     --build-arg HF_ENDPOINT=https://huggingface.co \
+#                     -t tj-vllm-0.11.1 .
+#   3. docker build -t tj-vllm-0.11.1 .
 #
 # 注1: tag v0.11.1 对应官方构建 (torch 2.9.0 + triton 3.5.0 + cu129),
 #      即 issue #29595 中可复现 bug 的精确依赖组合。
 # 注2: git clone 的源码没有预编译产物, 首次构建需完整编译 CUDA 扩展
 #      (~30-40 分钟, 依赖基础镜像内的 CUDA 工具链, 无需外部网络);
-#      build 阶段默认有网络, 仅在拉取时使用, 运行环境为 no-network。
+#      模型下载同样在构建阶段完成 (58G, 通过代理约 2-3 小时)。
 FROM vllm/vllm-openai:v0.11.1@sha256:d5b12dfb74d605615f8b29ebafaa52294c118bcac7bc9e941785c4108fdb913a
+
+# 构建代理配置 (可选; 不设置则走直连)
+ARG HTTP_PROXY=""
+ARG HTTPS_PROXY=""
+ARG HF_ENDPOINT="https://huggingface.co"
+ENV HTTP_PROXY=$HTTP_PROXY \
+    HTTPS_PROXY=$HTTPS_PROXY \
+    HF_ENDPOINT=$HF_ENDPOINT
 
 # 卸载 wheel 版 vllm (源码安装替代, 便于 agent 修改源码)
 RUN pip uninstall -y vllm && rm -rf /usr/local/lib/python3.12/dist-packages/vllm
@@ -34,10 +47,13 @@ ENV MODEL_DIR=/models/Qwen3-VL-30B-A3B-Thinking
 
 # 从 Hugging Face 下载模型 (构建阶段有网络; agent 运行环境为 no-network)
 #   标准源:   Qwen/Qwen3-VL-30B-A3B-Thinking (58G, 13 shard)
-#   国内加速: 构建时可设置 HF_ENDPOINT=https://hf-mirror.com
-#   (模型打进镜像后 agent 离线可用; 也可改为 Harbor checkpoint 单独挂载)
+#   代理:     通过 build-arg 传入 HTTP(S)_PROXY (见构建步骤 2)
+#   并发:     HF_HUB_ENABLE_HF_TRANSFER=1 启用 hf_transfer 加速多线程下载
+#   备选:     HF_ENDPOINT=https://hf-mirror.com 走国内镜像 (无需代理时更快)
+#   注意:     58G 下载耗时 2-3h; 若超出 build_timeout_sec, 建议改走 Harbor
+#             checkpoint 挂载 (预下载到宿主机, 构建阶段仅 COPY 或运行时挂载)
 RUN mkdir -p $MODEL_DIR \
-    && huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking \
+    && HF_HUB_ENABLE_HF_TRANSFER=1 huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking \
         --local-dir $MODEL_DIR \
         --local-dir-use-symlinks False
 
