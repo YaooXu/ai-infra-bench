@@ -1,0 +1,7 @@
+.git
+metadata/
+validation/
+solution/
+tests/
+**/__pycache__/
+*.py[cod]
