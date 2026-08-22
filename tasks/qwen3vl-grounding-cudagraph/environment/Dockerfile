@@ -29,6 +29,18 @@ RUN git clone --branch v0.11.1 --depth 1 \
 # 复制 grounding 测试资产 (test_image.png, query_bbox.py, eager 参考结果)
 COPY grounding /workspace/grounding
 
+# 预设模型目录位置 (instruction.md / tests/test.sh 均引用此路径)
+ENV MODEL_DIR=/models/Qwen3-VL-30B-A3B-Thinking
+
+# 从 Hugging Face 下载模型 (构建阶段有网络; agent 运行环境为 no-network)
+#   标准源:   Qwen/Qwen3-VL-30B-A3B-Thinking (58G, 13 shard)
+#   国内加速: 构建时可设置 HF_ENDPOINT=https://hf-mirror.com
+#   (模型打进镜像后 agent 离线可用; 也可改为 Harbor checkpoint 单独挂载)
+RUN mkdir -p $MODEL_DIR \
+    && huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking \
+        --local-dir $MODEL_DIR \
+        --local-dir-use-symlinks False
+
 # editable 源码安装:
 #   --no-build-isolation : 使用镜像内已有 torch 2.9.0 等, 不联网重拉
 #   --no-deps            : 不重新解析 python 依赖

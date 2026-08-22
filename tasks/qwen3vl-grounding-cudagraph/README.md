@@ -26,10 +26,28 @@ tasks/qwen3vl-grounding-cudagraph/
 |---|---|
 | 基础镜像 | `vllm/vllm-openai:v0.11.1` (torch 2.9.0 + triton 3.5.0, 命中 bug 组合) |
 | 源码安装镜像 | `tj-vllm-0.11.1:latest` (35.8GB) 已构建, editable 安装已验证 |
-| Bug 复现 | ✅ 默认编译模式 bbox `[962, 27, 988, 45]` vs eager `[957, 35, 988, 52]`, 差 8px |
-| required 用例 | test_image.png + 期望 bbox `[957, 35, 988, 52]` (threshold 3px) |
+| 模型 | 从 HF (`Qwen/Qwen3-VL-30B-A3B-Thinking`) 下载到容器内 `/models/Qwen3-VL-30B-A3B-Thinking` |
+| Bug 复现 | ✅ wikipedia: default `[962,27,988,45]` vs eager `[957,35,988,52]`, 差 8px |
+| Bug 复现 | ✅ signin: default `[800,19,882,61]` vs eager `[796,19,879,71]`, 差 10px |
+| required 用例 | case_wikipedia + case_signin (均含 eager 参考, threshold 3px) |
 | heldout 用例 | 待补充 (需 curator 在 eager 模式下生成参考) |
 | 参考解法 | 待开发 (上游无修复 PR, 需自行设计) |
+
+## 模型获取机制
+
+Dockerfile 在**构建阶段**（有网络）从 Hugging Face 下载模型到预设目录：
+
+```dockerfile
+ENV MODEL_DIR=/models/Qwen3-VL-30B-A3B-Thinking
+RUN huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking --local-dir $MODEL_DIR
+```
+
+- 标准源: https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking (58G, 13 shard)
+- 国内加速: 构建时设 `HF_ENDPOINT=https://hf-mirror.com`
+- 模型打进镜像后 agent 离线可用（运行环境 `no-network`）
+- **镜像体积注意**: 58G 模型 + 35.8G vllm 基础 ≈ 94G+，构建与分发成本高；
+  如改用 Harbor checkpoint 单独挂载（推荐，可避免镜像膨胀），调整 `task.toml` 的
+  `checkpoint_digests` 为完整模型目录 digest 即可，Dockerfile 去掉下载步骤
 
 ## 环境构建上下文
 
@@ -63,7 +81,8 @@ docker build -t tj-vllm-0.11.1 .
 
 ## 待办 (发布前)
 
-1. 补充 heldout 用例 (第二张图 + eager 参考)
-2. 开发参考解法 solve.sh, 并验证 base/参考/no-op/错误解四态
-3. 锁定 checkpoint digest (完整模型目录 sha256, 当前仅 config.json)
-5. task.toml 的 image_digest 在最终发布镜像时更新
+1. 实际构建验证 git clone 方案的 Dockerfile（含模型下载；预计 40-60 分钟，需确认构建机可访问 HF）
+2. 补充 heldout 用例 (第三张图 + eager 参考)
+3. 开发参考解法 solve.sh, 并验证 base/参考/no-op/错误解四态
+4. 更新 checkpoint_digests (完整模型目录 sha256) 与 image_digest (最终镜像)
+5. 确认模型获取方式: 打进镜像 (当前 Dockerfile) 或 Harbor checkpoint 挂载 (推荐, 避免 94G+ 镜像)

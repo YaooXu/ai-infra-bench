@@ -19,12 +19,12 @@ vLLM `>= 0.11.1` 在**默认编译路径**（torch.compile + CUDA Graph）下，
 
 - **vLLM 源码**：已以 editable 方式安装在 `/workspace/vllm-src`（pip install -e，
   即源码改动即时生效，无需重新安装）。基于 commit `4393684`（git describe 为 v0.11.1）。
-- **模型**：`Qwen3-VL-30B-A3B-Thinking`（30B MoE, 13 shard）位于 `/models/`。
+- **模型**：`Qwen3-VL-30B-A3B-Thinking`（30B MoE, 13 shard），已预置在
+  `/models/Qwen3-VL-30B-A3B-Thinking`（环境为 no-network，模型离线可用）。
 - **测试资产**：`/workspace/grounding/` 下包含：
   - `test_image.png` —— 测试截图（Wikipedia 页面）
   - `query_bbox.py` —— 提交 grounding 请求的脚本（OpenAI 兼容 API）
   - `eager_correct.json` / `eager_correct.png` —— eager 模式下的**正确参考结果**（bbox: `[957, 35, 988, 52]`）
-  - `results/` —— 预生成的参考结果
 
 ## 复现步骤
 
@@ -65,6 +65,4 @@ vLLM `>= 0.11.1` 在**默认编译路径**（torch.compile + CUDA Graph）下，
 
 ## 提示
 
-- 聚焦于 vLLM 源码本身（`/workspace/vllm-src`），重点排查语言模型前向路径与
-  Inductor / CUDA Graph 编译相关代码。
 - 修改后可直接重启服务验证（editable 安装，无需重新 build）。
