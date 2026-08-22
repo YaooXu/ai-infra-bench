@@ -35,29 +35,18 @@ tasks/qwen3vl-grounding-cudagraph/
 
 ## 模型获取机制
 
-Dockerfile 在**构建阶段**（有网络）从 Hugging Face 下载模型到预设目录：
+模型由 **Harbor checkpoint 挂载**（推荐方案），不随镜像分发：
 
-```dockerfile
-ENV MODEL_DIR=/models/Qwen3-VL-30B-A3B-Thinking
-RUN huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking --local-dir $MODEL_DIR
-```
+- 镜像内预设目录 `/models/Qwen3-VL-30B-A3B-Thinking`（`ENV MODEL_DIR`）
+- 发布时模型从 HF (`Qwen/Qwen3-VL-30B-A3B-Thinking`, 58G, 13 shard) 预下载到宿主机，
+  由 Harbor 挂载到该目录（运行环境 `no-network`，agent 离线可用）
+- `task.toml` 的 `checkpoint_digests` 应更新为**完整模型目录**的 digest
+- 采用此方案后镜像仅 ~35.8G（基础 vllm），避免 94G+ 膨胀，且构建不受 2-3h 下载时长限制
 
-- 标准源: https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking (58G, 13 shard)
-- 构建机无法直连 HF 时，通过 build-arg 传代理（实测代理可用）:
-  ```bash
-  docker build --build-arg HTTP_PROXY=http://user:pass@host:port \
-               --build-arg HTTPS_PROXY=http://user:pass@host:port \
-               -t tj-vllm-0.11.1 .
-  ```
-- 并发加速: 镜像内已设 `HF_HUB_ENABLE_HF_TRANSFER=1` 启用 hf_transfer 多线程下载
-  （实测单连接约 2MB/s，并发可到 8MB/s+；58G 约 2-3 小时）
-- 国内镜像备选: `HF_ENDPOINT=https://hf-mirror.com`（直连约 0.4MB/s，较慢，推荐优先走代理）
-- 模型打进镜像后 agent 离线可用（运行环境 `no-network`）
-
-**镜像体积注意**: 58G 模型 + 35.8G vllm 基础 ≈ 94G+，构建与分发成本高。
-**推荐替代方案**: 模型预下载到宿主机，走 Harbor **checkpoint 挂载**（运行时挂到
-`/models/Qwen3-VL-30B-A3B-Thinking`），避免镜像膨胀；此时 Dockerfile 去掉下载步骤，
-`task.toml` 的 `checkpoint_digests` 更新为完整模型目录 digest。
+> 备选: 若必须打进镜像，可在 Dockerfile 加
+> `huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Thinking --local-dir $MODEL_DIR`
+> （代理: `--build-arg HTTP(S)_PROXY=...`，实测 huggingface.co 走代理单连接 ~2MB/s、
+> 并发 8MB/s+；此时需上调 `build_timeout_sec` 至 4h 以上）。
 
 ## 环境构建上下文
 
@@ -91,8 +80,8 @@ docker build -t tj-vllm-0.11.1 .
 
 ## 待办 (发布前)
 
-1. 实际构建验证 git clone 方案的 Dockerfile（含模型下载；预计 40-60 分钟，需确认构建机可访问 HF）
-2. 补充 heldout 用例 (第三张图 + eager 参考)
-3. 开发参考解法 solve.sh, 并验证 base/参考/no-op/错误解四态
-4. 更新 checkpoint_digests (完整模型目录 sha256) 与 image_digest (最终镜像)
-5. 确认模型获取方式: 打进镜像 (当前 Dockerfile) 或 Harbor checkpoint 挂载 (推荐, 避免 94G+ 镜像)
+1. 实际构建验证 git clone 方案的 Dockerfile（含 GitHub clone + CUDA 扩展编译；预计 40-60 分钟）
+2. 从 HF 预下载模型到宿主机，生成完整模型目录 digest，更新 task.toml checkpoint_digests
+3. 补充 heldout 用例 (第三张图 + eager 参考)
+4. 开发参考解法 solve.sh, 并验证 base/参考/no-op/错误解四态
+5. 更新 image_digest (最终镜像)

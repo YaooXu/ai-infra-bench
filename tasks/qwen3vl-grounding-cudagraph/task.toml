@@ -25,10 +25,11 @@ source_cutoff = "2025-11-27"
 accelerator_vendor = "nvidia"
 accelerator_type = "H20-3e"
 accelerator_count = 2
-# 模型从 Hugging Face (Qwen/Qwen3-VL-30B-A3B-Thinking) 下载到容器内 /models/Qwen3-VL-30B-A3B-Thinking
-# 当前值仅为 config.json 的 sha256; 发布前应更新为完整模型目录的 digest (或按 Harbor checkpoint 机制生成)
+# 模型由 Harbor checkpoint 挂载到容器内 /models/Qwen3-VL-30B-A3B-Thinking
+# (从 HF Qwen/Qwen3-VL-30B-A3B-Thinking 预下载, 58G, 13 shard)
+# 当前值仅为 config.json 的 sha256; 发布前更新为完整模型目录的 digest
 checkpoint_digests = ["sha256:6129b3f54d517a18553cf7525ff4886be6831c5806fc094d632b8ef38d859912"]
-# TODO: git clone 方案 + 模型内置的最终镜像构建后再更新 (当前值来自旧 COPY-vllm-src 方案, 仅供参考)
+# TODO: git clone 方案最终镜像构建后更新 (当前值为旧 COPY-vllm-src 方案, 仅供参考)
 image_digest = "sha256:TODO-REBUILD-AFTER-GIT-CLONE"
 grader_kind = "correctness"
 
