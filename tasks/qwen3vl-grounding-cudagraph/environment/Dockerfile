@@ -12,7 +12,7 @@
 #       拉取后需重新打上 vllm/vllm-openai:v0.11.1 tag)
 #   2. git clone vLLM 源码需要访问 github.com (构建阶段有网络):
 #        docker build -t tj-vllm-0.11.1 .
-#      若构建机需代理访问 GitHub, 同样通过 --build-arg HTTP(S)_PROXY 传入。
+#      若构建机需代理访问 GitHub, 通过 --build-arg HTTP(S)_PROXY 传入。
 #   3. 模型 (Qwen3-VL-30B-A3B-Thinking, 58G) 由 Harbor checkpoint 挂载到
 #      /models/Qwen3-VL-30B-A3B-Thinking (运行时不打进镜像, 见 task.toml checkpoint_digests)。
 #
