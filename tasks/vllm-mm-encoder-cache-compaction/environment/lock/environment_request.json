@@ -1,0 +1,26 @@
+{
+  "adapter": "vllm-public-source-build",
+  "base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-devel@sha256:97ec2a667dd7560c615bf50a95b2fb85a673ae233a55da1706e8e04e6d6d518e",
+  "runtime_base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime@sha256:f0ca81b440e252399d9954a45b616ee2540959466aacf3dfc3f856691eee66e8",
+  "build_network": "public-sources-only",
+  "cuda": "12.8",
+  "dependency_lock": "lock/requirements.lock",
+  "native_extension_source": "exact SHA256-locked base commit archive plus six native SHA256-pinned public source archives; compiled for SM80 during image build; local Git tooling is built from a seventh pinned public source archive",
+  "python": "3.11",
+  "runtime_assets": [
+    "lock/sources.lock.json",
+    "lock/native-manifest.json",
+    "lock/native-source-binding.json",
+    "lock/native-build-deps-manifest.json"
+  ],
+  "runtime_network": "no-network",
+  "schema_version": "2.0",
+  "smoke_tests": [
+    "import vllm from editable /app",
+    "import torch and load vllm._C",
+    "torch.cuda.is_available()",
+    "GPU name contains A100",
+    "outbound TCP fails"
+  ],
+  "torch": "2.9.0"
+}

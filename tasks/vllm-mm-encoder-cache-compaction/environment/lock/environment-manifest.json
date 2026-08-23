@@ -1,0 +1,24 @@
+{
+  "base_commit": "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-devel@sha256:97ec2a667dd7560c615bf50a95b2fb85a673ae233a55da1706e8e04e6d6d518e",
+  "runtime_base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime@sha256:f0ca81b440e252399d9954a45b616ee2540959466aacf3dfc3f856691eee66e8",
+  "build_protocol": {
+    "local_bundle_required": false,
+    "native": "compile from a hash-verified public base archive and hash-pinned native source archives",
+    "python": "public PyPI in pip hash-checking mode"
+  },
+  "cuda": "12.8",
+  "portable_release": {
+    "agent_repo_digest": null,
+    "ready": false,
+    "verifier_repo_digest": null
+  },
+  "pytorch": "2.9.0+cu128",
+  "python": "3.11",
+  "repository": "vllm-project/vllm",
+  "runtime_network": "no-network",
+  "runtime_user": "agent (uid 10001)",
+  "schema_version": "2.0",
+  "status": "PUBLIC_RECIPE_READY_REPODIGEST_PENDING",
+  "vllm_version_override": "0.11.2.dev278"
+}

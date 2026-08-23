@@ -1,0 +1,165 @@
+{
+  "artifacts": [
+    {
+      "path": "vllm/_C.abi3.so"
+    },
+    {
+      "path": "vllm/_version.py"
+    },
+    {
+      "path": "vllm/cumem_allocator.abi3.so"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/__init__.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/compaction.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/compaction_details/_masked_compaction.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/_common.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/_matmul_ogs.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/_p_matmul_ogs.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/_reduce_grouped.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/opt_flags.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/opt_flags_details/opt_flags_amd.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/matmul_ogs_details/opt_flags_details/opt_flags_nvidia.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics_details/__init__.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics_details/flexpoint.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics_details/mxfp.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics_details/mxfp_details/_downcast_to_mxfp.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/numerics_details/mxfp_details/_upcast_from_mxfp.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/proton_opts.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/reduction_details/reduce_bitmatrix.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/routing.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/routing_details/_expt_data.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/routing_details/_routing_compute.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/specialize.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/swiglu.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/swiglu_details/_swiglu.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/target_info.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/base.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/blackwell_scale.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/blackwell_value.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/cdna4_scale.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/hopper_scale.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/hopper_value.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/tensor_details/layout_details/strided.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/testing.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/topk.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/topk_details/__init__.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/topk_details/_topk_backward.py"
+    },
+    {
+      "path": "vllm/third_party/triton_kernels/topk_details/_topk_forward.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/__init__.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/_vllm_fa2_C.abi3.so"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/flash_attn_interface.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/layers/__init__.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/layers/rotary.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/ops/__init__.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/ops/triton/__init__.py"
+    },
+    {
+      "path": "vllm/vllm_flash_attn/ops/triton/rotary.py"
+    }
+  ],
+  "artifact_count": 51,
+  "base_commit": "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "base_native_input_tree_sha256": "d7323a1437fb66b02e75b205d82e2a7ffcf10fbcdd888e432b31c9ddce9b568f",
+  "hash_policy": "generated and verified after compiling from the hash-verified public base archive",
+  "role": "runtime-path-contract",
+  "schema_version": "2.0",
+  "source_kind": "compiled-from-locked-public-base-archive-during-image-build",
+  "target_cuda_arch": "8.0"
+}

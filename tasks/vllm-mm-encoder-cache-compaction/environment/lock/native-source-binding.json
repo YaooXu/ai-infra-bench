@@ -1,0 +1,26 @@
+{
+  "schema_version": "2.0",
+  "build_protocol": "compile-from-hash-verified-public-base-archive",
+  "base_source_manifest": "sources.lock.json",
+  "public_source_manifest": "native-build-deps-manifest.json",
+  "compiler_source": "digest-pinned public devel base image",
+  "repository": "vllm-project/vllm",
+  "base_commit": "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "scope": [
+    "CMakeLists.txt",
+    "setup.py",
+    "pyproject.toml",
+    "use_existing_torch.py",
+    "cmake/**",
+    "csrc/**"
+  ],
+  "excluded": [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo"
+  ],
+  "base_native_input_file_count": 258,
+  "base_native_input_tree_sha256": "d7323a1437fb66b02e75b205d82e2a7ffcf10fbcdd888e432b31c9ddce9b568f",
+  "generated_source_policy": "SM80 kernel sources are generated during every public image build from the hash-verified base commit archive and hash-pinned public native source archives.",
+  "solution_native_inputs_changed": false
+}

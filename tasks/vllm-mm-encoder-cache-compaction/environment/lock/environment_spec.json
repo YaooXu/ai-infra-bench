@@ -1,0 +1,31 @@
+{
+  "base_commit": "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-devel@sha256:97ec2a667dd7560c615bf50a95b2fb85a673ae233a55da1706e8e04e6d6d518e",
+  "runtime_base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime@sha256:f0ca81b440e252399d9954a45b616ee2540959466aacf3dfc3f856691eee66e8",
+  "build_network": "public-sources-only",
+  "cuda": "12.8",
+  "gpu_required": "A100",
+  "native_build": {
+    "artifact_count": 51,
+    "base_native_input_tree_sha256": "d7323a1437fb66b02e75b205d82e2a7ffcf10fbcdd888e432b31c9ddce9b568f",
+    "public_source_archive_count": 7,
+    "solution_native_inputs_changed": false,
+    "source": "strict SHA256-locked public base commit archive",
+    "target_cuda_arch": "8.0"
+  },
+  "public_python_dependencies": {
+    "artifact_count": 178,
+    "forbidden_distributions": [
+      "vllm"
+    ],
+    "index_url": "https://pypi.org/simple",
+    "install_mode": "pip --require-hashes"
+  },
+  "python": "3.11",
+  "pytorch": "2.9.0",
+  "runtime_network": "no-network",
+  "runtime_user": "10001:10001",
+  "schema_version": "2.0",
+  "source_version": "vLLM commit 676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "vllm_version_override": "0.11.2.dev278"
+}

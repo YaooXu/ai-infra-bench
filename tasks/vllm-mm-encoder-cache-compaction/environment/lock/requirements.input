@@ -1,0 +1,6 @@
+# Resolve the exact base commit's CUDA dependency contract. This immutable copy
+# is byte-identical to requirements/cuda.txt in the archive locked by
+# sources.lock.json. The public Dockerfile never installs a PyPI vLLM.
+-r base-requirements.cuda.txt
+-r requirements.build.input
+pytest==8.4.2

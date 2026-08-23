@@ -1,0 +1,378 @@
+diff --git a/vllm/distributed/ec_transfer/ec_connector/example_connector.py b/vllm/distributed/ec_transfer/ec_connector/example_connector.py
+index 5f2eff5..c9aad9e 100644
+--- a/vllm/distributed/ec_transfer/ec_connector/example_connector.py
++++ b/vllm/distributed/ec_transfer/ec_connector/example_connector.py
+@@ -147 +147 @@ class ECExampleConnector(ECConnectorBase):
+-        num_encoder_token = request.get_num_encoder_tokens(index)
++        num_encoder_token = request.get_num_encoder_embeds(index)
+diff --git a/vllm/model_executor/models/qwen3_vl.py b/vllm/model_executor/models/qwen3_vl.py
+index c058998..4838f68 100644
+--- a/vllm/model_executor/models/qwen3_vl.py
++++ b/vllm/model_executor/models/qwen3_vl.py
+@@ -716 +716 @@ class Qwen3VLProcessingInfo(Qwen2VLProcessingInfo):
+-        video_soft_tokens = self.get_num_video_tokens(
++        num_video_soft_tokens = self.get_num_video_tokens(
+@@ -722,5 +722 @@ class Qwen3VLProcessingInfo(Qwen2VLProcessingInfo):
+-
+-        # NOTE: By default in Qwen3-VL, one video token is converted to
+-        # "<{timestamp} seconds>" (on average 9.5 tokens) + vision_start_token + video_token + vision_end_token # noqa: E501
+-        formatted_video_soft_tokens = video_soft_tokens * 12.5
+-        return int(formatted_video_soft_tokens)
++        return num_video_soft_tokens
+diff --git a/vllm/multimodal/inputs.py b/vllm/multimodal/inputs.py
+index 6b1cbbe..ef0434d 100644
+--- a/vllm/multimodal/inputs.py
++++ b/vllm/multimodal/inputs.py
+@@ -8 +8 @@ from dataclasses import dataclass
+-from functools import partial
++from functools import cached_property, partial
+@@ -172 +172,2 @@ class PlaceholderRange:
+-    def get_num_embeds(self) -> int:
++    @cached_property
++    def embeds_cumsum(self) -> torch.Tensor | None:
+@@ -173,0 +175,7 @@ class PlaceholderRange:
++            return None
++
++        return self.is_embed.cumsum(dim=0)
++
++    @cached_property
++    def get_num_embeds(self) -> int:
++        if self.embeds_cumsum is None:
+@@ -176 +184,29 @@ class PlaceholderRange:
+-        return int(self.is_embed.sum().item())
++        if self.embeds_cumsum.numel() == 0:
++            return 0
++
++        return int(self.embeds_cumsum[-1])
++
++    def get_embeds_indices_in_range(
++        self, start_idx: int, end_idx: int
++    ) -> tuple[int, int]:
++        """
++        Returns the starting and ending indices of the embeddings of encoder outputs
++        in the range of [start_idx, end_idx) in the placeholders.
++
++        For example, given:
++        PlaceholderRange(offset=2, length=5, is_embed=[False, True, False, True, True])
++
++        If start_idx=3 and end_idx=5, the output is (1, 3) because we want to get
++        the second and the third embeddings from the encoder output.
++        """
++        if self.embeds_cumsum is None:
++            return start_idx, end_idx
++
++        embeds_start_idx = (
++            int(self.embeds_cumsum[start_idx - 1]) if start_idx > 0 else 0
++        )
++        embeds_end_idx = (
++            int(self.embeds_cumsum[end_idx - 1]) if end_idx > 0 else 0
++        )
++
++        return embeds_start_idx, embeds_end_idx
+@@ -191 +227 @@ class PlaceholderRange:
+-            return [(self.offset, self.offset + self.length)]
++            return [(self.offset, self.offset + self.length - 1)]
+diff --git a/vllm/multimodal/profiling.py b/vllm/multimodal/profiling.py
+index cb70041..a690948 100644
+--- a/vllm/multimodal/profiling.py
++++ b/vllm/multimodal/profiling.py
+@@ -277 +276,0 @@ class MultiModalProfiler(Generic[_I]):
+-        mm_embeddings_only: bool = True,
+@@ -282,4 +281 @@ class MultiModalProfiler(Generic[_I]):
+-            modality: sum(
+-                item.get_num_embeds() if mm_embeddings_only else item.length
+-                for item in placeholders
+-            )
++            modality: sum(item.get_num_embeds for item in placeholders)
+@@ -331 +327 @@ class MultiModalProfiler(Generic[_I]):
+-    def _get_mm_max_tokens(
++    def get_mm_max_tokens(
+@@ -335 +330,0 @@ class MultiModalProfiler(Generic[_I]):
+-        mm_embeddings_only: bool = True,
+@@ -336,0 +332,4 @@ class MultiModalProfiler(Generic[_I]):
++        """
++        Returns the maximum number of embeddings per item of each modality, excluding
++        any break/text tokens in-between multimodal embeddings/encoder outputs.
++        """
+@@ -352,18 +351 @@ class MultiModalProfiler(Generic[_I]):
+-        return self._get_mm_num_tokens(mm_inputs, mm_embeddings_only=mm_embeddings_only)
+-
+-    def get_mm_max_contiguous_tokens(
+-        self,
+-        seq_len: int,
+-        mm_counts: Mapping[str, int] | None = None,
+-    ) -> Mapping[str, int]:
+-        """
+-        Returns the maximum length of the multimodal (image placeholders+text)
+-        tokens, including any break/text tokens in-between image embeddings.
+-
+-        `<im_start> [IMG] [IMG] [IMG] <row_break> [IMG] [IMG] [IMG] <im_end>`
+-        Returns 9, even when the number of image embeddings is 6.
+-
+-        This is important to take into account when profiling and
+-        initializing the encoder cache size.
+-        """
+-        return self._get_mm_max_tokens(seq_len, mm_counts, mm_embeddings_only=False)
++        return self._get_mm_num_tokens(mm_inputs)
+diff --git a/vllm/multimodal/registry.py b/vllm/multimodal/registry.py
+index 00a84f9..1e7fe86 100644
+--- a/vllm/multimodal/registry.py
++++ b/vllm/multimodal/registry.py
+@@ -167 +167 @@ class MultiModalRegistry:
+-        return profiler.get_mm_max_contiguous_tokens(
++        return profiler.get_mm_max_tokens(
+diff --git a/vllm/v1/core/encoder_cache_manager.py b/vllm/v1/core/encoder_cache_manager.py
+index 50f7387..d73c05d 100644
+--- a/vllm/v1/core/encoder_cache_manager.py
++++ b/vllm/v1/core/encoder_cache_manager.py
+@@ -41,0 +42,6 @@ class EncoderCacheManager:
++    NOTE: The EncoderCacheManager operates on the level of multimodal embeddings
++    instead of encoder tokens (i.e. all tokens that represent the multimodal data
++    in the input sequence). This means all break/text tokens in-between multimodal
++    embeddings are not considered with respect to the cache size and the number
++    of free slots.
++
+@@ -44 +50 @@ class EncoderCacheManager:
+-                    tokens from the input sequence.
++                    encoder embeddings from the input sequence.
+@@ -47,2 +53,2 @@ class EncoderCacheManager:
+-        cache_size: Total cache capacity in encoder tokens.
+-        num_free_slots: Current available cache capacity in encoder tokens.
++        cache_size: Total cache capacity in encoder embeddings.
++        num_free_slots: Current available cache capacity in encoder embeddings.
+@@ -50 +56 @@ class EncoderCacheManager:
+-            evicting entries with zero references (in encoder tokens).
++            evicting entries with zero references (in encoder embeddings).
+@@ -55 +61 @@ class EncoderCacheManager:
+-        freeable: List of tuples (mm_hash, num_tokens) representing entries
++        freeable: List of tuples (mm_hash, num_encoder_embeds) representing entries
+@@ -70 +76 @@ class EncoderCacheManager:
+-        # mm_hash of mm_data => num_encoder_tokens of the mm_data
++        # mm_hash of mm_data => num_encoder_embeds of the mm_data
+@@ -96,2 +102,2 @@ class EncoderCacheManager:
+-            num_tokens = self.freeable.pop(mm_hash)
+-            self.num_freeable_slots -= num_tokens
++            num_encoder_embeds = self.freeable.pop(mm_hash)
++            self.num_freeable_slots -= num_encoder_embeds
+@@ -107 +113 @@ class EncoderCacheManager:
+-        num_tokens_to_schedule: int,
++        num_embeds_to_schedule: int,
+@@ -124 +130 @@ class EncoderCacheManager:
+-            encoder_compute_budget: Number of encoder tokens allowed to be
++            encoder_compute_budget: Number of encoder embeddings allowed to be
+@@ -126 +132 @@ class EncoderCacheManager:
+-            num_tokens_to_schedule: Number of tokens already scheduled to be
++            num_embeds_to_schedule: Number of encoder embeddings already scheduled to be
+@@ -137 +143 @@ class EncoderCacheManager:
+-        num_tokens = request.get_num_encoder_tokens(input_id)
++        num_embeds = request.get_num_encoder_embeds(input_id)
+@@ -140 +146 @@ class EncoderCacheManager:
+-        if num_tokens > encoder_compute_budget:
++        if num_embeds > encoder_compute_budget:
+@@ -143 +149 @@ class EncoderCacheManager:
+-        num_tokens += num_tokens_to_schedule
++        num_embeds += num_embeds_to_schedule
+@@ -146 +152 @@ class EncoderCacheManager:
+-        if num_tokens <= self.num_free_slots:
++        if num_embeds <= self.num_free_slots:
+@@ -150 +156 @@ class EncoderCacheManager:
+-        if num_tokens > self.num_freeable_slots:
++        if num_embeds > self.num_freeable_slots:
+@@ -156,2 +162,2 @@ class EncoderCacheManager:
+-        while num_tokens > self.num_free_slots:
+-            mm_hash, num_free_token = self.freeable.popitem(last=False)
++        while num_embeds > self.num_free_slots:
++            mm_hash, num_free_embeds = self.freeable.popitem(last=False)
+@@ -160 +166 @@ class EncoderCacheManager:
+-            self.num_free_slots += num_free_token
++            self.num_free_slots += num_free_embeds
+@@ -179 +185 @@ class EncoderCacheManager:
+-        num_encoder_tokens = request.get_num_encoder_tokens(input_id)
++        num_encoder_embeds = request.get_num_encoder_embeds(input_id)
+@@ -183,2 +189,2 @@ class EncoderCacheManager:
+-        assert self.num_free_slots >= num_encoder_tokens
+-        assert self.num_freeable_slots >= num_encoder_tokens
++        assert self.num_free_slots >= num_encoder_embeds
++        assert self.num_freeable_slots >= num_encoder_embeds
+@@ -187,2 +193,2 @@ class EncoderCacheManager:
+-        self.num_free_slots -= num_encoder_tokens
+-        self.num_freeable_slots -= num_encoder_tokens
++        self.num_free_slots -= num_encoder_embeds
++        self.num_freeable_slots -= num_encoder_embeds
+@@ -209 +215 @@ class EncoderCacheManager:
+-        increased by the number of encoder tokens for that input.
++        increased by the number of encoder embeddings for that input.
+@@ -221,3 +227,3 @@ class EncoderCacheManager:
+-            num_tokens = request.get_num_encoder_tokens(input_id)
+-            self.freeable[mm_hash] = num_tokens
+-            self.num_freeable_slots += num_tokens
++            num_encoder_embeds = request.get_num_encoder_embeds(input_id)
++            self.freeable[mm_hash] = num_encoder_embeds
++            self.num_freeable_slots += num_encoder_embeds
+@@ -364 +370 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        num_tokens_to_schedule: int,
++        num_embeds_to_schedule: int,
+@@ -366 +372 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        num_tokens = request.get_num_encoder_tokens(input_id)
++        num_encoder_embeds = request.get_num_encoder_embeds(input_id)
+@@ -368 +374 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        if num_tokens > encoder_compute_budget:
++        if num_encoder_embeds > encoder_compute_budget:
+@@ -371 +377 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        num_tokens += num_tokens_to_schedule
++        num_encoder_embeds += num_embeds_to_schedule
+@@ -373 +379 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        return num_tokens <= self.num_free_slots
++        return num_encoder_embeds <= self.num_free_slots
+@@ -376,2 +382,2 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        num_encoder_tokens = request.get_num_encoder_tokens(input_id)
+-        self.num_free_slots -= num_encoder_tokens
++        num_encoder_embeds = request.get_num_encoder_embeds(input_id)
++        self.num_free_slots -= num_encoder_embeds
+@@ -395,2 +401,2 @@ class EncoderDecoderCacheManager(EncoderCacheManager):
+-        num_tokens = request.get_num_encoder_tokens(input_id)
+-        self.num_free_slots += num_tokens
++        num_encoder_embeds = request.get_num_encoder_embeds(input_id)
++        self.num_free_slots += num_encoder_embeds
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 278970a..afe668d 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -352,2 +352,2 @@ class Scheduler(SchedulerInterface):
+-                                num_tokens_to_restore = sum(
+-                                    preempted_req.get_num_encoder_tokens(i)
++                                num_embeds_to_restore = sum(
++                                    preempted_req.get_num_encoder_embeds(i)
+@@ -356 +356,8 @@ class Scheduler(SchedulerInterface):
+-                                encoder_compute_budget += num_tokens_to_restore
++                                encoder_compute_budget += num_embeds_to_restore
++                                # ``new_encoder_compute_budget`` was computed
++                                # before the victim was preempted and is the
++                                # value committed after this allocation loop.
++                                # Carry the restored E budget into that value
++                                # as well so a later request in this same step
++                                # can use the released encoder capacity.
++                                new_encoder_compute_budget += num_embeds_to_restore
+@@ -914 +921 @@ class Scheduler(SchedulerInterface):
+-        num_tokens_to_schedule = 0
++        num_embeds_to_schedule = 0
+@@ -917,0 +925 @@ class Scheduler(SchedulerInterface):
++            num_encoder_embeds = mm_feature.mm_position.get_num_embeds
+@@ -973 +980,0 @@ class Scheduler(SchedulerInterface):
+-
+@@ -975 +982 @@ class Scheduler(SchedulerInterface):
+-                request, i, encoder_compute_budget, num_tokens_to_schedule
++                request, i, encoder_compute_budget, num_embeds_to_schedule
+@@ -994,0 +1002,17 @@ class Scheduler(SchedulerInterface):
++            # Calculate the number of embeddings to schedule in the current range
++            # of scheduled encoder placholder tokens.
++            start_idx_rel = max(0, num_computed_tokens - start_pos)
++            end_idx_rel = min(
++                num_encoder_tokens, num_computed_tokens + num_new_tokens - start_pos
++            )
++            curr_embeds_start, curr_embeds_end = (
++                mm_feature.mm_position.get_embeds_indices_in_range(
++                    start_idx_rel,
++                    end_idx_rel,
++                )
++            )
++            # There's no embeddings in the current range of encoder placeholder tokens
++            # so we can skip the encoder input.
++            if curr_embeds_end - curr_embeds_start == 0:
++                continue
++
+@@ -998 +1022 @@ class Scheduler(SchedulerInterface):
+-                num_tokens_to_schedule += num_encoder_tokens
++                num_embeds_to_schedule += num_encoder_embeds
+@@ -1001,2 +1025,2 @@ class Scheduler(SchedulerInterface):
+-            num_tokens_to_schedule += num_encoder_tokens
+-            encoder_compute_budget -= num_encoder_tokens
++            num_embeds_to_schedule += num_encoder_embeds
++            encoder_compute_budget -= num_encoder_embeds
+diff --git a/vllm/v1/request.py b/vllm/v1/request.py
+index a775e84..f33059b 100644
+--- a/vllm/v1/request.py
++++ b/vllm/v1/request.py
+@@ -212 +212 @@ class Request:
+-    def get_num_encoder_tokens(self, input_id: int) -> int:
++    def get_num_encoder_embeds(self, input_id: int) -> int:
+@@ -214,2 +214,2 @@ class Request:
+-        num_tokens = self.mm_features[input_id].mm_position.length
+-        return num_tokens
++        num_embeds = self.mm_features[input_id].mm_position.get_num_embeds
++        return num_embeds
+diff --git a/vllm/v1/worker/gpu_model_runner.py b/vllm/v1/worker/gpu_model_runner.py
+index 1aa2ec6..ce31e0d 100644
+--- a/vllm/v1/worker/gpu_model_runner.py
++++ b/vllm/v1/worker/gpu_model_runner.py
+@@ -172 +171,0 @@ from .utils import (
+-    gather_mm_placeholders,
+@@ -174 +172,0 @@ from .utils import (
+-    scatter_mm_placeholders,
+@@ -2190,4 +2188 @@ class GPUModelRunner(
+-            self.encoder_cache[mm_hash] = scatter_mm_placeholders(
+-                output,
+-                is_embed=pos_info.is_embed,
+-            )
++            self.encoder_cache[mm_hash] = output
+@@ -2243,0 +2239,7 @@ class GPUModelRunner(
++                curr_embeds_start, curr_embeds_end = (
++                    pos_info.get_embeds_indices_in_range(start_idx, end_idx)
++                )
++                # If there are no embeddings in the current range, we skip
++                # gathering the embeddings.
++                if curr_embeds_start == curr_embeds_end:
++                    continue
+@@ -2250,0 +2253,3 @@ class GPUModelRunner(
++                    mm_embeds_item = encoder_output[curr_embeds_start:curr_embeds_end]
++                else:
++                    mm_embeds_item = encoder_output[start_idx:end_idx]
+@@ -2256,5 +2260,0 @@ class GPUModelRunner(
+-
+-                mm_embeds_item = gather_mm_placeholders(
+-                    encoder_output[start_idx:end_idx],
+-                    is_embed=is_embed,
+-                )
+@@ -4489,25 +4489,2 @@ class GPUModelRunner(
+-
+-                    # NOTE: This happens when encoder cache needs to store
+-                    # the embeddings that encoder outputs are scattered onto.
+-                    # In this case we create dummy embeddings of size
+-                    # (max_tokens_for_modality, hidden_size) and scatter
+-                    # encoder output into it.
+-                    encoder_output_shape = dummy_encoder_outputs[0].shape
+-                    max_mm_tokens_per_item = mm_budget.max_tokens_by_modality[
+-                        dummy_modality
+-                    ]
+-                    if encoder_output_shape[0] < max_mm_tokens_per_item:
+-                        encoder_hidden_size = encoder_output_shape[-1]
+-                        expanded_outputs = []
+-                        for output in dummy_encoder_outputs:
+-                            expanded = output.new_zeros(
+-                                (max_mm_tokens_per_item, encoder_hidden_size)
+-                            )
+-                            num_tokens = output.shape[0]
+-                            expanded[:num_tokens].copy_(output)
+-                            expanded_outputs.append(expanded)
+-
+-                        dummy_encoder_outputs = expanded_outputs
+-
+-                    # Cache the dummy encoder outputs.
+-                    self.encoder_cache["tmp"] = dict(enumerate(dummy_encoder_outputs))
++                    for i, output in enumerate(dummy_encoder_outputs):
++                        self.encoder_cache[f"tmp_{i}"] = output
+diff --git a/vllm/v1/worker/utils.py b/vllm/v1/worker/utils.py
+index e9c4822..2e8afec 100644
+--- a/vllm/v1/worker/utils.py
++++ b/vllm/v1/worker/utils.py
+@@ -6,0 +7 @@ import torch
++from typing_extensions import deprecated
+@@ -10,0 +12 @@ from vllm.config import ModelConfig, SchedulerConfig, VllmConfig
++from vllm.logger import init_logger
+@@ -19,0 +22,2 @@ from vllm.v1.kv_cache_interface import KVCacheGroupSpec, KVCacheSpec
++logger = init_logger(__name__)
++
+@@ -200,0 +205 @@ def sanity_check_mm_encoder_outputs(
++@deprecated("`scatter_mm_placeholders` is deprecated and will be removed in v0.15.0.")
+@@ -228,0 +234 @@ def scatter_mm_placeholders(
++@deprecated("`gather_mm_placeholders` is deprecated and will be removed in v0.15.0.")

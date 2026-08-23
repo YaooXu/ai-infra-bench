@@ -1,0 +1,174 @@
+{
+  "schema_version": "1.2",
+  "grader_kind": "correctness",
+  "primary_reward": {
+    "kind": "binary_all_requirements",
+    "pass_value": 1.0,
+    "failure_value": 0.0,
+    "diagnostic_file": "scoring.json",
+    "diagnostic_metric": "raw_correctness"
+  },
+  "score_groups": {
+    "pe_range": 0.25,
+    "cache_scheduler": 0.3,
+    "storage_gather_merge": 0.25,
+    "profiling_connector": 0.1,
+    "regression_hardening": 0.1
+  },
+  "core_cap": {
+    "value": 0.35,
+    "apply_when_all_fail": [
+      "CORE-SCHED-001",
+      "CORE-CACHE-001",
+      "CORE-STORAGE-001"
+    ]
+  },
+  "requirements": [
+    {
+      "id": "CORE-PE-001",
+      "suite": "required",
+      "score_group": "pe_range",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_sparse_and_generated_range_mapping"
+      ]
+    },
+    {
+      "id": "CORE-CACHE-001",
+      "suite": "required",
+      "score_group": "cache_scheduler",
+      "test_node_ids": [
+        "required/test_cache_scheduler.py::test_cache_allocate_budget_free_and_eviction_use_embedding_count",
+        "required/test_cache_scheduler.py::test_cache_hit_shared_hash_and_multiple_items_do_not_double_charge"
+      ]
+    },
+    {
+      "id": "CORE-SCHED-001",
+      "suite": "required",
+      "score_group": "cache_scheduler",
+      "test_node_ids": [
+        "required/test_cache_scheduler.py::test_scheduler_budget_and_multiple_items_use_embedding_count"
+      ]
+    },
+    {
+      "id": "CORE-SCHED-002",
+      "suite": "required",
+      "score_group": "cache_scheduler",
+      "test_node_ids": [
+        "required/test_cache_scheduler.py::test_chunk_overlap_uses_decoder_positions_and_special_only_chunk_skips_encoder"
+      ]
+    },
+    {
+      "id": "CORE-PREEMPT-001",
+      "suite": "required",
+      "score_group": "cache_scheduler",
+      "test_node_ids": [
+        "required/test_cache_scheduler.py::test_preemption_restores_embedding_budget"
+      ]
+    },
+    {
+      "id": "CORE-STORAGE-001",
+      "suite": "required",
+      "score_group": "storage_gather_merge",
+      "test_node_ids": [
+        "required/test_storage_gather_merge.py::test_encoder_cache_physically_stores_only_embedding_rows"
+      ]
+    },
+    {
+      "id": "CORE-GATHER-001",
+      "suite": "required",
+      "score_group": "storage_gather_merge",
+      "test_node_ids": [
+        "required/test_storage_gather_merge.py::test_sparse_compact_rows_merge_into_correct_decoder_positions",
+        "required/test_storage_gather_merge.py::test_chunked_and_multiple_item_merge_preserves_non_embedding_positions"
+      ]
+    },
+    {
+      "id": "CORE-DENSE-001",
+      "suite": "required",
+      "score_group": "pe_range",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_dense_mask_absence_is_one_to_one"
+      ]
+    },
+    {
+      "id": "CORE-PROFILE-001",
+      "suite": "heldout",
+      "score_group": "profiling_connector",
+      "test_node_ids": [
+        "heldout/test_profiling_connector.py::test_profiler_and_dummy_cache_use_embedding_count"
+      ]
+    },
+    {
+      "id": "CORE-CONNECTOR-001",
+      "suite": "heldout",
+      "score_group": "profiling_connector",
+      "test_node_ids": [
+        "heldout/test_profiling_connector.py::test_external_connector_accounts_and_transfers_embedding_rows"
+      ]
+    },
+    {
+      "id": "UPSTREAM-EMPTY-001",
+      "suite": "required",
+      "score_group": "pe_range",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_nonzero_empty_interval"
+      ]
+    },
+    {
+      "id": "UPSTREAM-FALSE-001",
+      "suite": "required",
+      "score_group": "pe_range",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_nonempty_all_false_has_zero_embeddings"
+      ]
+    },
+    {
+      "id": "UPSTREAM-FALSE-002",
+      "suite": "heldout",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "heldout/test_regression_hardening.py::test_all_false_extracts_no_decoder_embedding_ranges"
+      ]
+    },
+    {
+      "id": "HARD-RANGE-001",
+      "suite": "required",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_zero_origin_empty_interval"
+      ]
+    },
+    {
+      "id": "HARD-PZERO-001",
+      "suite": "required",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "required/test_pe_range.py::test_zero_length_placeholder"
+      ]
+    },
+    {
+      "id": "HARD-FALSE-E2E-001",
+      "suite": "heldout",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "heldout/test_regression_hardening.py::test_all_false_pipeline_allocates_and_executes_nothing"
+      ]
+    },
+    {
+      "id": "REGRESSION-TEXT-001",
+      "suite": "heldout",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "heldout/test_regression_hardening.py::test_text_only_regression_has_no_encoder_work"
+      ]
+    },
+    {
+      "id": "REGRESSION-DENSE-001",
+      "suite": "heldout",
+      "score_group": "regression_hardening",
+      "test_node_ids": [
+        "heldout/test_regression_hardening.py::test_dense_multimodal_regression_schedules_full_item"
+      ]
+    }
+  ]
+}

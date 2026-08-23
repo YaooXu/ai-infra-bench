@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "artifacts": [
+    {
+      "name": "triton-kernels",
+      "source_directory": "triton",
+      "revision": "v3.5.0",
+      "url": "https://codeload.github.com/triton-lang/triton/tar.gz/refs/tags/v3.5.0",
+      "archive": "archives/triton-v3.5.0.tar.gz",
+      "sha256": "426cefe3752fcce2d3ea31af4252f3fa8358b112fe1e3e112434411935644259"
+    },
+    {
+      "name": "cutlass",
+      "source_directory": "cutlass",
+      "revision": "v4.2.1",
+      "url": "https://codeload.github.com/NVIDIA/cutlass/tar.gz/refs/tags/v4.2.1",
+      "archive": "archives/cutlass-v4.2.1.tar.gz",
+      "sha256": "a4513ba33ae82fd754843c6d8437bee1ac71a6ef1c74df886de2338e3917d4df"
+    },
+    {
+      "name": "vllm-flash-attention",
+      "source_directory": "vllm-flash-attention",
+      "revision": "86f8f157cf82aa2342743752b97788922dd7de43",
+      "url": "https://codeload.github.com/vllm-project/flash-attention/tar.gz/86f8f157cf82aa2342743752b97788922dd7de43",
+      "archive": "archives/vllm-flash-attn-86f8f157.tar.gz",
+      "sha256": "2dfff43bc46ddccac9abaa5d4177e75af0bdf9e389ece60dc2c52a85be5bb8a7"
+    },
+    {
+      "name": "vllm-flash-attention-cutlass-submodule",
+      "submodule_of": "vllm-flash-attention",
+      "revision": "62750a2b75c802660e4894434dc55e839f322277",
+      "parent_revision": "86f8f157cf82aa2342743752b97788922dd7de43",
+      "submodule_path": "csrc/cutlass",
+      "url": "https://codeload.github.com/NVIDIA/cutlass/tar.gz/62750a2b75c802660e4894434dc55e839f322277",
+      "archive": "archives/flash-attn-cutlass-62750a2b.tar.gz",
+      "sha256": "78816d6c6d97793b5b59ef2a702174cb85b78dfcefc8fe2489964de2e42f17d2"
+    },
+    {
+      "name": "flashmla",
+      "source_directory": "flashmla",
+      "revision": "46d64a8ebef03fa50b4ae74937276a5c940e3f95",
+      "url": "https://codeload.github.com/vllm-project/FlashMLA/tar.gz/46d64a8ebef03fa50b4ae74937276a5c940e3f95",
+      "archive": "archives/flashmla-46d64a8e.tar.gz",
+      "sha256": "f7300db68dff3d25d9c39d493be4bdafa9702ff50836bb6c442a01718c9f87ff"
+    },
+    {
+      "name": "qutlass",
+      "source_directory": "qutlass",
+      "revision": "830d2c4537c7396e14a02a46fbddd18b5d107c65",
+      "url": "https://codeload.github.com/IST-DASLab/qutlass/tar.gz/830d2c4537c7396e14a02a46fbddd18b5d107c65",
+      "archive": "archives/qutlass-830d2c45.tar.gz",
+      "sha256": "6b431aa10fbc6b288564c820658aed685641678903e128e7b0a958b8757b5d0c"
+    },
+    {
+      "name": "git",
+      "source_directory": "git",
+      "revision": "v2.47.2",
+      "url": "https://codeload.github.com/git/git/tar.gz/refs/tags/v2.47.2",
+      "archive": "archives/git-v2.47.2.tar.gz",
+      "sha256": "9d9e5d9b762188550b1dffaacea7f9709a43979b030c17f9424b2b27333ad52b"
+    }
+  ]
+}

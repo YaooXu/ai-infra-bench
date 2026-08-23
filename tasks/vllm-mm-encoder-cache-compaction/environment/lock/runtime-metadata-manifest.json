@@ -1,0 +1,12 @@
+{
+  "distribution": "vllm",
+  "required_files": [
+    "METADATA",
+    "WHEEL",
+    "entry_points.txt",
+    "top_level.txt"
+  ],
+  "schema_version": "2.0",
+  "source": "generated from the vLLM wheel compiled from the hash-verified base archive in the same public image build",
+  "version": "0.11.2.dev278"
+}

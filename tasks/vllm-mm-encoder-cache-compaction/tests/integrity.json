@@ -1,0 +1,50 @@
+{
+  "environment_files": {
+    ".dockerignore": "6200e62d4128eadfb90c76247d18ba0b5df549b3b15e98345f2b0734937330ee",
+    "Dockerfile": "344e7875d5e6e2e253d8a54e9f88f4ee1a42aa01fbd7855bd8cb5a86b164e28c",
+    "lock/ARTIFACTS.md": "e88f04d8d9186def87f2e13c31bfdd9bebcaddbafd0d982c4069846956a38bde",
+    "lock/base-requirements.cuda.txt": "a3f1571e54c4031cf0638f76ee90549b0a2a1a2216a7118cd70a3c6a7f19c158",
+    "lock/environment-manifest.json": "48c163ab3508897783803a6c64dc2508aad866b1a632c10d203d9d16006e6c52",
+    "lock/environment_request.json": "5ee8754d035e2858869bc8c03a88e64a02464bf4bfce951e9cc59a31dcd70946",
+    "lock/environment_spec.json": "49df722df0ea9ad58bef3dc7964d1df654482770beff26cd9a40919a674f9d33",
+    "lock/hardware-manifest.json": "d8a0fd9bcff67be54692fcb9f7e71653528194714ce610d1e4b58772309b254a",
+    "lock/native-build-deps-manifest.json": "d605c2740002778c3eb2a70c358eeb220595bca6f0c041c36c7b9cf1b2b46ce4",
+    "lock/native-manifest.json": "a43ab43dcff50f303f4664e132c8292b4d847dc3e19ce73426fbb03d004a1e65",
+    "lock/native-source-binding.json": "237d82024ecbf23c050466903dcaf7d4d2b50be858ba664bf303af4d3fcbeab9",
+    "lock/public-build-manifest.json": "88ece4146d8578f7bbe81f6c71c3cc6a938fdb0ebef5256ce9495380aa07577f",
+    "lock/requirements.build.input": "64acd4c81edd82c10d8a73bc7d1199b24501106c2d31bb3ff643458a50a427e9",
+    "lock/requirements.input": "5454d2c740752d5c8e6f6bf02f2a46e74a4cd8fc2f1b126bf160679cdf5d74a8",
+    "lock/requirements.lock": "ce93786c8556bafc14ec5d369277334a743ae67877068f78c17156c7f6453ecf",
+    "lock/runtime-metadata-manifest.json": "7357a6c3083822724985c597110bcbeb7d3c76b5a5ef70f739aea51d0c7f41eb",
+    "lock/sources.lock.json": "54f670b0986c72a14f8a16dab3f773134c85ca7061a59a257b386caffc72ecf0",
+    "lock/wheelhouse-manifest.json": "eeffc25dbf474b797a58af66062dd929a0bf44a9360ac6a67b8f92f4415a047f",
+    "scripts/fetch_base_source.py": "6b75bed3b1a982a31be5aa41de17252e586a03778169040b67e0b67656f55315",
+    "scripts/fetch_native_sources.py": "70c96a3a32347f98d6c63b3c7df2478e95959de6842ebe965133c83313f78547",
+    "scripts/prepare_runtime_tree.py": "485ebc36191540c77e657d84be1d64527f2047bfa7c5af257c266eb7e2e4de38",
+    "scripts/verify_artifacts.py": "9e0abc637f63b5f5e090d9136d7d7962eb7646879421be1e3bbae9979a3385a9"
+  },
+  "environment_spec_sha256": "49df722df0ea9ad58bef3dc7964d1df654482770beff26cd9a40919a674f9d33",
+  "executable_files": [
+    "pytest_entry.py",
+    "run_verifier.py",
+    "test.sh"
+  ],
+  "schema_version": "1.2",
+  "test_files": {
+    ".dockerignore": "5ef63f8eb344c2fe8b5e14250ae86a1cdb18d3ee4219cb0e9887cca36bd5aa30",
+    "Dockerfile": "1812ad3740080848e06355c37550854825160af17b0ea12d48a3fa47e8fd3a21",
+    "README.md": "39a8fdc26c3d699f9a6d0549965986a6776f542871e6d6bebfd901294bb3220c",
+    "heldout/test_profiling_connector.py": "a492dcb4fd23307202d2bf16e3ab206886d4386e9a253c1297cf26c90e5915b4",
+    "heldout/test_regression_hardening.py": "45b16231c2b273c42ffd095d3653900f519257c451ee9b31282b01ce5660ba4e",
+    "heldout/test_scoring_contract.py": "32b013b68572a376cab197f36f0b11105cd05d16cbaf0871c35ffa33a7a92a14",
+    "pytest_entry.py": "0c5b1904818888fa80e05d0b0f3624d781d460b1ef29081c0ecedf1e78787a65",
+    "required/test_cache_scheduler.py": "098f290ca8ca2f7891612d5a5b5158195c24938c2231f93d7a8df45c6f090741",
+    "required/test_pe_range.py": "d13d7be11c0bf094a3e13b5a4c1877f83797dfd7746e0cffacff8e444346ff82",
+    "required/test_storage_gather_merge.py": "5d493039a0aaa92d636cbe2a874120ad73dbe972de65bf5fc2e7103a175fb284",
+    "requirements.json": "d4635f7a7f3babe120e9957033eff3c9557b145e7c9380206d287f952f203e65",
+    "run_verifier.py": "ef0f1f750f40d1c8043bfb3fe92aa46159f711d74d930449d51d78a5297d017a",
+    "scoring.py": "3c14c359f1d9f4c862f1aee3605cef3b3d431c5df41b2ca9091bb47cb01658c4",
+    "test.sh": "c1dadff6faa7e0c259be0656313d972e8259eca076a35f35adb3e37c7ac57372",
+    "update_integrity.py": "d01b60ebe8dba7bf3c0e368d39cfd88c743861922aa14328ce41b0a5461975cc"
+  }
+}
