@@ -1,14 +1,3 @@
 # Local benchmark outputs can be large and may contain private trajectories.
 runs/
 *.csv
-
-# Optional curator caches and local validation outputs are never public build
-# inputs. The task's Dockerfile rebuilds everything from committed/public data.
-tasks/vllm-mm-encoder-cache-compaction/environment/lock/artifacts/
-tasks/vllm-mm-encoder-cache-compaction/**/__pycache__/
-tasks/vllm-mm-encoder-cache-compaction/**/.pytest_cache/
-tasks/vllm-mm-encoder-cache-compaction/**/*.pyc
-tasks/vllm-mm-encoder-cache-compaction/tests/reward.txt
-tasks/vllm-mm-encoder-cache-compaction/tests/reward.json
-tasks/vllm-mm-encoder-cache-compaction/tests/result.json
-tasks/vllm-mm-encoder-cache-compaction/tests/junit-*.xml
