@@ -1,0 +1,18 @@
+# GPU override for harbor's local Docker environment backend.
+#
+# harbor 会在构建/预置 compose 之后自动加载任务目录下的这个 docker-compose.yaml
+# （见 harbor/environments/docker/docker.py 的 _docker_compose_paths），因此这里
+# 只需对 main 服务追加 GPU device reservation，即可让本地 Docker 后端把宿主 GPU
+# 挂进容器 —— 而无需修改 harbor 源码，也无需在 task.toml 里声明 gpus>=1
+# （那会被内置 Docker 后端的 capabilities 校验拒绝）。
+#
+# 语法要求 docker compose v2 + nvidia-container-runtime。已在 H20-3e 上验证可用。
+services:
+  main:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

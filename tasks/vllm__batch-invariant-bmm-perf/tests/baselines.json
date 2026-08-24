@@ -1,0 +1,57 @@
+{
+  "_comment": "Frozen baselines B (base per-batch loop: the base-commit bmm_batch_invariant, which loops over the batch calling the Triton matmul_persistent kernel) and G (reference fused single batched bmm_kernel from PR #29345). Measured on NVIDIA H20-3e, bf16, warmup=10 iters=50, median of 5 rounds. Original 2 shapes measured 2026-08-18, expanded with 4 additional shapes on 2026-08-20. reward = correctness * median_over_shapes(clip((B_latency - A_latency)/(B_latency - G_latency), 0, 1)). Quality gates: base_ms >= 0.5ms, gap >= 0.1ms, speedup >= 1.5x, CV < 10% for both implementations.",
+  "hardware": "NVIDIA H20-3e",
+  "dtype": "bfloat16",
+  "shapes": [
+    {
+      "B": 8,
+      "M": 1280,
+      "N": 1280,
+      "K": 5120,
+      "base_ms": 2.4147,
+      "ref_ms": 1.0006
+    },
+    {
+      "B": 8,
+      "M": 2048,
+      "N": 2048,
+      "K": 2560,
+      "base_ms": 2.4216,
+      "ref_ms": 1.2892
+    },
+    {
+      "B": 32,
+      "M": 512,
+      "N": 512,
+      "K": 5120,
+      "base_ms": 5.2308,
+      "ref_ms": 0.688
+    },
+    {
+      "B": 32,
+      "M": 1280,
+      "N": 1280,
+      "K": 2560,
+      "base_ms": 5.0511,
+      "ref_ms": 1.9797
+    },
+    {
+      "B": 32,
+      "M": 1280,
+      "N": 1280,
+      "K": 5120,
+      "base_ms": 9.6499,
+      "ref_ms": 3.8071
+    },
+    {
+      "B": 32,
+      "M": 2048,
+      "N": 2048,
+      "K": 5120,
+      "base_ms": 19.7021,
+      "ref_ms": 9.8218
+    }
+  ],
+  "reference_median_speedup": 2.47,
+  "min_improvement_percent": 5.0
+}
