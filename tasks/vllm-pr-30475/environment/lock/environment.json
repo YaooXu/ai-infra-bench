@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "repository": "vllm-project/vllm",
+  "base_commit": "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+  "source_archive": {
+    "url": "https://codeload.github.com/vllm-project/vllm/tar.gz/676db55eecf8b6d9ec38ea243cf6f35ea8378ec6",
+    "sha256": "ac774fb6bbf75b083d997dcb70b5cdf8746c6e6bfa8d95b3c2415a6c30240624",
+    "git_tree_sha1": "aafa39e6544cbeaf83b72985f83aaefd4e9e3456"
+  },
+  "base_image": {
+    "tag_for_documentation": "vllm/vllm-openai:v0.11.2",
+    "amd64_manifest_sha256": "sha256:47a9896f86818fea323b2d38082758c62d9a0155d6fe6c4dbd7d735c556f680a"
+  },
+  "runtime": {
+    "python": "3.12",
+    "pytorch_family": "2.9.x",
+    "cuda": "12.9",
+    "network": "none",
+    "gpu_validation": "NVIDIA A100-SXM4-40GB, physical GPU index 2"
+  }
+}

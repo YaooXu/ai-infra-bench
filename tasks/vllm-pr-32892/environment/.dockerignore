@@ -1,0 +1,8 @@
+*
+!Dockerfile
+!rebuild_native.sh
+!runtime_smoke.py
+!reproduce_baseline.py
+!source_gate.py
+!lock/
+!lock/**

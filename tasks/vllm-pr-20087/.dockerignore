@@ -1,0 +1,5 @@
+.git
+validation
+environment/lock
+**/__pycache__
+**/*.pyc

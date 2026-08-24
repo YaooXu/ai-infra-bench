@@ -1,0 +1,27 @@
+{
+  "base_image": {
+    "image": "vllm/vllm-openai:v0.20.0",
+    "linux_amd64_manifest_digest": "sha256:77797441eae630c2e79eefa03957b3d61a278670f2a9928d64ce102e7a0790cc",
+    "version_basis": "nearest official vLLM release to the 2026-04-20 base commit; released 2026-04-27",
+    "vllm": "0.20.0",
+    "python": "3.12",
+    "torch": "2.11.0+cu130",
+    "cuda": "13.0"
+  },
+  "source": {
+    "base_sha": "ea0e501bb18c12b80acc05ff8c7f013db515ba80",
+    "git_tree": "f3a7898db0c5cf56d04ae58070633342bfae3856",
+    "archive_url": "https://codeload.github.com/vllm-project/vllm/tar.gz/ea0e501bb18c12b80acc05ff8c7f013db515ba80",
+    "archive_sha256": "28f46bea58c2a2ac64ea5beaddc58c26a9f3fe05121e65afdbd125a4e65ce665",
+    "archive_size_bytes": 34314430
+  },
+  "eligibility": {
+    "workload": "Cutlass FP8 batch invariance",
+    "minimum_compute_capability": "8.9",
+    "validation_gpu": "NVIDIA A100-SXM4-40GB",
+    "validation_compute_capability": "8.0",
+    "status": "hardware-blocked",
+    "image_role": "eligibility-and-structural-probe-only",
+    "exact_base_native_binding": false
+  }
+}
