@@ -13,12 +13,14 @@ curator validation.
   bit and aggregate semantic tree are verified before compilation.
 - Python dependencies are installed from public PyPI using a complete
   `--require-hashes` lock.
-- vLLM native extensions are rebuilt for SM80 from the verified base source and
-  seven hash-pinned public source archives. No curator wheel/native bundle is
-  required.
+- vLLM native extensions are rebuilt for SM80 in a build-only copy of the
+  verified base source and seven hash-pinned public source archives. `/app` is
+  materialized from the untouched pristine copy, then receives only the 51
+  manifest-declared runtime paths. No curator wheel/native bundle is required.
 - Agent and separate-verifier runtime networking remains disabled.
-- The agent image contains one editable synthetic Git commit under `/app` and
-  never contains tests or the solution.
+- The agent image contains one editable, source-only synthetic Git commit under
+  `/app`; generated runtime paths are exactly ignored and neither tests nor the
+  solution are present.
 - Harbor restores the submitted artifact at its original source path `/app` in
   the independent verifier environment.
 

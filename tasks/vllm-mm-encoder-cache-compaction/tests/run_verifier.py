@@ -300,19 +300,33 @@ def probe_environment() -> tuple[dict[str, object], list[str], list[str]]:
         infra_errors.append("runtime network policy failed: outbound TCP succeeded")
 
     source_probe = isolated_python(
-        "import pathlib,sys; root=pathlib.Path(" + repr(str(WORKSPACE)) + "); "
-        "sys.path.insert(0,str(root)); import vllm; "
+        "import importlib.util,json,pathlib,sys; root=pathlib.Path("
+        + repr(str(WORKSPACE))
+        + "); "
+        "sys.path.insert(0,str(root)); import vllm,vllm._C; "
         "from vllm.multimodal.inputs import PlaceholderRange; "
         "from vllm.v1.core.encoder_cache_manager import EncoderCacheManager; "
-        "print(pathlib.Path(vllm.__file__).resolve())"
+        "source=pathlib.Path(vllm.__file__).resolve(); "
+        "native=pathlib.Path(importlib.util.find_spec('vllm._C').origin).resolve(); "
+        "assert (root/'vllm/__init__.py').is_file(); "
+        "source.relative_to(root); native.relative_to(root); "
+        "print(json.dumps({'candidate_init':str(root/'vllm/__init__.py'),"
+        "'candidate_import':str(source),'native_extension':str(native),"
+        "'native_extension_loaded':True}))"
     )
     if source_probe.returncode != 0:
         candidate_errors.append("global vLLM import probe failed: " + source_probe.stderr[-1500:])
     else:
         try:
-            imported = Path(source_probe.stdout.strip().splitlines()[-1]).resolve()
+            workspace_probe = json.loads(source_probe.stdout.strip().splitlines()[-1])
+            imported = Path(str(workspace_probe["candidate_import"])).resolve()
+            native = Path(str(workspace_probe["native_extension"])).resolve()
             imported.relative_to(WORKSPACE)
-        except (IndexError, ValueError):
+            native.relative_to(WORKSPACE)
+            if workspace_probe.get("native_extension_loaded") is not True:
+                raise ValueError("native extension was not loaded")
+            metadata["workspace_probe"] = workspace_probe
+        except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError):
             candidate_errors.append("vLLM import did not resolve to candidate workspace")
     return metadata, infra_errors, candidate_errors
 
@@ -531,6 +545,7 @@ def main() -> int:
         write_json(LOG_DIR / "global_failure.json", {"errors": candidate_errors})
         record_failure(infra_error=0, reason="candidate_global_import_failure")
         return 1
+    write_json(LOG_DIR / "workspace_probe.json", env_metadata["workspace_probe"])
 
     env = controlled_env()
     collection_errors: dict[str, str] = {}

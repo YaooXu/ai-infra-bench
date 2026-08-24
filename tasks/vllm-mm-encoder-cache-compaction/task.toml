@@ -4,7 +4,7 @@ schema_version = "1.3"
 # Collect only the candidate workspace and rematerialize it in the clean
 # verifier environment. Git history and build caches are not grading evidence.
 artifacts = [
-  { source = "/app", exclude = [".git", "__pycache__", "*.pyc", ".pytest_cache"] }
+  { source = "/app", exclude = [".git", "build", "dist", "*.egg-info", "__pycache__", "*.pyc", "*.pyo", ".pytest_cache"] }
 ]
 
 [task]

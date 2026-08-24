@@ -24,6 +24,13 @@ TREE_ALGORITHM = "sha256(path\\0file_sha256\\0size_bytes\\0executable_int\\n)"
 REQUIREMENT_RE = re.compile(
     r"^([A-Za-z0-9_.-]+)==([^\s;]+)\s+--hash=sha256:([0-9a-f]{64})$"
 )
+FORBIDDEN_RUNTIME_DIRECTORIES = {
+    "build",
+    "dist",
+    "__pycache__",
+    ".pytest_cache",
+}
+FORBIDDEN_RUNTIME_SUFFIXES = {".pyc", ".pyo"}
 
 
 def sha256_file(path: Path) -> str:
@@ -409,7 +416,28 @@ def verify_runtime(
     contract = load_json(lock_root / "native-manifest.json")
     generated = load_json(native_build_manifest)
     binding = load_json(lock_root / "native-source-binding.json")
+    source_manifest = load_json(lock_root / "sources.lock.json")
+    if generated.get("schema_version") != "2.0":
+        raise ValueError("generated native manifest schema mismatch")
+    if generated.get("source") != (
+        "wheel-built-from-distinct-hash-verified-build-copy"
+    ):
+        raise ValueError("generated native manifest build protocol mismatch")
+    if generated.get("base_commit") != source_manifest.get("base_commit"):
+        raise ValueError("generated runtime is bound to a different base commit")
+    if generated.get("pristine_source_tree_sha256") != source_manifest.get(
+        "tree_sha256"
+    ):
+        raise ValueError("generated runtime is not bound to the pristine tree")
     expected_paths = {str(item["path"]) for item in contract["artifacts"]}
+    expected_source_paths = set(
+        expected_source_tree(lock_root / "sources.lock.json")
+    )
+    overlap = expected_paths & expected_source_paths
+    if overlap:
+        raise ValueError(
+            f"runtime artifacts overwrite pristine source: {sorted(overlap)[:20]}"
+        )
     generated_entries = {str(item["path"]): item for item in generated["artifacts"]}
     if set(generated_entries) != expected_paths:
         raise ValueError("generated native manifest differs from runtime contract")
@@ -429,6 +457,32 @@ def verify_runtime(
             raise ValueError(f"generated runtime artifact size mismatch: {relative}")
         if sha256_file(path) != artifact["sha256"]:
             raise ValueError(f"generated runtime artifact hash mismatch: {relative}")
+
+    actual_runtime_files: set[str] = set()
+    forbidden: list[str] = []
+    for path in sorted(runtime_root.rglob("*")):
+        relative_path = path.relative_to(runtime_root)
+        if relative_path.parts and relative_path.parts[0] == ".git":
+            continue
+        if path.is_symlink():
+            raise ValueError(f"runtime symlink is forbidden: {relative_path}")
+        if any(
+            part in FORBIDDEN_RUNTIME_DIRECTORIES or part.endswith(".egg-info")
+            for part in relative_path.parts
+        ) or (path.is_file() and path.suffix in FORBIDDEN_RUNTIME_SUFFIXES):
+            forbidden.append(relative_path.as_posix())
+        if path.is_file():
+            actual_runtime_files.add(relative_path.as_posix())
+    if forbidden:
+        raise ValueError(f"runtime tree contains build/cache output: {forbidden[:20]}")
+    allowed_runtime_files = expected_source_paths | expected_paths
+    if actual_runtime_files != allowed_runtime_files:
+        missing = sorted(allowed_runtime_files - actual_runtime_files)
+        extra = sorted(actual_runtime_files - allowed_runtime_files)
+        raise ValueError(
+            "runtime tree differs from pristine-plus-overlay contract: "
+            f"missing={missing[:20]} extra={extra[:20]}"
+        )
 
     dist = metadata.distribution("vllm")
     metadata_contract = load_json(lock_root / "runtime-metadata-manifest.json")

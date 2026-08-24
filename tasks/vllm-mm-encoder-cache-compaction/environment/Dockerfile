@@ -33,10 +33,11 @@ RUN python -I /opt/bench/scripts/verify_artifacts.py \
       --lock-root /opt/bench/lock --mode declarations && \
     python -I /opt/bench/scripts/fetch_base_source.py \
       --manifest /opt/bench/lock/sources.lock.json \
-      --output /opt/base-source/vllm && \
+      --output /opt/base-pristine/vllm && \
     python -I /opt/bench/scripts/verify_artifacts.py \
       --lock-root /opt/bench/lock --mode source \
-      --source-root /opt/base-source/vllm
+      --source-root /opt/base-pristine/vllm && \
+    chmod -R a-w /opt/base-pristine
 
 FROM build-base AS native-builder
 
@@ -59,7 +60,7 @@ RUN python -m venv /opt/bench-venv && \
     /opt/bench-venv/bin/python -m pip check && \
     /opt/bench-venv/bin/python -I /opt/bench/scripts/verify_artifacts.py \
       --lock-root /opt/bench/lock --mode installed \
-      --source-root /opt/base-source/vllm
+      --source-root /opt/base-pristine/vllm
 
 RUN /opt/bench-venv/bin/python -I /opt/bench/scripts/fetch_native_sources.py \
       --manifest /opt/bench/lock/native-build-deps-manifest.json \
@@ -81,7 +82,16 @@ RUN make -C /opt/native-src/git -j32 \
       NO_TCLTK=YesPlease NO_INSTALL_HARDLINKS=YesPlease install && \
     test "$(/opt/bench-git/bin/git --version)" = "git version 2.47.2"
 
-WORKDIR /opt/base-source/vllm
+# Compilation never runs in the immutable pristine tree.  The build copy is
+# verified before compilation; the pristine tree is verified again afterwards.
+RUN mkdir -p /opt/build-source && \
+    cp -a /opt/base-pristine/vllm /opt/build-source/vllm && \
+    chmod -R u+w /opt/build-source/vllm && \
+    python -I /opt/bench/scripts/verify_artifacts.py \
+      --lock-root /opt/bench/lock --mode source \
+      --source-root /opt/build-source/vllm
+
+WORKDIR /opt/build-source/vllm
 ENV PATH=/opt/bench-git/bin:/opt/bench-venv/bin:/usr/local/cuda/bin:${PATH} \
     CMAKE_BUILD_TYPE=Release \
     FLASH_MLA_SRC_DIR=/opt/native-src/flashmla \
@@ -95,13 +105,20 @@ ENV PATH=/opt/bench-git/bin:/opt/bench-venv/bin:/usr/local/cuda/bin:${PATH} \
     VLLM_TARGET_DEVICE=cuda
 
 RUN python setup.py bdist_wheel --dist-dir /opt/vllm-dist --py-limited-api=cp38
-RUN python -I /opt/bench/scripts/prepare_runtime_tree.py \
-      --source-root /opt/base-source/vllm \
+RUN python -I /opt/bench/scripts/verify_artifacts.py \
+      --lock-root /opt/bench/lock --mode source \
+      --source-root /opt/base-pristine/vllm && \
+    python -I /opt/bench/scripts/prepare_runtime_tree.py \
+      --pristine-source /opt/base-pristine/vllm \
+      --build-source /opt/build-source/vllm \
+      --source-manifest /opt/bench/lock/sources.lock.json \
       --wheel-dir /opt/vllm-dist \
       --contract /opt/bench/lock/native-manifest.json \
       --source-binding /opt/bench/lock/native-source-binding.json \
-      --output /opt/runtime/app \
+      --runtime-output /opt/runtime/app \
+      --overlay-output /opt/runtime/native-overlay \
       --metadata-output /opt/runtime/site-packages \
+      --git-exclude-output /opt/runtime/native-runtime.gitignore \
       --manifest-output /opt/runtime/native-build-manifest.json
 
 FROM ${RUNTIME_BASE_IMAGE} AS runtime
@@ -127,26 +144,15 @@ COPY --from=native-builder /opt/bench-venv/ /opt/bench-venv/
 COPY --from=native-builder /opt/runtime/app/ /app/
 COPY --from=native-builder /opt/runtime/site-packages/ /opt/bench-venv/lib/python3.11/site-packages/
 COPY --from=native-builder /opt/runtime/native-build-manifest.json /opt/bench/native-build-manifest.json
+COPY --from=native-builder /opt/runtime/native-runtime.gitignore /opt/bench/native-runtime.gitignore
 COPY lock/ /opt/bench/lock/
 COPY scripts/ /opt/bench/scripts/
 COPY Dockerfile /opt/bench/Dockerfile
 COPY .dockerignore /opt/bench/.dockerignore
 
-# Isolated Python still resolves the candidate-editable tree through this
-# root-owned path file; vLLM implementation files are never installed elsewhere.
-RUN printf '/app\n' > /opt/bench-venv/lib/python3.11/site-packages/vllm-editable.pth && \
-    test "$(git --version)" = "git version 2.47.2" && \
-    /opt/bench-venv/bin/python -m pip check && \
-    cd /tmp && /opt/bench-venv/bin/python -I /opt/bench/scripts/verify_artifacts.py \
-      --lock-root /opt/bench/lock \
-      --mode runtime \
-      --runtime-root /app \
-      --native-build-manifest /opt/bench/native-build-manifest.json && \
-    cd /tmp && /opt/bench-venv/bin/python -I -c \
-      "import importlib.util,pathlib,torch,vllm; root=pathlib.Path('/app'); assert pathlib.Path(vllm.__file__).resolve().is_relative_to(root); spec=importlib.util.find_spec('vllm._C'); assert spec and pathlib.Path(spec.origin).resolve().is_relative_to(root); assert torch.__version__.startswith('2.9.0')"
-
 # Candidate tooling receives one synthetic base commit and no upstream Git
-# objects, remotes, tags, reflog, hidden tests, or solution artifacts.
+# objects, generated runtime artifacts, remotes, tags, reflog, hidden tests, or
+# solution artifacts.  At this point /app is exactly the pristine public tree.
 RUN cd /app && \
     git init -q && \
     git config user.name "AI Infra Benchmark" && \
@@ -157,10 +163,40 @@ RUN cd /app && \
       git commit -q -m "sanitized benchmark base" && \
     git reflog expire --expire=now --all && \
     test "$(git rev-list --count HEAD)" = "1" && \
+    expected_tree=$(/opt/bench-venv/bin/python -I -c \
+      'import json,pathlib; print(json.loads(pathlib.Path("/opt/bench/lock/sources.lock.json").read_text())["git_tree_sha1"])') && \
+    test "$(git rev-parse 'HEAD^{tree}')" = "$expected_tree" && \
     test -z "$(git remote)" && \
     test -z "$(git tag)" && \
     test ! -e /tests && \
     test ! -e /solution
+
+# Apply only the source-built, manifest-verified runtime overlay after the
+# synthetic source commit.  Exact generated paths are ignored through
+# .git/info/exclude; neither broad source globs nor candidate Python files are
+# hidden from git status.
+COPY --from=native-builder /opt/runtime/native-overlay/ /app/
+RUN cat /opt/bench/native-runtime.gitignore >> /app/.git/info/exclude && \
+    printf '/app\n' > /opt/bench-venv/lib/python3.11/site-packages/vllm-editable.pth && \
+    test "$(git --version)" = "git version 2.47.2" && \
+    /opt/bench-venv/bin/python -m pip check && \
+    cd /tmp && /opt/bench-venv/bin/python -I /opt/bench/scripts/verify_artifacts.py \
+      --lock-root /opt/bench/lock \
+      --mode runtime \
+      --runtime-root /app \
+      --native-build-manifest /opt/bench/native-build-manifest.json && \
+    cd /tmp && /opt/bench-venv/bin/python -I -c \
+      "import importlib.util,pathlib,torch,vllm; root=pathlib.Path('/app'); assert pathlib.Path(vllm.__file__).resolve().is_relative_to(root); spec=importlib.util.find_spec('vllm._C'); assert spec and pathlib.Path(spec.origin).resolve().is_relative_to(root); assert torch.__version__.startswith('2.9.0')" && \
+    cd /app && test -z "$(git status --porcelain=v1 --untracked-files=all)" && \
+    /opt/bench-venv/bin/python -I -c \
+      "import json,pathlib,subprocess; root=pathlib.Path('/app'); contract=json.loads(pathlib.Path('/opt/bench/lock/native-manifest.json').read_text()); tracked=set(subprocess.check_output(['git','ls-files'],cwd=root,text=True).splitlines()); generated={x['path'] for x in contract['artifacts']}; overlap=tracked & generated; assert not overlap, sorted(overlap)" && \
+    test ! -e /app/build && test ! -e /app/dist && \
+    printf 'runtime-size ' && du -sh /app && \
+    printf 'synthetic-git-size ' && du -sh /app/.git && \
+    printf 'build-tree-size 0 (absent) /app/build\n' && \
+    git count-objects -vH && \
+    find /app -xdev -type f ! -path '/app/.git/*' -printf '%s %p\n' \
+      | sort -nr | head -n 30
 
 RUN groupadd --gid 10001 agent && \
     useradd --uid 10001 --gid 10001 --create-home --home-dir /home/agent agent && \

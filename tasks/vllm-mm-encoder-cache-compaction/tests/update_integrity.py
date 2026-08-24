@@ -30,6 +30,7 @@ ENVIRONMENT_FILES = [
     "lock/wheelhouse-manifest.json",
     "scripts/fetch_base_source.py",
     "scripts/fetch_native_sources.py",
+    "scripts/measure_artifact_transfer.py",
     "scripts/prepare_runtime_tree.py",
     "scripts/verify_artifacts.py",
 ]

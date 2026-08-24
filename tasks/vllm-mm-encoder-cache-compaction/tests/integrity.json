@@ -1,8 +1,8 @@
 {
   "environment_files": {
     ".dockerignore": "6200e62d4128eadfb90c76247d18ba0b5df549b3b15e98345f2b0734937330ee",
-    "Dockerfile": "344e7875d5e6e2e253d8a54e9f88f4ee1a42aa01fbd7855bd8cb5a86b164e28c",
-    "lock/ARTIFACTS.md": "e88f04d8d9186def87f2e13c31bfdd9bebcaddbafd0d982c4069846956a38bde",
+    "Dockerfile": "6cb02df44082a3f771405ee290b4293ae3df2759eb4b9be9d308143d91fa0884",
+    "lock/ARTIFACTS.md": "0f2b8a5197ea8d049fca5e9b031e63d76b1208a193f22e78ed4e0065be79e254",
     "lock/base-requirements.cuda.txt": "a3f1571e54c4031cf0638f76ee90549b0a2a1a2216a7118cd70a3c6a7f19c158",
     "lock/environment-manifest.json": "48c163ab3508897783803a6c64dc2508aad866b1a632c10d203d9d16006e6c52",
     "lock/environment_request.json": "5ee8754d035e2858869bc8c03a88e64a02464bf4bfce951e9cc59a31dcd70946",
@@ -20,8 +20,9 @@
     "lock/wheelhouse-manifest.json": "eeffc25dbf474b797a58af66062dd929a0bf44a9360ac6a67b8f92f4415a047f",
     "scripts/fetch_base_source.py": "6b75bed3b1a982a31be5aa41de17252e586a03778169040b67e0b67656f55315",
     "scripts/fetch_native_sources.py": "70c96a3a32347f98d6c63b3c7df2478e95959de6842ebe965133c83313f78547",
-    "scripts/prepare_runtime_tree.py": "485ebc36191540c77e657d84be1d64527f2047bfa7c5af257c266eb7e2e4de38",
-    "scripts/verify_artifacts.py": "9e0abc637f63b5f5e090d9136d7d7962eb7646879421be1e3bbae9979a3385a9"
+    "scripts/measure_artifact_transfer.py": "d3bae232cae20e517989a009a477f0afadc0dc874d23c3106213152a479a2f01",
+    "scripts/prepare_runtime_tree.py": "90063c973cf06af104d2931944821ffd462077756c1f54b32b2e7f4de18b7d74",
+    "scripts/verify_artifacts.py": "88bba8aa9bf9d9c62f3fe969d11460a1b2e678bbdb379f68f8ea627b0af20eb4"
   },
   "environment_spec_sha256": "49df722df0ea9ad58bef3dc7964d1df654482770beff26cd9a40919a674f9d33",
   "executable_files": [
@@ -42,9 +43,9 @@
     "required/test_pe_range.py": "d13d7be11c0bf094a3e13b5a4c1877f83797dfd7746e0cffacff8e444346ff82",
     "required/test_storage_gather_merge.py": "5d493039a0aaa92d636cbe2a874120ad73dbe972de65bf5fc2e7103a175fb284",
     "requirements.json": "d4635f7a7f3babe120e9957033eff3c9557b145e7c9380206d287f952f203e65",
-    "run_verifier.py": "ef0f1f750f40d1c8043bfb3fe92aa46159f711d74d930449d51d78a5297d017a",
+    "run_verifier.py": "5b95383ded5a1bff21d05ceb1e456cef52a96250d914fe6c1d56c4df2bef8ee3",
     "scoring.py": "3c14c359f1d9f4c862f1aee3605cef3b3d431c5df41b2ca9091bb47cb01658c4",
     "test.sh": "c1dadff6faa7e0c259be0656313d972e8259eca076a35f35adb3e37c7ac57372",
-    "update_integrity.py": "d01b60ebe8dba7bf3c0e368d39cfd88c743861922aa14328ce41b0a5461975cc"
+    "update_integrity.py": "7f9f770733aa9ca6ea6f918bf9e8b6126ee1bd9d582e3f267a1b7cc3f28c68a4"
   }
 }

@@ -37,9 +37,13 @@ mode difference was non-semantic group-write permission introduced by the local
 copy. The public archive tree and the old starter are otherwise zero-difference.
 
 The final image deletes the downloaded archive and builder tree by starting a
-new runtime stage. `/app` receives the verified source plus only the generated
-runtime artifacts, then creates exactly one synthetic Git commit with no
-remote, tags, reflog or upstream objects.
+new runtime stage. Compilation runs only in `/opt/build-source`; the immutable
+`/opt/base-pristine` tree is reverified after compilation. `/app` first receives
+only that clean public source and creates exactly one synthetic Git commit with
+no remote, tags, reflog or upstream objects. The 51 generated runtime paths are
+overlaid afterwards and listed exactly in `.git/info/exclude`, so native
+binaries and wheel-generated files are available at runtime but are not part of
+the synthetic source commit.
 
 ## Python dependencies
 
@@ -70,9 +74,16 @@ The native builder uses the digest-pinned CUDA/PyTorch devel image and:
 3. downloads the seven archives in `native-build-deps-manifest.json`, checking
    every SHA-256 before safe extraction;
 4. builds a minimal Git 2.47.2 without network transports;
-5. compiles an SM80 vLLM wheel from the verified base source;
+5. copies the immutable pristine tree to a distinct build tree and compiles an
+   SM80 vLLM wheel only in that build tree;
 6. extracts only the 51 generated/runtime paths in `native-manifest.json`;
 7. emits and checks `native-build-manifest.json` in the runtime image.
+
+The runtime-tree preparation rejects `build`, `dist`, `*.egg-info`, Python
+caches and pytest caches. Release validation also measures the exact excluded
+`tar czf` operation used by Harbor v0.20: one archive must complete within 60
+seconds, and three concurrent archives must remain below Harbor's fixed
+120-second transfer timeout.
 
 No precompiled `.so` is accepted from the host, the curator cache or arbitrary
 `site-packages`. `native-source-binding.json` binds the 258 native build inputs
