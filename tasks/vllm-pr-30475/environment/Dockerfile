@@ -80,15 +80,12 @@ RUN set -eu; \
     cd /app; \
     test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-COPY runtime_smoke.py reproduce_baseline.py /opt/bench/
-COPY lock/ /opt/bench/lock/
-
 RUN groupadd --gid 10001 agent \
     && useradd --uid 10001 --gid 10001 --create-home --home-dir /home/agent agent \
     && chown -R agent:agent /app /home/agent \
-    && chmod -R a-w /opt/bench /opt/vllm-native-overlay
+    && chmod -R a-w /opt/vllm-native-overlay
 
 WORKDIR /app
 USER 10001:10001
 ENTRYPOINT []
-CMD ["python3", "-I", "/opt/bench/runtime_smoke.py"]
+CMD ["sleep", "infinity"]

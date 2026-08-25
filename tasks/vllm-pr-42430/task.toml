@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-42430"
+version = "1.0.0"
+description = "Classify prior-state one-token Mamba rows correctly in FULL CUDA-graph mode."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "mamba", "cuda-graph", "disaggregated-serving"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__42430"]
+repository = "vllm-project/vllm"
+base_commit = "737bfa3a43ce386bd1894792f3302d9f3f9d73fa"
+oracle_commit = "47829b1159335a010521ea3e5361d51744a36b0a"
+workload_type = "bug_fix"
+difficulty = "hard"
+grader_kind = "gpu_correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1200.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 4
+memory_mb = 24576
+storage_mb = 65536
+gpus = 1
+gpu_types = ["A100"]

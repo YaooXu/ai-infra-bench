@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-21476"
+version = "1.0.0"
+description = "Add a native CUDA path for vLLM INT8 per-token-group quantization."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "cuda", "int8", "quantization", "performance"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__21476"]
+repository = "vllm-project/vllm"
+base_commit = "14bf19e39f601163265b7c7d58d972b8a83d8896"
+oracle_commit = "75d29cf4e1d7e950c2308b12e944b507fb3e1916"
+workload_type = "performance_fix"
+difficulty = "hard"
+grader_kind = "correctness_and_native_path"
+
+[agent]
+timeout_sec = 10800.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 7200.0
+os = "linux"
+cpus = 8
+memory_mb = 32768
+storage_mb = 65536
+gpus = 1
+gpu_types = ["A100"]

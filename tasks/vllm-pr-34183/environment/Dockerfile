@@ -55,14 +55,10 @@ RUN set -eux; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-
-RUN chmod 755 /workspace/public_dev/run.sh
-
 ENV PYTHONPATH=/workspace/repo \
     LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
 
 USER agent
 WORKDIR /workspace/repo
 ENTRYPOINT []
-CMD ["/bin/bash"]
+CMD ["sleep", "infinity"]

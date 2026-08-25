@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-32618"
+version = "1.0.0"
+description = "Implement direct GPU sampled-token exchange for async scheduling with pipeline parallelism."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "pipeline-parallel", "nccl", "async-scheduling"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__32618"]
+repository = "vllm-project/vllm"
+base_commit = "8ebf372e9d612a325f54aadf5c0c3c6588b6afa3"
+oracle_commit = "3e440786afe763e892e12125ee7529f95f141c54"
+workload_type = "feature_fix"
+difficulty = "hard"
+grader_kind = "distributed_correctness"
+
+[agent]
+timeout_sec = 7200.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 8
+memory_mb = 32768
+storage_mb = 65536
+gpus = 2
+gpu_types = ["A100"]

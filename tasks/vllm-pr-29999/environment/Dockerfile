@@ -12,6 +12,7 @@ FROM vllm/vllm-openai:v0.12.0@sha256:6766ce0c459e24b76f3e9ba14ffc0442131ef4248c9
 
 ARG VLLM_SOURCE_COMMIT=2902c348265639de300c95cbcae1c26486f57ac7
 ARG VLLM_SOURCE_SHA256=12a2dd5777029f342c5379c4b22ead2255912f832f98726692b5dbf5132256de
+ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/2902c348265639de300c95cbcae1c26486f57ac7
 
 LABEL ai-infra-bench.vllm-source-commit="${VLLM_SOURCE_COMMIT}"
 
@@ -29,11 +30,9 @@ RUN ln -s libpcre2-8.so.0.14.0 /usr/lib/libpcre2-8.so.0 \
     && ln -s libz.so.1.3.1 /usr/lib/libz.so.1 \
     && git --version
 
-# The archive is prepared outside docker build.  This layer verifies the full
-# content digest, extracts no Git metadata, and overlays only wheel-only files
-# (native extensions and generated metadata) without replacing base source.
-COPY vllm-source.tar.gz /tmp/vllm-source.tar.gz
 RUN set -eu; \
+    curl --fail --location --retry 8 --retry-all-errors \
+      "${VLLM_SOURCE_URL}" -o /tmp/vllm-source.tar.gz; \
     printf '%s  %s\n' "${VLLM_SOURCE_SHA256}" /tmp/vllm-source.tar.gz | sha256sum -c -; \
     mkdir -p /workspace/repo; \
     tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \

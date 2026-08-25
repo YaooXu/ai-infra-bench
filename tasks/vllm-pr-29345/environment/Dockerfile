@@ -19,6 +19,7 @@ FROM vllm/vllm-openai:v0.11.1@sha256:d5b12dfb74d605615f8b29ebafaa52294c118bcac7b
 
 ARG VLLM_SOURCE_COMMIT=b07555d26f4c7ad9a2d1ec45428a9d4287db612c
 ARG VLLM_SOURCE_SHA256=5f5d48bb58d898d89d65bb4310b916f3472f84db0cb17f994203084e3aafce1f
+ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/b07555d26f4c7ad9a2d1ec45428a9d4287db612c
 
 LABEL ai-infra-bench.vllm-source-commit="${VLLM_SOURCE_COMMIT}" \
       ai-infra-bench.vllm-native-origin="v0.11.1:439368496db48d8f992ba8c606a0c0b1eebbfa69"
@@ -32,8 +33,9 @@ RUN tar -xzf /tmp/git-runtime.tar -C / \
     && ln -s libz.so.1.3.1 /usr/lib/libz.so.1 \
     && git --version
 
-COPY vllm-source.tar.gz /tmp/vllm-source.tar.gz
 RUN set -eu; \
+    curl --fail --location --retry 8 --retry-all-errors \
+      "${VLLM_SOURCE_URL}" -o /tmp/vllm-source.tar.gz; \
     printf '%s  %s\n' "${VLLM_SOURCE_SHA256}" /tmp/vllm-source.tar.gz | sha256sum -c -; \
     mkdir -p /workspace/repo; \
     tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \

@@ -34,3 +34,6 @@ daemon 进行真实构建或硬件资格检查。
 
 每项的 source/digest、构建时间、镜像 ID、Base/Oracle 结果和剩余风险见对应目录下的
 `validation/docker-build.md`。`blocked-before-build` 项没有伪造 Dockerfile 或镜像。
+
+其中 10 个 `validated` 项已进一步封装为统一 Harbor task；格式、资源与统一
+Base/Oracle 门禁见 [vLLM Survey Harbor 封装审计](VLLM_HARBOR_TASK_AUDIT.md)。

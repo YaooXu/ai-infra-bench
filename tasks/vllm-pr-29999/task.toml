@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-29999"
+version = "1.0.0"
+description = "Remove a spurious missing-vLLM-config warning from modular MoE profiling."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "moe", "distributed", "warning", "triton"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__29999"]
+repository = "vllm-project/vllm"
+base_commit = "2902c348265639de300c95cbcae1c26486f57ac7"
+oracle_commit = "7b5575fa7dcf76ac86ab8d18501b9cc04f74f6bb"
+workload_type = "bug_fix"
+difficulty = "medium"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 3600.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1200.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 49152
+gpus = 1
+gpu_types = ["A100"]

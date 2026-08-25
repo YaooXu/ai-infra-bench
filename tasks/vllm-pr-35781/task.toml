@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-35781"
+version = "1.0.0"
+description = "Avoid repeatedly scanning blocked remote-KV requests in the vLLM scheduler."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "scheduler", "kv-transfer", "performance"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__35781"]
+repository = "vllm-project/vllm"
+base_commit = "d88f28da05b12bc7d63ebe3dcedf445ecb274343"
+oracle_commit = "a8ff2cca92807f1b15b9b8d21135784298ad7814"
+workload_type = "performance_fix"
+difficulty = "hard"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 600.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 1800.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 24576
+gpus = 0

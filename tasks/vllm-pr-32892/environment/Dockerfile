@@ -1,5 +1,14 @@
 # syntax=docker/dockerfile:1
 
+FROM alpine/git:2.49.1@sha256:c0280cf9572316299b08544065d3bf35db65043d5e3963982ec50647d2746e26 AS git_runtime
+RUN tar -czf /git-runtime.tar \
+    /usr/bin/git \
+    /usr/libexec/git-core \
+    /usr/share/git-core \
+    /lib/ld-musl-x86_64.so.1 \
+    /usr/lib/libpcre2-8.so.0.14.0 \
+    /usr/lib/libz.so.1.3.1
+
 ARG BASE_IMAGE=vllm/vllm-openai@sha256:1d6866b87630d94f5e0cdae55ab5abb4ce0b03fcb84d9d10612f9d518d19d4fd
 FROM ${BASE_IMAGE}
 
@@ -10,10 +19,8 @@ ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/dc917cc
 ARG CUTLASS_SOURCE_SHA256=a4513ba33ae82fd754843c6d8437bee1ac71a6ef1c74df886de2338e3917d4df
 ARG CUTLASS_SOURCE_URL=https://codeload.github.com/NVIDIA/cutlass/tar.gz/refs/tags/v4.2.1
 ARG CMAKE_WHEEL_SHA256=2f766bb46367e5e0559fa33184653754bce044583a06014dcaebf8e6dff8a1f1
-ARG CMAKE_WHEEL_URL=https://files.pythonhosted.org/cmake-3.31.10.whl
+ARG CMAKE_WHEEL_URL=https://files.pythonhosted.org/packages/f4/2e/cefc60143950ca1a8dda26d4c8484e6fc406db16e7ca098ebae549de35f9/cmake-3.31.10-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 ARG CMAKE_WHEEL_FILE=cmake-3.31.10-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-ARG GIT_DEBS_SHA256=b33d71799bececf4aec897980fcbcae2d3c4da3e5cda2a0f6fe4be70139b761b
-ARG GIT_DEBS_URL=https://packages.invalid/git-debs.tar.gz
 
 USER 0:0
 ENV HF_HUB_OFFLINE=1 \
@@ -36,6 +43,13 @@ RUN case "${BASE_IMAGE}" in \
       *) echo "BASE_IMAGE must be the frozen v0.14.0 linux/amd64 manifest" >&2; exit 1 ;; \
     esac
 
+COPY --from=git_runtime /git-runtime.tar /tmp/git-runtime.tar
+RUN tar -xzf /tmp/git-runtime.tar -C / \
+    && rm /tmp/git-runtime.tar \
+    && ln -s libpcre2-8.so.0.14.0 /usr/lib/libpcre2-8.so.0 \
+    && ln -s libz.so.1.3.1 /usr/lib/libz.so.1 \
+    && git --version
+
 # All network inputs are byte-locked. Validation serves them from A100
 # loopback, so proxy credentials never enter build arguments or image layers.
 RUN set -eu; \
@@ -45,30 +59,20 @@ RUN set -eu; \
       "${CUTLASS_SOURCE_URL}" -o /tmp/cutlass-source.tar.gz; \
     curl --fail --location --retry 5 --connect-timeout 30 \
       "${CMAKE_WHEEL_URL}" -o "/tmp/${CMAKE_WHEEL_FILE}"; \
-    curl --fail --location --retry 5 --connect-timeout 30 \
-      "${GIT_DEBS_URL}" -o /tmp/git-debs.tar.gz; \
     printf '%s  %s\n' "${VLLM_SOURCE_SHA256}" /tmp/vllm-source.tar.gz \
       | sha256sum --check --strict; \
     printf '%s  %s\n' "${CUTLASS_SOURCE_SHA256}" /tmp/cutlass-source.tar.gz \
       | sha256sum --check --strict; \
     printf '%s  %s\n' "${CMAKE_WHEEL_SHA256}" "/tmp/${CMAKE_WHEEL_FILE}" \
       | sha256sum --check --strict; \
-    printf '%s  %s\n' "${GIT_DEBS_SHA256}" /tmp/git-debs.tar.gz \
-      | sha256sum --check --strict; \
-    mkdir -p /tmp/git-debs /app /opt/cutlass; \
-    tar -xzf /tmp/git-debs.tar.gz -C /tmp/git-debs; \
-    dpkg -i \
-      /tmp/git-debs/liberror-perl_0.17029-1_all.deb \
-      /tmp/git-debs/git-man_1%3a2.34.1-1ubuntu1.17_all.deb \
-      /tmp/git-debs/git_1%3a2.34.1-1ubuntu1.17_amd64.deb; \
+    mkdir -p /app /opt/cutlass; \
     python3 -m pip install --no-index --no-deps "/tmp/${CMAKE_WHEEL_FILE}"; \
     tar -xzf /tmp/vllm-source.tar.gz -C /app --strip-components=1; \
     tar -xzf /tmp/cutlass-source.tar.gz -C /opt/cutlass --strip-components=1; \
-    rm -rf /tmp/git-debs /tmp/vllm-source.tar.gz \
-      /tmp/cutlass-source.tar.gz "/tmp/${CMAKE_WHEEL_FILE}" \
-      /tmp/git-debs.tar.gz; \
+    rm -rf /tmp/vllm-source.tar.gz \
+      /tmp/cutlass-source.tar.gz "/tmp/${CMAKE_WHEEL_FILE}"; \
     test "$(cmake --version | sed -n '1s/.* //p')" = 3.31.10; \
-    test "$(git --version | sed 's/git version //')" = 2.34.1
+    git --version
 
 # Reconstruct a one-commit task repository and prove its tree is the canonical
 # Git tree of VLLM_BASE_SHA. No upstream remotes, branches or tags survive.
@@ -87,8 +91,7 @@ RUN set -eu; \
     test -z "$(git remote)"; \
     test -z "$(git tag)"
 
-COPY source_gate.py rebuild_native.sh runtime_smoke.py reproduce_baseline.py /opt/bench/
-COPY lock/ /opt/bench/lock/
+COPY source_gate.py rebuild_native.sh /opt/bench/
 
 RUN set -eu; \
     python3 -I /opt/bench/source_gate.py /app; \
@@ -118,4 +121,4 @@ RUN groupadd --gid 10001 agent \
 WORKDIR /app
 USER 10001:10001
 ENTRYPOINT []
-CMD ["python3", "-I", "/opt/bench/runtime_smoke.py"]
+CMD ["sleep", "infinity"]

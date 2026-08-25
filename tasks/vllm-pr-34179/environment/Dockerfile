@@ -58,7 +58,7 @@ RUN set -eux; \
     PYTHONPATH=/workspace/repo python3 -c 'import importlib.util, pathlib, vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; print("candidate_source", src); print("candidate_native", native)'; \
     rm -f /root/.bash_history
 
-COPY environment/lock/native-donor.json /workspace/environment-lock/native-donor.json
+COPY lock/native-donor.json /workspace/environment-lock/native-donor.json
 
 RUN python3 -c 'import json, pathlib; manifest=json.loads(pathlib.Path("/workspace/environment-lock/native-donor.json").read_text()); root=pathlib.Path("/workspace/repo/vllm"); actual=sorted(str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and (p.suffix == ".so" or p.name == "_version.py")); assert actual == manifest["copied_artifacts"], (actual, manifest["copied_artifacts"]); py_actual=sorted(p for p in manifest["copied_python_artifacts"] if (root / p).is_file()); assert py_actual == manifest["copied_python_artifacts"], py_actual; assert manifest["target_native_intersection"] == []; print("native_manifest_verified", len(actual), "python_shims_verified", len(py_actual))'
 
@@ -69,9 +69,6 @@ RUN set -eux; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-RUN chmod 755 /workspace/public_dev/run.sh
-
 ENV PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1
@@ -79,4 +76,4 @@ ENV PYTHONPATH=/workspace/repo \
 USER agent
 WORKDIR /workspace/repo
 ENTRYPOINT []
-CMD ["/bin/bash"]
+CMD ["sleep", "infinity"]

@@ -15,13 +15,17 @@ RUN tar -czf /git-runtime.tar \
 # unrelated native extensions are explicitly labeled same-version donors.
 FROM vllm/vllm-openai:v0.10.0@sha256:05a31dc4185b042e91f4d2183689ac8a87bd845713d5c3f987563c5899878271
 
-ARG SOURCE_ARCHIVE=vllm-base.tar.gz
 ARG VLLM_SOURCE_COMMIT=14bf19e39f601163265b7c7d58d972b8a83d8896
 ARG VLLM_SOURCE_SHA256=ef6429c4011bb3955ac9249833aa0a82f36b7855dcad7ac556deb4849d5f3339
+ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/14bf19e39f601163265b7c7d58d972b8a83d8896
 ARG CUTLASS_SHA256=44a121c5878827875856c175ebe82e955062e37cd61fcdf31ebe2e8874f2fc5c
+ARG CUTLASS_URL=https://codeload.github.com/NVIDIA/cutlass/tar.gz/refs/tags/v4.0.0
 ARG FLASH_ATTN_SHA256=cca19d7e53af08aa6d6f0c4fd9dd78d30314497e38fb03b1368b3d5a77ab4b5c
+ARG FLASH_ATTN_URL=https://codeload.github.com/vllm-project/flash-attention/tar.gz/1c2624e53c078854e0637ee566c72fe2107e75f4
 ARG FLASH_ATTN_CUTLASS_SHA256=78816d6c6d97793b5b59ef2a702174cb85b78dfcefc8fe2489964de2e42f17d2
+ARG FLASH_ATTN_CUTLASS_URL=https://codeload.github.com/NVIDIA/cutlass/tar.gz/62750a2b75c802660e4894434dc55e839f322277
 ARG FLASH_MLA_SHA256=42ebf11c1a4cd17c4221705de5cff4fcaedf29a9dbdfcb8f2459dc550faf66f7
+ARG FLASH_MLA_URL=https://codeload.github.com/vllm-project/FlashMLA/tar.gz/575f7724b9762f265bbee5889df9c7d630801845
 
 LABEL ai-infra-bench.vllm-source-commit="${VLLM_SOURCE_COMMIT}" \
       ai-infra-bench.vllm-native-origin="_C=exact-source:${VLLM_SOURCE_COMMIT};other=v0.10.0-donor" \
@@ -37,11 +41,11 @@ RUN tar -xzf /tmp/git-runtime.tar -C / \
     && ln -s libz.so.1.3.1 /usr/lib/libz.so.1 \
     && git --version
 
-COPY ${SOURCE_ARCHIVE} /tmp/vllm-source.tar.gz
-COPY cutlass-v4.0.0.tar.gz /tmp/cutlass.tar.gz
-COPY flash-attn-1c2624e.tar.gz /tmp/flash-attn.tar.gz
-COPY flash-attn-cutlass-62750a2.tar.gz /tmp/flash-attn-cutlass.tar.gz
-COPY flashmla-575f772.tar.gz /tmp/flashmla.tar.gz
+RUN curl --fail --location --retry 8 --retry-all-errors "${VLLM_SOURCE_URL}" -o /tmp/vllm-source.tar.gz \
+    && curl --fail --location --retry 8 --retry-all-errors "${CUTLASS_URL}" -o /tmp/cutlass.tar.gz \
+    && curl --fail --location --retry 8 --retry-all-errors "${FLASH_ATTN_URL}" -o /tmp/flash-attn.tar.gz \
+    && curl --fail --location --retry 8 --retry-all-errors "${FLASH_ATTN_CUTLASS_URL}" -o /tmp/flash-attn-cutlass.tar.gz \
+    && curl --fail --location --retry 8 --retry-all-errors "${FLASH_MLA_URL}" -o /tmp/flashmla.tar.gz
 
 # Build with no package-index or FetchContent access.  CMake dependencies and
 # the FlashAttention submodule are immutable, digest-checked archives.  sm80 is
