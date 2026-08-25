@@ -1,9 +1,10 @@
 # Harbor-compatible task template. Copy this directory to tasks/<task-id>/
 # and replace every angle-bracket placeholder before validation.
-schema_version = "1.3"
+schema_version = "1.4"
 
 [task]
 name = "ai-infra-bench/<task-id>"
+version = "1.0.0"
 description = "<observable failure or requested capability; do not include the solution>"
 authors = [{ name = "<curator>" }]
 keywords = ["ai-inference", "vllm", "<workload-type>", "<subsystem>"]
@@ -36,6 +37,7 @@ timeout_sec = 1800.0
 # Prefer "separate" for tamper-sensitive and performance tasks. When enabled,
 # add a verifier image as documented by Harbor.
 environment_mode = "shared"
+user = "root"
 
 [environment]
 network_mode = "no-network"
