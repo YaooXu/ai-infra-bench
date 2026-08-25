@@ -25,11 +25,10 @@ multiple multimodal items, profiling, and external cache transfer must remain
 consistent in embedding units. Text-only and dense multimodal behavior must
 not regress.
 
-The evaluation runs without network access on one NVIDIA A100 GPU. All
-dependencies are already present; do not download packages, source code,
-models, or other assets. Make the implementation changes in the vLLM source
-tree under `/app`. Do not modify tests, verifier files, reward files, or the
-runtime isolation configuration.
+The evaluation runs without network access. All dependencies are already
+present; do not download packages, source code, models, or other assets. Make
+the implementation changes in the vLLM source tree under `/app`. Do not modify
+tests, verifier files, reward files, or the runtime isolation configuration.
 
 This task grades observable correctness and structural resource semantics.
 Efficiency is checked by facts such as cache rows and accounting units being

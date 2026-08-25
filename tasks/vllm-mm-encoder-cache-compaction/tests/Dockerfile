@@ -1,9 +1,7 @@
-# Build after the local public-source agent image:
-#   docker build --network none --build-arg AGENT_IMAGE=<local-agent-tag> \
-#     -f tests/Dockerfile -t <local-verifier-tag> tests
-# A release pipeline may pass an OCI RepoDigest instead. No private registry is
-# required for a clean-clone local build.
-ARG AGENT_IMAGE
+# Build after the local public-source agent image. The default is the stable
+# recipe-only tag produced by environment/build_images.sh; callers may still
+# override it with another local tag for isolated validation.
+ARG AGENT_IMAGE=ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss
 FROM ${AGENT_IMAGE}
 ARG AGENT_IMAGE
 RUN test -n "$AGENT_IMAGE"

@@ -17,9 +17,9 @@
   "schema_version": "2.0",
   "smoke_tests": [
     "import vllm from editable /app",
-    "import torch and load vllm._C",
-    "torch.cuda.is_available()",
-    "GPU name contains A100",
+    "import target Python modules from /app",
+    "torch.cuda.device_count() equals zero",
+    "locate the source-built vllm._C without making its driver load a validity gate",
     "outbound TCP fails"
   ],
   "torch": "2.9.0"

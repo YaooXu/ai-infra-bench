@@ -305,7 +305,7 @@ def verify_runtime_metadata_contract(path: Path) -> dict[str, Any]:
 
 def verify_public_build_manifest(lock_root: Path) -> dict[str, Any]:
     manifest = load_json(lock_root / "public-build-manifest.json")
-    if manifest.get("protocol") != "public-source-build":
+    if manifest.get("protocol") != "recipe-only-local-build":
         raise ValueError("public-build protocol mismatch")
     if manifest.get("build_time_network") != "public-sources-only":
         raise ValueError("build-time network policy mismatch")
@@ -313,6 +313,16 @@ def verify_public_build_manifest(lock_root: Path) -> dict[str, Any]:
         raise ValueError("runtime network policy mismatch")
     if manifest.get("local_bundle_required") is not False:
         raise ValueError("public build still declares a local bundle")
+    if manifest.get("prebuilt_task_images_published") is not False:
+        raise ValueError("recipe-only task must not declare published task images")
+    expected_local_tags = {
+        "agent": "ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss",
+        "verifier": "ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss",
+    }
+    if manifest.get("local_image_tags") != expected_local_tags:
+        raise ValueError("recipe-only local image tags changed")
+    if manifest.get("verifier_build_network") != "no-network":
+        raise ValueError("verifier build network policy mismatch")
     image_pattern = re.compile(r"^[^\s@]+@sha256:[0-9a-f]{64}$")
     for field in ("base_image", "runtime_base_image"):
         if not image_pattern.fullmatch(str(manifest.get(field, ""))):

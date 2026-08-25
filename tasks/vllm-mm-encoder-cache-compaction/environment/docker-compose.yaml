@@ -1,0 +1,5 @@
+services:
+  main:
+    environment:
+      CUDA_VISIBLE_DEVICES: ""
+      NVIDIA_VISIBLE_DEVICES: void

@@ -274,21 +274,24 @@ def probe_environment() -> tuple[dict[str, object], list[str], list[str]]:
     candidate_errors: list[str] = []
     metadata: dict[str, object] = {}
 
-    gpu = isolated_python(
+    no_gpu = isolated_python(
         "import json,torch; "
-        "assert torch.cuda.is_available(); "
-        "assert torch.cuda.device_count()==1, torch.cuda.device_count(); "
-        "name=torch.cuda.get_device_name(0); assert 'A100' in name; "
-        "print(json.dumps({'gpu_model':name,'cuda':torch.version.cuda,"
-        "'torch':torch.__version__,'cuda_device_count':torch.cuda.device_count()}))"
+        "available=bool(torch.cuda.is_available()); "
+        "count=int(torch.cuda.device_count()); "
+        "assert not available, available; assert count==0, count; "
+        "print(json.dumps({'gpu_model':None,'cuda':torch.version.cuda,"
+        "'torch':torch.__version__,'cuda_device_count':count,"
+        "'physical_gpu_visible':available}))"
     )
-    if gpu.returncode != 0:
-        infra_errors.append("independent A100/CUDA probe failed: " + gpu.stderr[-1000:])
+    if no_gpu.returncode != 0:
+        infra_errors.append(
+            "no-physical-GPU probe failed: " + no_gpu.stderr[-1000:]
+        )
     else:
         try:
-            metadata.update(json.loads(gpu.stdout.strip().splitlines()[-1]))
+            metadata.update(json.loads(no_gpu.stdout.strip().splitlines()[-1]))
         except (IndexError, json.JSONDecodeError) as exc:
-            infra_errors.append(f"independent GPU probe returned invalid JSON: {exc}")
+            infra_errors.append(f"device probe returned invalid JSON: {exc}")
 
     network = isolated_python(
         "import socket; s=socket.socket(); s.settimeout(2); "
@@ -303,16 +306,18 @@ def probe_environment() -> tuple[dict[str, object], list[str], list[str]]:
         "import importlib.util,json,pathlib,sys; root=pathlib.Path("
         + repr(str(WORKSPACE))
         + "); "
-        "sys.path.insert(0,str(root)); import vllm,vllm._C; "
+        "sys.path.insert(0,str(root)); import vllm; "
         "from vllm.multimodal.inputs import PlaceholderRange; "
         "from vllm.v1.core.encoder_cache_manager import EncoderCacheManager; "
         "source=pathlib.Path(vllm.__file__).resolve(); "
-        "native=pathlib.Path(importlib.util.find_spec('vllm._C').origin).resolve(); "
+        "native_spec=importlib.util.find_spec('vllm._C'); "
+        "native=(pathlib.Path(native_spec.origin).resolve() if native_spec and native_spec.origin else None); "
         "assert (root/'vllm/__init__.py').is_file(); "
-        "source.relative_to(root); native.relative_to(root); "
+        "source.relative_to(root); "
+        "assert native is None or native.is_relative_to(root); "
         "print(json.dumps({'candidate_init':str(root/'vllm/__init__.py'),"
-        "'candidate_import':str(source),'native_extension':str(native),"
-        "'native_extension_loaded':True}))"
+        "'candidate_import':str(source),'native_extension':str(native) if native else None,"
+        "'target_python_imports_loaded':True}))"
     )
     if source_probe.returncode != 0:
         candidate_errors.append("global vLLM import probe failed: " + source_probe.stderr[-1500:])
@@ -320,14 +325,27 @@ def probe_environment() -> tuple[dict[str, object], list[str], list[str]]:
         try:
             workspace_probe = json.loads(source_probe.stdout.strip().splitlines()[-1])
             imported = Path(str(workspace_probe["candidate_import"])).resolve()
-            native = Path(str(workspace_probe["native_extension"])).resolve()
             imported.relative_to(WORKSPACE)
-            native.relative_to(WORKSPACE)
-            if workspace_probe.get("native_extension_loaded") is not True:
-                raise ValueError("native extension was not loaded")
+            native_value = workspace_probe.get("native_extension")
+            if native_value is not None:
+                Path(str(native_value)).resolve().relative_to(WORKSPACE)
+            if workspace_probe.get("target_python_imports_loaded") is not True:
+                raise ValueError("target Python imports were not loaded")
             metadata["workspace_probe"] = workspace_probe
         except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError):
             candidate_errors.append("vLLM import did not resolve to candidate workspace")
+
+    # Loading the CUDA extension is diagnostic rather than a validity gate.
+    # Missing driver-provided libcuda.so.1 in a gpus=0 container does not make
+    # the Python correctness contract invalid.
+    native_probe = isolated_python(
+        "import json,pathlib,sys; "
+        + "sys.path.insert(0," + repr(str(WORKSPACE)) + "); "
+        "import vllm._C; print(json.dumps({'native_extension_loaded':True}))"
+    )
+    metadata["native_extension_loaded_without_gpu"] = native_probe.returncode == 0
+    if native_probe.returncode != 0:
+        metadata["native_extension_import_error"] = native_probe.stderr[-1500:]
     return metadata, infra_errors, candidate_errors
 
 

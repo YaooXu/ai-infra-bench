@@ -149,6 +149,8 @@ COPY lock/ /opt/bench/lock/
 COPY scripts/ /opt/bench/scripts/
 COPY Dockerfile /opt/bench/Dockerfile
 COPY .dockerignore /opt/bench/.dockerignore
+COPY build_images.sh /opt/bench/build_images.sh
+COPY docker-compose.yaml /opt/bench/docker-compose.yaml
 
 # Candidate tooling receives one synthetic base commit and no upstream Git
 # objects, generated runtime artifacts, remotes, tags, reflog, hidden tests, or
@@ -207,4 +209,4 @@ RUN groupadd --gid 10001 agent && \
 
 WORKDIR /app
 USER 10001:10001
-CMD ["python", "-I", "-c", "import torch,vllm,vllm._C; print(vllm.__file__); print(torch.__version__); print(torch.version.cuda)"]
+CMD ["python", "-I", "-c", "import importlib.util,torch,vllm; print(vllm.__file__); print(torch.__version__); print(torch.version.cuda); print(torch.cuda.device_count()); print(importlib.util.find_spec('vllm._C').origin)"]

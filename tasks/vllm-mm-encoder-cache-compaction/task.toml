@@ -10,7 +10,7 @@ artifacts = [
 [task]
 name = "ai-infra-bench/vllm-mm-encoder-cache-compaction"
 description = "Separate decoder placeholder coordinates from compact multimodal encoder-cache accounting and storage."
-authors = [{ name = "AI Infra Benchmark Authors" }]
+authors = [{ name = "yc" }]
 keywords = ["ai-inference", "vllm", "refactor", "multimodal", "scheduler", "memory-kv"]
 
 [metadata]
@@ -23,13 +23,10 @@ difficulty = "expert"
 repository = "vllm-project/vllm"
 base_commit = "676db55eecf8b6d9ec38ea243cf6f35ea8378ec6"
 source_cutoff = "2026-08-08"
-accelerator_vendor = "nvidia"
-accelerator_type = "A100-SXM4-40GB"
+accelerator_vendor = "cpu"
+accelerator_type = "x86_64"
 accelerator_count = 1
 checkpoint_digests = []
-# Intentionally unresolved: the validated local Docker image ID is not an OCI
-# RepoDigest and must not be presented as a portable release identity.
-image_digest = ""
 grader_kind = "correctness"
 
 [agent]
@@ -43,7 +40,8 @@ network_mode = "no-network"
 environment_mode = "separate"
 user = "agent"
 
-[environment]
+[verifier.environment]
+docker_image = "ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss"
 network_mode = "no-network"
 build_timeout_sec = 7200.0
 os = "linux"
@@ -51,5 +49,15 @@ workdir = "/app"
 cpus = 16
 memory_mb = 65536
 storage_mb = 102400
-gpus = 1
-gpu_types = ["A100"]
+gpus = 0
+
+[environment]
+docker_image = "ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss"
+network_mode = "no-network"
+build_timeout_sec = 7200.0
+os = "linux"
+workdir = "/app"
+cpus = 16
+memory_mb = 65536
+storage_mb = 102400
+gpus = 0

@@ -3,7 +3,7 @@
 This directory is a Harbor schema 1.3 task for the vLLM multimodal encoder
 cache placeholder/embedding-count contract. `instruction.md` is the only task
 description intended for solving agents; this README documents packaging and
-curator validation.
+validation.
 
 ## Packaging protocol
 
@@ -16,7 +16,7 @@ curator validation.
 - vLLM native extensions are rebuilt for SM80 in a build-only copy of the
   verified base source and seven hash-pinned public source archives. `/app` is
   materialized from the untouched pristine copy, then receives only the 51
-  manifest-declared runtime paths. No curator wheel/native bundle is required.
+  manifest-declared runtime paths.
 - Agent and separate-verifier runtime networking remains disabled.
 - The agent image contains one editable, source-only synthetic Git commit under
   `/app`; generated runtime paths are exactly ignored and neither tests nor the
@@ -29,21 +29,17 @@ See `environment/lock/ARTIFACTS.md` for the full supply-chain contract.
 ## Local builds
 
 ```bash
-docker build --network default --no-cache \
-  -f environment/Dockerfile \
-  -t vllm-mm-cache-agent:local \
-  environment
-
-docker build --network none --no-cache \
-  --build-arg AGENT_IMAGE=vllm-mm-cache-agent:local \
-  -f tests/Dockerfile \
-  -t vllm-mm-cache-verifier:local \
-  tests
+bash environment/build_images.sh
 ```
 
-The first build may access only the public sources declared by the manifests.
-Runtime containers must use `--network none`; the canonical validation hardware
-is one NVIDIA A100-SXM4-40GB.
+This produces the stable local recipe tags:
+
+- `ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss`
+- `ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss`
+
+The agent build may access only the public sources declared by the manifests.
+The verifier build uses `--network none`. Both runtime environments use
+`network_mode = "no-network"`.
 
 ## Verifier outputs
 
@@ -52,6 +48,7 @@ is one NVIDIA A100-SXM4-40GB.
 `{"reward": 0.0}`. Continuous completion, group scores, validity and
 infrastructure diagnostics are retained separately in `scoring.json`.
 
-The release image fields remain empty until maintainers publish the exact
-validated images and obtain registry manifest RepoDigests. Local image IDs and
-archive-file hashes are never substituted for those identities.
+This task is released as a recipe-only/local-build task and intentionally has
+no `metadata.image_digest`. No task image is published to a registry. Local
+image IDs are recorded only as validation evidence and are never represented
+as OCI registry RepoDigests.

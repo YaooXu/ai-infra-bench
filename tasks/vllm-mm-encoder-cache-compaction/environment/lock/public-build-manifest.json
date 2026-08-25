@@ -2,16 +2,17 @@
   "base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-devel@sha256:97ec2a667dd7560c615bf50a95b2fb85a673ae233a55da1706e8e04e6d6d518e",
   "runtime_base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime@sha256:f0ca81b440e252399d9954a45b616ee2540959466aacf3dfc3f856691eee66e8",
   "build_time_network": "public-sources-only",
-  "curator_offline_cache": {
-    "required": false,
-    "status": "optional and intentionally outside the public task"
-  },
   "local_bundle_required": false,
   "base_source_archive_count": 1,
   "base_source_manifest": "sources.lock.json",
   "native_runtime_artifact_count": 51,
   "native_source_archive_count": 7,
-  "protocol": "public-source-build",
+  "protocol": "recipe-only-local-build",
+  "local_image_tags": {
+    "agent": "ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss",
+    "verifier": "ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss"
+  },
+  "prebuilt_task_images_published": false,
   "public_sources": [
     "https://pypi.org/simple",
     "https://codeload.github.com",
@@ -19,5 +20,6 @@
   ],
   "python_distribution_count": 178,
   "runtime_network": "no-network",
+  "verifier_build_network": "no-network",
   "schema_version": "1.0"
 }

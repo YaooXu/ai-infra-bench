@@ -70,7 +70,8 @@
       "suite": "required",
       "score_group": "storage_gather_merge",
       "test_node_ids": [
-        "required/test_storage_gather_merge.py::test_encoder_cache_physically_stores_only_embedding_rows"
+        "required/test_storage_gather_merge.py::test_encoder_cache_physically_stores_only_embedding_rows",
+        "heldout/test_cpu_e2e_pipeline.py::test_cpu_sparse_pipeline_uses_e_end_to_end"
       ]
     },
     {

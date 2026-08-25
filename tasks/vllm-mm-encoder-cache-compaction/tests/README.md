@@ -4,10 +4,13 @@
 gather/merge behavior that every valid solution must address.
 
 `heldout/` contains profiling/connector integration, lifecycle regressions,
-hardened edge cases, and trusted scorer self-tests. These tests do not add
-requirements beyond `instruction.md`; they vary execution paths and inputs to
-reject partial or hard-coded implementations. The formal Harbor reward is
-binary; continuous capability completion is retained in `scoring.json` only.
+hardened edge cases, a CPU component pipeline, and trusted scorer self-tests.
+The pipeline traverses range mapping, scheduler/cache accounting, compact
+storage, and gather/merge using the real candidate Python modules. These tests
+do not add requirements beyond `instruction.md`; they vary execution paths and
+inputs to reject partial or hard-coded implementations. The formal Harbor
+reward is binary; continuous capability completion is retained in
+`scoring.json` only.
 
 `test.sh` is the only Harbor entrypoint. It clears prior outputs, verifies the
 frozen test and environment manifests, runs each candidate-bound pytest node in

@@ -12,6 +12,8 @@ from pathlib import Path
 ENVIRONMENT_FILES = [
     ".dockerignore",
     "Dockerfile",
+    "build_images.sh",
+    "docker-compose.yaml",
     "lock/ARTIFACTS.md",
     "lock/environment-manifest.json",
     "lock/environment_request.json",

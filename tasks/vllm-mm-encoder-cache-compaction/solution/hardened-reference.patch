@@ -20,7 +20,7 @@ index c058998..4838f68 100644
 -        return int(formatted_video_soft_tokens)
 +        return num_video_soft_tokens
 diff --git a/vllm/multimodal/inputs.py b/vllm/multimodal/inputs.py
-index 6b1cbbe..ef0434d 100644
+index 6b1cbbe..e9477ef 100644
 --- a/vllm/multimodal/inputs.py
 +++ b/vllm/multimodal/inputs.py
 @@ -8 +8 @@ from dataclasses import dataclass
@@ -30,20 +30,22 @@ index 6b1cbbe..ef0434d 100644
 -    def get_num_embeds(self) -> int:
 +    @cached_property
 +    def embeds_cumsum(self) -> torch.Tensor | None:
-@@ -173,0 +175,7 @@ class PlaceholderRange:
+@@ -173,0 +175,12 @@ class PlaceholderRange:
 +            return None
 +
-+        return self.is_embed.cumsum(dim=0)
++        return torch.cat(
++            (
++                self.is_embed.new_zeros(1, dtype=torch.long),
++                self.is_embed.to(dtype=torch.long).cumsum(dim=0),
++            )
++        )
 +
 +    @cached_property
 +    def get_num_embeds(self) -> int:
 +        if self.embeds_cumsum is None:
-@@ -176 +184,29 @@ class PlaceholderRange:
+@@ -176 +189,22 @@ class PlaceholderRange:
 -        return int(self.is_embed.sum().item())
-+        if self.embeds_cumsum.numel() == 0:
-+            return 0
-+
-+        return int(self.embeds_cumsum[-1])
++        return int(self.embeds_cumsum[-1].item())
 +
 +    def get_embeds_indices_in_range(
 +        self, start_idx: int, end_idx: int
@@ -61,16 +63,14 @@ index 6b1cbbe..ef0434d 100644
 +        if self.embeds_cumsum is None:
 +            return start_idx, end_idx
 +
-+        embeds_start_idx = (
-+            int(self.embeds_cumsum[start_idx - 1]) if start_idx > 0 else 0
++        return (
++            int(self.embeds_cumsum[start_idx].item()),
++            int(self.embeds_cumsum[end_idx].item()),
 +        )
-+        embeds_end_idx = (
-+            int(self.embeds_cumsum[end_idx - 1]) if end_idx > 0 else 0
-+        )
-+
-+        return embeds_start_idx, embeds_end_idx
-@@ -191 +227 @@ class PlaceholderRange:
+@@ -191 +225,3 @@ class PlaceholderRange:
 -            return [(self.offset, self.offset + self.length)]
++            if self.length == 0:
++                return []
 +            return [(self.offset, self.offset + self.length - 1)]
 diff --git a/vllm/multimodal/profiling.py b/vllm/multimodal/profiling.py
 index cb70041..a690948 100644

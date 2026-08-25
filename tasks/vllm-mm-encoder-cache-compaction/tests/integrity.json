@@ -1,17 +1,19 @@
 {
   "environment_files": {
     ".dockerignore": "6200e62d4128eadfb90c76247d18ba0b5df549b3b15e98345f2b0734937330ee",
-    "Dockerfile": "6cb02df44082a3f771405ee290b4293ae3df2759eb4b9be9d308143d91fa0884",
-    "lock/ARTIFACTS.md": "0f2b8a5197ea8d049fca5e9b031e63d76b1208a193f22e78ed4e0065be79e254",
+    "Dockerfile": "a3293e81bbdee9308a7e724d41b9b7d17035afa11ae8f3403a6ce00e55ea8000",
+    "build_images.sh": "9256ec1589647d033a8f07e8740edf0eb92b85770a67706962f0fb97121a6361",
+    "docker-compose.yaml": "64d09352ec265bce7e8823d022d6ee333da332f7620b5d9e39034d09c5da4c03",
+    "lock/ARTIFACTS.md": "e8dc6cd77c96164ccc6c51f5e2562374822b750aa9c1ccbe9f7cd854888570b3",
     "lock/base-requirements.cuda.txt": "a3f1571e54c4031cf0638f76ee90549b0a2a1a2216a7118cd70a3c6a7f19c158",
-    "lock/environment-manifest.json": "48c163ab3508897783803a6c64dc2508aad866b1a632c10d203d9d16006e6c52",
-    "lock/environment_request.json": "5ee8754d035e2858869bc8c03a88e64a02464bf4bfce951e9cc59a31dcd70946",
-    "lock/environment_spec.json": "49df722df0ea9ad58bef3dc7964d1df654482770beff26cd9a40919a674f9d33",
-    "lock/hardware-manifest.json": "d8a0fd9bcff67be54692fcb9f7e71653528194714ce610d1e4b58772309b254a",
+    "lock/environment-manifest.json": "190d5115fa9f63366ad76c88dc4dd84da0900a8270efc2507227544dbded6315",
+    "lock/environment_request.json": "c3316eb6e577aa95f1f8f1e4b342391ab2863adf4b510a7e7dc2f8cef01a02b9",
+    "lock/environment_spec.json": "9b27be88adefab7382470875beaa23bfa7f755111849243904660cd92b430407",
+    "lock/hardware-manifest.json": "16d251d1e99c1880145e6dcced77d7a2afd0b00bde3e30a7050310b88549d360",
     "lock/native-build-deps-manifest.json": "d605c2740002778c3eb2a70c358eeb220595bca6f0c041c36c7b9cf1b2b46ce4",
     "lock/native-manifest.json": "a43ab43dcff50f303f4664e132c8292b4d847dc3e19ce73426fbb03d004a1e65",
     "lock/native-source-binding.json": "237d82024ecbf23c050466903dcaf7d4d2b50be858ba664bf303af4d3fcbeab9",
-    "lock/public-build-manifest.json": "88ece4146d8578f7bbe81f6c71c3cc6a938fdb0ebef5256ce9495380aa07577f",
+    "lock/public-build-manifest.json": "fba293f4fcd16f3787fa9d8901a1e573d50099662d6379d9b2c41e15eb77e640",
     "lock/requirements.build.input": "64acd4c81edd82c10d8a73bc7d1199b24501106c2d31bb3ff643458a50a427e9",
     "lock/requirements.input": "5454d2c740752d5c8e6f6bf02f2a46e74a4cd8fc2f1b126bf160679cdf5d74a8",
     "lock/requirements.lock": "ce93786c8556bafc14ec5d369277334a743ae67877068f78c17156c7f6453ecf",
@@ -22,9 +24,9 @@
     "scripts/fetch_native_sources.py": "70c96a3a32347f98d6c63b3c7df2478e95959de6842ebe965133c83313f78547",
     "scripts/measure_artifact_transfer.py": "d3bae232cae20e517989a009a477f0afadc0dc874d23c3106213152a479a2f01",
     "scripts/prepare_runtime_tree.py": "90063c973cf06af104d2931944821ffd462077756c1f54b32b2e7f4de18b7d74",
-    "scripts/verify_artifacts.py": "88bba8aa9bf9d9c62f3fe969d11460a1b2e678bbdb379f68f8ea627b0af20eb4"
+    "scripts/verify_artifacts.py": "a7311bc5f76bca12207b8ca4e2561ec86798c2788be2218adf5c0839ccd40d60"
   },
-  "environment_spec_sha256": "49df722df0ea9ad58bef3dc7964d1df654482770beff26cd9a40919a674f9d33",
+  "environment_spec_sha256": "9b27be88adefab7382470875beaa23bfa7f755111849243904660cd92b430407",
   "executable_files": [
     "pytest_entry.py",
     "run_verifier.py",
@@ -33,19 +35,21 @@
   "schema_version": "1.2",
   "test_files": {
     ".dockerignore": "5ef63f8eb344c2fe8b5e14250ae86a1cdb18d3ee4219cb0e9887cca36bd5aa30",
-    "Dockerfile": "1812ad3740080848e06355c37550854825160af17b0ea12d48a3fa47e8fd3a21",
-    "README.md": "39a8fdc26c3d699f9a6d0549965986a6776f542871e6d6bebfd901294bb3220c",
+    "Dockerfile": "62b333b1a495817059218c3bb5d4638f736b093a394e7fd9442f12366d86d797",
+    "README.md": "a1d54ac2723c45727b9c4d1e61d4f19693e3427e931edc97ed2504411fa8fd39",
+    "docker-compose.yaml": "64d09352ec265bce7e8823d022d6ee333da332f7620b5d9e39034d09c5da4c03",
+    "heldout/test_cpu_e2e_pipeline.py": "255681cc27b612a38c33c7ab4327048c296355813a583f438fdf1de5e69e13f3",
     "heldout/test_profiling_connector.py": "a492dcb4fd23307202d2bf16e3ab206886d4386e9a253c1297cf26c90e5915b4",
     "heldout/test_regression_hardening.py": "45b16231c2b273c42ffd095d3653900f519257c451ee9b31282b01ce5660ba4e",
     "heldout/test_scoring_contract.py": "32b013b68572a376cab197f36f0b11105cd05d16cbaf0871c35ffa33a7a92a14",
     "pytest_entry.py": "0c5b1904818888fa80e05d0b0f3624d781d460b1ef29081c0ecedf1e78787a65",
     "required/test_cache_scheduler.py": "098f290ca8ca2f7891612d5a5b5158195c24938c2231f93d7a8df45c6f090741",
     "required/test_pe_range.py": "d13d7be11c0bf094a3e13b5a4c1877f83797dfd7746e0cffacff8e444346ff82",
-    "required/test_storage_gather_merge.py": "5d493039a0aaa92d636cbe2a874120ad73dbe972de65bf5fc2e7103a175fb284",
-    "requirements.json": "d4635f7a7f3babe120e9957033eff3c9557b145e7c9380206d287f952f203e65",
-    "run_verifier.py": "5b95383ded5a1bff21d05ceb1e456cef52a96250d914fe6c1d56c4df2bef8ee3",
+    "required/test_storage_gather_merge.py": "3fb26a9d7d5e91775a29f0df135e5ad099b2a0fa55a3c1ab92b56e671bb922eb",
+    "requirements.json": "c0416d49f1dbf42364df0f5b7d1f7f95745faec2781216f082bbb4ddaae92edb",
+    "run_verifier.py": "2f428206b72d0a8a5f74baed5f5cacfdc215fcb245de95d0c19cadba64025c4d",
     "scoring.py": "3c14c359f1d9f4c862f1aee3605cef3b3d431c5df41b2ca9091bb47cb01658c4",
     "test.sh": "c1dadff6faa7e0c259be0656313d972e8259eca076a35f35adb3e37c7ac57372",
-    "update_integrity.py": "7f9f770733aa9ca6ea6f918bf9e8b6126ee1bd9d582e3f267a1b7cc3f28c68a4"
+    "update_integrity.py": "2fd90d92b553ccb88473ccb8dddefc2b9b04cdd28e197b752bac0f9f3ffecd74"
   }
 }

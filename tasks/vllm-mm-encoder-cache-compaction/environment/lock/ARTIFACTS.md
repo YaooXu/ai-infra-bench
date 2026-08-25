@@ -1,23 +1,26 @@
 # Public build and artifact contract
 
-This task is built only from its committed recipe and public, immutable inputs.
-A clean clone does **not** need the curator's historical 5.3 GB wheel/native
-cache. That cache may remain available to curators for offline recovery, but it
-is neither a build input nor a release artifact.
+This is a recipe-only/local-build task. It is built only from its committed
+Dockerfiles and public, immutable inputs; no prebuilt task image is published
+or required.
 
 ## Network boundary
 
-- **Image build:** public network access is allowed for the two digest-pinned
-  base images, PyPI and the exact GitHub codeload URLs in the source manifests.
-  No APT repository is used.
+- **Agent image build:** public network access is allowed for the two
+  digest-pinned base images, PyPI and the exact GitHub codeload URLs in the
+  source manifests. No APT repository is used.
+- **Verifier image build:** `no-network`; it adds trusted tests and the scorer
+  to the already-built local agent image.
 - **Agent runtime:** `no-network`.
 - **Verifier runtime:** `no-network`, in a separate environment.
-- **Curator offline cache:** optional and outside the public task.
+
+The public `environment/docker-compose.yaml` and `tests/docker-compose.yaml`
+match the resource and network policy declared by `task.toml`.
 
 There is no network fallback after a hash mismatch. In particular, the outer
 SHA-256 of the GitHub base archive is strict. Even if its extracted semantic
 tree appears unchanged, a different archive hash fails the build until a
-curator independently reviews and updates the lock.
+maintainer independently reviews and updates the lock.
 
 ## Base source
 
@@ -32,9 +35,7 @@ curator independently reviews and updates the lock.
 `scripts/fetch_base_source.py` rejects absolute paths, traversal, duplicate
 entries, links, devices and unlisted files before extraction. Regular file
 modes are normalized to Git's canonical `100644`/`100755` semantics. The
-previous vendored starter had identical bytes and executable bits; its only raw
-mode difference was non-semantic group-write permission introduced by the local
-copy. The public archive tree and the old starter are otherwise zero-difference.
+extracted tree must exactly match the locked file and aggregate tree manifests.
 
 The final image deletes the downloaded archive and builder tree by starting a
 new runtime stage. Compilation runs only in `/opt/build-source`; the immutable
@@ -85,42 +86,55 @@ caches and pytest caches. Release validation also measures the exact excluded
 seconds, and three concurrent archives must remain below Harbor's fixed
 120-second transfer timeout.
 
-No precompiled `.so` is accepted from the host, the curator cache or arbitrary
-`site-packages`. `native-source-binding.json` binds the 258 native build inputs
-to an aggregate SHA-256, while `prepare_runtime_tree.py` rejects a source-built
-wheel missing any required extension. Optional modules produced by a full build
-remain in the builder stage and are recorded rather than copied.
+No precompiled `.so` is accepted from the host or arbitrary `site-packages`.
+`native-source-binding.json` binds the 258 native build inputs to an aggregate
+SHA-256, while `prepare_runtime_tree.py` rejects a source-built wheel missing
+any required extension. Optional modules produced by a full build remain in
+the builder stage and are recorded rather than copied.
 
 Docker build stages do not receive NVIDIA driver injection, so the build checks
-extension location and metadata without loading `libcuda.so.1`. The no-network
-A100 runtime smoke imports `vllm._C` with GPU injection and is the authoritative
-ABI/driver gate.
+extension location and metadata without loading `libcuda.so.1`. The verifier
+imports the candidate Python modules from `/app`; native-extension loading is
+recorded separately as runtime diagnostic evidence.
 
 ## Reproducible local build order
 
 From the task directory:
 
 ```bash
-docker build --network default --no-cache \
-  -f environment/Dockerfile \
-  -t vllm-mm-cache-agent:local \
+bash environment/build_images.sh
+```
+
+Equivalent explicit commands are:
+
+```bash
+docker build --network default --no-cache --pull=false \
+  --file environment/Dockerfile \
+  --tag ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss \
   environment
 
-docker build --network none --no-cache \
-  --build-arg AGENT_IMAGE=vllm-mm-cache-agent:local \
-  -f tests/Dockerfile \
-  -t vllm-mm-cache-verifier:local \
+docker build --network none --no-cache --pull=false \
+  --build-arg AGENT_IMAGE=ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss \
+  --file tests/Dockerfile \
+  --tag ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss \
   tests
 ```
 
-The first build needs public network access; both resulting runtime environments
-run with `network_mode = "no-network"`. The verifier build only adds the frozen
-tests to the exact agent image and performs no network request.
+The first build needs public network access. The second build performs no
+network request. Both resulting runtime environments run with
+`network_mode = "no-network"`. `tests/Dockerfile` defaults to the stable local
+agent tag, and the separate verifier contains trusted tests/scoring code while
+the agent image contains neither `tests/` nor `solution/`.
 
-Local tags and image IDs are development evidence only. `metadata.image_digest`
-stays empty until a maintainer pushes the release image and records its OCI
-registry manifest digest. After that, the agent RepoDigest becomes the default
-`AGENT_IMAGE` in `tests/Dockerfile`; a prebuilt verifier RepoDigest may also be
-declared in `[verifier.environment]` if that is the repository's chosen release
-mode. Harbor 0.20 does not require that table to build `tests/Dockerfile` in
-separate mode when using recipe-based environments.
+`build_images.sh` forwards the standard Docker proxy build arguments when they
+are already present in the caller's environment. A controlled builder may also
+override `VLLM_MM_CACHE_BASE_IMAGE` and
+`VLLM_MM_CACHE_RUNTIME_BASE_IMAGE` to an anonymous local mirror reference for
+the same public manifests. The Dockerfile independently rejects either value
+unless it ends in the exact frozen SHA-256 digest above; this does not permit a
+different or mutable base image.
+
+The stable tags identify locally built recipe outputs only. This release does
+not publish task images and therefore omits `metadata.image_digest`. Local image
+IDs, `docker save` hashes and archive hashes are validation evidence, not OCI
+registry RepoDigests.

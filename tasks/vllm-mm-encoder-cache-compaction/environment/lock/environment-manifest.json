@@ -8,17 +8,23 @@
     "python": "public PyPI in pip hash-checking mode"
   },
   "cuda": "12.8",
-  "portable_release": {
-    "agent_repo_digest": null,
-    "ready": false,
-    "verifier_repo_digest": null
+  "release_protocol": {
+    "kind": "recipe-only-local-build",
+    "metadata_image_digest": "omitted",
+    "prebuilt_task_images_published": false,
+    "stable_local_agent_tag": "ai-infra-bench/vllm-mm-encoder-cache-compaction-agent:oss",
+    "stable_local_verifier_tag": "ai-infra-bench/vllm-mm-encoder-cache-compaction-verifier:oss"
   },
   "pytorch": "2.9.0+cu128",
   "python": "3.11",
   "repository": "vllm-project/vllm",
+  "formal_scoring": {
+    "physical_gpu_count": 0,
+    "tensor_device": "cpu"
+  },
   "runtime_network": "no-network",
   "runtime_user": "agent (uid 10001)",
   "schema_version": "2.0",
-  "status": "PUBLIC_RECIPE_READY_REPODIGEST_PENDING",
+  "status": "PUBLIC_RECIPE_ONLY",
   "vllm_version_override": "0.11.2.dev278"
 }

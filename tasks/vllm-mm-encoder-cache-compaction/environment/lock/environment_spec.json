@@ -4,7 +4,8 @@
   "runtime_base_image": "pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime@sha256:f0ca81b440e252399d9954a45b616ee2540959466aacf3dfc3f856691eee66e8",
   "build_network": "public-sources-only",
   "cuda": "12.8",
-  "gpu_required": "A100",
+  "gpu_required": false,
+  "scoring_device": "cpu",
   "native_build": {
     "artifact_count": 51,
     "base_native_input_tree_sha256": "d7323a1437fb66b02e75b205d82e2a7ffcf10fbcdd888e432b31c9ddce9b568f",
