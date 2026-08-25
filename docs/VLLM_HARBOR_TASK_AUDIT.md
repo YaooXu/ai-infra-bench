@@ -1,7 +1,10 @@
 # vLLM Survey Harbor 封装审计
 
-本轮只把 24 项 survey 审计中标记为 `validated` 的 10 项发布为 Harbor task。
-`environment-only` 与 `blocked` 项仍保留环境或资格审计材料，但不伪装成可评分任务。
+首轮把 24 项 survey 审计中标记为 `validated` 的 10 项发布为 Harbor task。随后对 7 项
+`environment-only` 做二次行为审计，其中 6 项补齐 accepted Oracle 与 Base `0` / Oracle
+`1` 后升级；29595 因 A100 是明确负对照而保持 blocked。当前共 16 项可评分 Harbor
+task。二次验收细节见
+[vLLM environment-only 二次验收](VLLM_ENVIRONMENT_ONLY_RETRY_AUDIT.md)。
 
 ## 统一格式
 
@@ -31,6 +34,9 @@ Docker 镜像中不复制 `tests/` 或 `solution/`。运行阶段关闭网络；
 | `vllm-pr-32618` | 2×A100 | 两 rank NCCL sampled-token 路径 |
 | `vllm-pr-34179` | 1×A100 | DCP Triton slot mapping 与 CUDA Graph replay |
 | `vllm-pr-42430` | 1×A100 | Mamba FULL-CG metadata 语义 |
+
+二次升级的 6 项为 `vllm-pr-28973`、`vllm-pr-30282`、`vllm-pr-34246`、
+`vllm-pr-39337`、`vllm-pr-39832` 和 `vllm-pr-40841`；其资源与评分核心见二次验收文档。
 
 ## 验收门槛
 
@@ -62,7 +68,7 @@ A100 节点的隔离 daemon 中执行，但不申请 GPU。
 | `vllm-pr-34179` | 0 | 1 | production Triton slot mapping + CUDA Graph replay |
 | `vllm-pr-42430` | 0 | 1 | prior-state 单 token 为 decode，首 token 保持 prefill |
 
-结构验证使用 Harbor `0.22.0`：10 项均能被 SDK 加载，且
+结构验证使用 Harbor `0.22.0`：当前 16 项均能被 SDK 加载，且
 `harbor run -p <task> -a nop --print-config` 均成功。具体构建证据、完整输出与
 残余范围见各任务的 `validation/docker-build.md`；本表只记录 Harbor 封装后的
 统一评分门结果。

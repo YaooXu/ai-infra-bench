@@ -1,8 +1,46 @@
 # Docker build and baseline validation
 
-Status: environment-ready for the modular-kernel configuration contract. The
-real base image executes a CUDA Triton MoE before reproducing the old API.
-A solved-tree pass was not available in this survey run.
+Status: validated Harbor task for the modular-kernel configuration ownership
+contract. The real base image executes a CUDA Triton MoE before reproducing the
+old API, and the accepted squash Oracle passes the same hidden verifier.
+
+## Harbor upgrade verification
+
+The authoritative accepted mapping is squash parent
+`b337647aa0ce103a84aac1e07a8fd738a5a4f13f` to merged commit
+`3778673ea81bf5241f40e9c5e90f989bde377acf`. Survey Base
+`e2ed238885be6af358be1851cd43105b7d036c49` is an ancestor of both the PR Head
+and the squash parent; the focused five-file production patch applies cleanly
+to that Base.
+
+The Harbor verifier uses a hidden input shape and checks:
+
+- a real CUDA BatchedTritonExperts forward and finite output;
+- no-config compatibility without consulting process-global vLLM config;
+- ordinary explicit config identity and numerical equivalence;
+- DP+EP config identity and decision;
+- the production `FusedMoEModularMethod.make` consumer passes the layer's MoE
+  config rather than its generic vLLM parallel config;
+- the production FlashInfer CUTLASS wrapper makes the same ownership choice,
+  while the functional CUTLASS entry no longer accepts the obsolete keyword;
+- the superseded `parallel_config=` keyword is rejected.
+
+On A100 GPU0 with `--network none`, the unchanged Base reached the real Triton
+forward and then produced reward `0` at the missing `moe_parallel_config`
+contract. Applying the accepted Oracle produced reward `1`:
+
+```text
+CUDA_TRITON_COMPAT_OK 20993.70703125
+consumers=FusedMoEModularMethod.make,flashinfer_cutlass_moe_fp8
+dp_ep=true
+legacy_keyword_rejected=true
+ordinary_matches_compatibility=true
+```
+
+The remaining post-cutoff v0.13 native donor risk is an environment provenance
+limitation, not an untested target behavior: the candidate Python and focused
+production consumer are exact Base source, all donor artifacts are manifest
+locked, and the same real Triton path executes on both Base and Oracle.
 
 ## Atomicity, review requirements, and behavior contract
 
@@ -23,7 +61,7 @@ The publishable behavior boundary is therefore:
   it must not consult process-global vLLM configuration.
 - The superseded `parallel_config` keyword is rejected.
 - A real CUDA Triton modular MoE executes before the baseline-specific failure;
-  the Dev is not a constructor-signature or source-string test.
+  the verifier is not a constructor-signature or source-string test.
 
 ## Docker daemon
 
@@ -45,7 +83,7 @@ or common credential markers.
 
 The unmodified v0.12.0 image passed `vllm._C`, `vllm._custom_ops`, and A100
 allocation with PyTorch `2.9.0+cu129`. After overlaying the exact base Python,
-import failed before the Dev workload:
+import failed before the verifier workload:
 
 ```text
 RuntimeError: operator _C::cutlass_encode_and_reorder_int4b_grouped does not exist
@@ -97,35 +135,36 @@ cuda True NVIDIA A100-SXM4-40GB tensor([0.], device='cuda:0')
 ## Final build
 
 Remote context:
-`/data/ai-infra-bench/survey-builds/vllm-pr-30282/context`
+`/data/ai-infra-bench/harbor-envonly/tasks/vllm-pr-30282/environment`
 
 ```bash
 export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
 source /data/akg_kernel_bench_lite/A100_proxy.sh
-cd /data/ai-infra-bench/survey-builds/vllm-pr-30282
+cd /data/ai-infra-bench/harbor-envonly/tasks/vllm-pr-30282
 /usr/bin/time -p docker build \
   --network host \
   --pull=false \
   --build-arg HTTP_PROXY \
   --build-arg HTTPS_PROXY \
   --build-arg NO_PROXY \
-  -t ai-infra-bench/vllm-pr-30282:base \
-  -f context/environment/Dockerfile context
+  -t ai-infra-bench/vllm-pr-30282:harbor-base \
+  -f environment/Dockerfile environment
 ```
 
 Result:
 
 ```text
-Successfully built 6e75e4483fde
-Successfully tagged ai-infra-bench/vllm-pr-30282:base
-real 875.01
-user 0.14
-sys 0.06
+Sending build context to Docker daemon  19.97kB
+Successfully built f232f10352aa
+Successfully tagged ai-infra-bench/vllm-pr-30282:harbor-base
+real 237.94
+user 0.04
+sys 0.03
 ```
 
 - Image ID:
-  `sha256:6e75e4483fde15091c52804f57aa39258fc1a09e26e63de8a221848332b4aee7`
-- Image size: `10,446,430,908` bytes
+  `sha256:f232f10352aaa102893cd53be0f29116f36a40e80caf1498a986c1ae97f0a079`
+- Image size: `10,446,427,684` bytes
 - Runtime user: `agent` (UID 1000)
 - Candidate synthetic commit:
   `8521e82ad54a82c639f292ca77d3c60922faab6c`
@@ -134,22 +173,24 @@ sys 0.06
 - Archive SHA-256, seven native hashes, regular ELF checks, and no-extra-object
   assertions: passed
 
-## Public GPU baseline
+## Harbor Base and Oracle
 
 ```bash
 export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
 docker run --rm --network none --gpus device=0 \
-  ai-infra-bench/vllm-pr-30282:base \
-  bash /workspace/public_dev/run.sh
+  --user root \
+  -v "$TASK/tests:/tests:ro" \
+  ai-infra-bench/vllm-pr-30282:harbor-base \
+  bash -lc '/tests/test.sh; cat /logs/verifier/reward.txt'
 ```
 
-Exit status: `1` (expected baseline failure).
+Base reward: `0` (expected baseline failure).
 
 ```text
 WARNING ... Current vLLM config is not set.
 WARNING ... Using default MoE config. Performance might be sub-optimal!
 CUDA_TRITON_COMPAT_OK 12059.134765625
-FAIL: modular kernel does not accept explicit MoE parallel config after CUDA Triton execution (FusedMoEModularKernel.__init__() got an unexpected keyword argument 'moe_parallel_config')
+TypeError: FusedMoEModularKernel.__init__() got an unexpected keyword argument 'moe_parallel_config'
 ```
 
 The CUDA marker is printed only after two batched Triton expert GEMMs,
@@ -158,13 +199,26 @@ validation. Thus the real compatibility entry runs before the baseline reaches
 the task-specific failure. The global-config warning is itself part of the old
 fallback behavior that the target removes.
 
-On the target, the same Dev additionally requires:
+After applying the accepted focused Oracle as UID 1000, the same verifier
+returned reward `1`:
+
+```text
+CUDA_TRITON_COMPAT_OK 20993.70703125
+{"compatibility_norm": 20993.70703125, "consumers": ["FusedMoEModularMethod.make", "flashinfer_cutlass_moe_fp8"], "cuda": true, "dp_ep": true, "gpu": "NVIDIA A100-SXM4-40GB", "legacy_keyword_rejected": true, "ordinary_matches_compatibility": true}
+ORACLE_REWARD=1
+```
+
+The solved tree additionally demonstrates:
 
 - the explicit ordinary config to be stored by identity, remain non-DP+EP,
   execute the same CUDA Triton path, and match the compatibility output;
 - an explicit `dp_size=2, use_ep=True` config to be stored by identity and set
   `is_dp_ep=True`; and
 - the legacy `parallel_config=` keyword to raise `TypeError`.
+
+A fresh final-image container also confirmed that `/workspace/public_dev`,
+`/tests`, and `/solution` are absent before verifier mounts; its synthetic Git
+state is one commit, zero remotes, and clean.
 
 ## Final binding and sanitization probes
 
@@ -201,16 +255,14 @@ history_secret_markers 0
 
 ## Remaining risks
 
-- No solved-tree image was built, so the target-side ordinary-config CUDA pass
-  and negative legacy-keyword oracle are specified but not demonstrated.
 - Native extensions are a four-day post-cutoff approximation. They use the
   exact Torch/CUDA family and pass real candidate imports and Triton execution,
   while donor Python is excluded, but exact-SHA compilation would be stronger.
-- The Dev validates the DP+EP decision with a real config object but does not
+- The verifier validates the DP+EP decision with a real config object but does not
   launch a multi-rank distributed EP job. Its scope is configuration ownership
   and modular-kernel behavior, not collective correctness.
 - Review explicitly discussed non-modular FlashInfer TRTLLM MoE as unaffected;
-  this focused Dev does not execute that separate backend.
+  this focused verifier does not execute that separate backend.
 
 ## Survey-manual feedback
 

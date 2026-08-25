@@ -4,16 +4,31 @@ ARG NATIVE_IMAGE=vllm/vllm-openai:v0.15.1@sha256:8c9aaddfa6011b9651d06834d2fb90b
 FROM ${NATIVE_IMAGE} AS native-artifacts
 
 USER root
+COPY lock/native-donor.sha256 /tmp/native-donor.sha256
 RUN set -eux; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
-    mkdir -p /opt/native-vllm; \
-    find "${VLLM_SITE}" -type f -name '*.so' \
-        -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/opt/native-vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' "${VLLM_SITE}" {} +; \
-    test "$(find /opt/native-vllm -type f ! -name '*.so' | wc -l)" = 0
+    cd "${VLLM_SITE}"; \
+    sha256sum -c /tmp/native-donor.sha256; \
+    for rel in \
+        _C.abi3.so \
+        _flashmla_C.abi3.so \
+        _flashmla_extension_C.abi3.so \
+        _moe_C.abi3.so \
+        cumem_allocator.abi3.so \
+        vllm_flash_attn/_vllm_fa2_C.abi3.so \
+        vllm_flash_attn/_vllm_fa3_C.abi3.so; do \
+        test -f "${rel}"; \
+        test ! -L "${rel}"; \
+        readelf -h "${rel}" >/dev/null; \
+        install -D -m 0755 "${rel}" "/opt/native-vllm/${rel}"; \
+    done; \
+    test "$(find /opt/native-vllm -type f | wc -l)" = 7; \
+    rm -f /tmp/native-donor.sha256
 
 FROM ${BASE_IMAGE}
 
 ARG VLLM_BASE_SHA=0118cdcc02ae16a137645e2289bf41f5e3da9d80
+ARG VLLM_BASE_TREE=eb2267901a78dcd021c505f5a6bd50ccc6632a9b
 ARG VLLM_SOURCE_SHA256=75b2632ec1ea5f92539b9c5f6a7e3cd3357874f04cfd6953c9ae851f1b992957
 
 USER root
@@ -24,11 +39,11 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /workspace
 
 COPY --from=native-artifacts /opt/native-vllm /opt/native-vllm
+COPY lock/final-native.sha256 /tmp/final-native.sha256
 
-# Build networking is used only to materialize the exact survey base. The
-# digest-checked codeload archive contains no Git metadata; create one synthetic
-# benchmark commit after extraction. Predefined Docker proxy args are not
-# redeclared so their values are excluded from image history and config.
+# Materialize the exact source cutoff, prove its canonical tree, then create a
+# single synthetic benchmark commit. Generated/native artifacts are installed
+# only after that commit and remain ignored by Git.
 RUN set -eux; \
     apt-get \
         -o Acquire::http::Proxy=false \
@@ -37,9 +52,7 @@ RUN set -eux; \
     DEBIAN_FRONTEND=noninteractive apt-get \
         -o Acquire::http::Proxy=false \
         -o Acquire::https::Proxy=false \
-        install -y --no-install-recommends \
-        ca-certificates \
-        git; \
+        install -y --no-install-recommends ca-certificates git; \
     rm -rf /var/lib/apt/lists/*; \
     curl -fL \
         --retry 8 \
@@ -56,28 +69,36 @@ RUN set -eux; \
     git -C /workspace/repo init; \
     git -C /workspace/repo config user.name "AI Infra Bench"; \
     git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -A; \
+    git -C /workspace/repo add -f -A; \
+    test "$(git -C /workspace/repo write-tree)" = "${VLLM_BASE_TREE}"; \
     git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
     git -C /workspace/repo branch -M benchmark-base; \
+    test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
     test -z "$(git -C /workspace/repo remote)"; \
     test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
-    cp -a "${VLLM_SITE}/_version.py" /workspace/repo/vllm/_version.py; \
-    find /opt/native-vllm -type f -name '*.so' \
-        -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/workspace/repo/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' /opt/native-vllm {} +; \
-    rm -rf /opt/native-vllm; \
+    install -D -m 0644 "${VLLM_SITE}/_version.py" /workspace/repo/vllm/_version.py; \
+    for rel in \
+        _C.abi3.so \
+        _flashmla_C.abi3.so \
+        _flashmla_extension_C.abi3.so \
+        _moe_C.abi3.so \
+        cumem_allocator.abi3.so \
+        vllm_flash_attn/_vllm_fa2_C.abi3.so \
+        vllm_flash_attn/_vllm_fa3_C.abi3.so; do \
+        install -D -m 0755 "/opt/native-vllm/${rel}" "/workspace/repo/vllm/${rel}"; \
+    done; \
+    cd /workspace/repo/vllm; \
+    sha256sum -c /tmp/final-native.sha256; \
+    test "$(find /workspace/repo/vllm -type f -name '*.so' | wc -l)" = 7; \
     test -z "$(git -C /workspace/repo status --porcelain)"; \
-    rm -f /root/.bash_history
-
-COPY environment/public_dev /workspace/public_dev
+    rm -rf /opt/native-vllm /tmp/final-native.sha256 /root/.bash_history
 
 RUN set -eux; \
-    python3 /workspace/public_dev/make_tiny_model.py; \
     if ! id -u agent >/dev/null 2>&1; then \
         useradd --create-home --shell /bin/bash agent; \
     fi; \
-    chown -R agent:agent /workspace /opt/models/tiny-streaming; \
-    chmod 755 /workspace/public_dev/run.sh; \
+    chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
 ENV PYTHONPATH=/workspace/repo \

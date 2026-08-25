@@ -1,39 +1,39 @@
-ARG BASE_IMAGE=vllm/vllm-openai:v0.18.1@sha256:228113d30448941e7a845f57ef0b3d3ea74ffda81be72ded4f8d6dfab0124fe6
-ARG STABLE_LIBTORCH_IMAGE=vllm/vllm-openai:v0.19.0@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504
-FROM ${STABLE_LIBTORCH_IMAGE} AS stable_libtorch_donor
+# syntax=docker/dockerfile:1.7
 
-FROM ${BASE_IMAGE}
+FROM alpine/git:2.49.1@sha256:c0280cf9572316299b08544065d3bf35db65043d5e3963982ec50647d2746e26 AS git_runtime
 
-ARG VLLM_BASE_SHA=31a719bcd37a195107711dc8b498288e49ef8576
-ARG VLLM_BASE_TREE=a45811fe928b168245e519e4205bbd99c6fa3f57
-ARG VLLM_SOURCE_SHA256=f248739d9eb5591e5282be31b323a499a3643426221aa1dd8d58caba3baf7f67
+# The accepted squash parent predates v0.19.0 by roughly two days. v0.19.0 is
+# the first official same-Torch image that contains the complete native set
+# imported by this source snapshot. All native objects come from this one
+# internally consistent image; no mixed-release object is used.
+FROM vllm/vllm-openai:v0.19.0@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504
+
+ARG VLLM_BASE_SHA=36d7f19897843c9cbdb701ba88d0f2c29954fe44
+ARG VLLM_BASE_TREE=647523aac911ae44a1dcaab79ef66d58290b478e
+ARG VLLM_SOURCE_SHA256=8e71d0480773b8532f7397e52257e5600b0ef0ff56654eba5e78afc48be0cbab
+
+LABEL ai-infra-bench.source-commit="${VLLM_BASE_SHA}" \
+      ai-infra-bench.native-scope="v0.19.0-donor; verifier exercises Python/PyTorch merge primitive only"
 
 USER root
 
-ENV PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+COPY --from=git_runtime /usr/bin/git /usr/local/bin/git
+COPY --from=git_runtime /usr/libexec/git-core /usr/libexec/git-core
+COPY --from=git_runtime /usr/share/git-core /usr/share/git-core
+COPY --from=git_runtime /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
+COPY --from=git_runtime /usr/lib/libpcre2-8.so.0.14.0 /usr/lib/libpcre2-8.so.0.14.0
+COPY --from=git_runtime /usr/lib/libz.so.1.3.1 /usr/lib/libz.so.1.3.1
 
-WORKDIR /workspace
+COPY lock/native.sha256 /tmp/native.sha256
 
-# Acquire the exact survey base and synthesize one canonical benchmark commit.
-# Docker's predefined proxy args are not redeclared, keeping proxy values out
-# of image configuration and history.
+# Network is needed only to acquire the immutable source archive. Runtime is
+# offline. Docker proxy values are predefined build arguments and are neither
+# redeclared nor persisted in image configuration.
 RUN set -eux; \
-    apt-get \
-        -o Acquire::http::Proxy=false \
-        -o Acquire::https::Proxy=false \
-        update; \
-    DEBIAN_FRONTEND=noninteractive apt-get \
-        -o Acquire::http::Proxy=false \
-        -o Acquire::https::Proxy=false \
-        install -y --no-install-recommends git; \
-    rm -rf /var/lib/apt/lists/*; \
-    curl -fL \
-        --retry 8 \
-        --retry-all-errors \
-        --retry-delay 3 \
-        --connect-timeout 30 \
-        --max-time 600 \
+    ln -s libpcre2-8.so.0.14.0 /usr/lib/libpcre2-8.so.0; \
+    ln -s libz.so.1.3.1 /usr/lib/libz.so.1; \
+    git --version; \
+    curl -fL --retry 8 --retry-all-errors --retry-delay 3 \
         "https://codeload.github.com/vllm-project/vllm/tar.gz/${VLLM_BASE_SHA}" \
         -o /tmp/vllm-source.tar.gz; \
     echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
@@ -49,68 +49,49 @@ RUN set -eux; \
     git -C /workspace/repo branch -M benchmark-base; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1
-
-COPY environment/lock/base-native.sha256 /tmp/base-native.sha256
-COPY environment/lock/native.sha256 /tmp/native.sha256
-COPY --from=stable_libtorch_donor \
-    /usr/local/lib/python3.12/dist-packages/vllm/_C_stable_libtorch.abi3.so \
-    /tmp/native-stage/_C_stable_libtorch.abi3.so
-
-# Bind exact candidate Python to a hash-locked native whitelist. The closest
-# pre-cutoff release supplies all but one object; a same-Torch post-cutoff image
-# supplies only the explicitly named stable-libtorch object needed by Base.
-# No release Python directory is visible, and every object is a regular ELF.
-RUN set -eux; \
+    test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
     VLLM_SITE=/usr/local/lib/python3.12/dist-packages/vllm; \
     cd "${VLLM_SITE}"; \
-    sha256sum -c /tmp/base-native.sha256; \
+    sha256sum -c /tmp/native.sha256; \
     for rel in \
         _C.abi3.so \
+        _C_stable_libtorch.abi3.so \
         _flashmla_C.abi3.so \
         _flashmla_extension_C.abi3.so \
         _moe_C.abi3.so \
         cumem_allocator.abi3.so \
         vllm_flash_attn/_vllm_fa2_C.abi3.so \
         vllm_flash_attn/_vllm_fa3_C.abi3.so; do \
-        test -f "${VLLM_SITE}/${rel}"; \
-        test ! -L "${VLLM_SITE}/${rel}"; \
-        readelf -h "${VLLM_SITE}/${rel}" >/dev/null; \
-        install -D -m 0755 "${VLLM_SITE}/${rel}" "/workspace/repo/vllm/${rel}"; \
+        test -f "${rel}"; \
+        test ! -L "${rel}"; \
+        readelf -h "${rel}" >/dev/null; \
+        install -D -m 0755 "${rel}" "/workspace/repo/vllm/${rel}"; \
     done; \
-    test -f /tmp/native-stage/_C_stable_libtorch.abi3.so; \
-    test ! -L /tmp/native-stage/_C_stable_libtorch.abi3.so; \
-    readelf -h /tmp/native-stage/_C_stable_libtorch.abi3.so >/dev/null; \
-    install -D -m 0755 \
-        /tmp/native-stage/_C_stable_libtorch.abi3.so \
-        /workspace/repo/vllm/_C_stable_libtorch.abi3.so; \
-    install -D -m 0644 "${VLLM_SITE}/_version.py" "/workspace/repo/vllm/_version.py"; \
-    cd /workspace/repo/vllm; \
-    sha256sum -c /tmp/native.sha256; \
+    install -D -m 0644 _version.py /workspace/repo/vllm/_version.py; \
     test "$(find /workspace/repo/vllm -type f -name '*.so' | wc -l)" = 8; \
     test -z "$(git -C /workspace/repo status --porcelain)"; \
-    rm -rf \
-        /tmp/base-native.sha256 \
-        /tmp/native.sha256 \
-        /tmp/native-stage \
-        /root/.bash_history
-
-RUN set -eux; \
+    rm -f /tmp/native.sha256; \
     if ! id -u agent >/dev/null 2>&1; then \
-        useradd --create-home --shell /bin/bash agent; \
+        useradd --create-home --uid 1000 --shell /bin/bash agent; \
     fi; \
-    chown -R agent:agent /workspace; \
-    rm -f /home/agent/.bash_history
-
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-
-RUN chmod 755 /workspace/public_dev/run.sh
+    chown -R agent:agent /workspace/repo /home/agent
 
 ENV PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \
-    TRANSFORMERS_OFFLINE=1
+    TRANSFORMERS_OFFLINE=1 \
+    HF_DATASETS_OFFLINE=1 \
+    PIP_NO_INDEX=1 \
+    VLLM_NO_USAGE_STATS=1 \
+    HOME=/home/agent
 
 USER agent
 WORKDIR /workspace/repo
+
+RUN python3 -c "import pathlib,vllm; from vllm.model_executor.models.utils import _merge_multimodal_embeddings; p=pathlib.Path(vllm.__file__).resolve(); print(p); assert str(p).startswith('/workspace/repo/vllm/')" \
+    && test "$(id -un)" = agent \
+    && test -z "$(git remote)" \
+    && test "$(git rev-list --all --count)" = 1 \
+    && test -z "$(git status --porcelain)"
+
 ENTRYPOINT []
 CMD ["/bin/bash"]

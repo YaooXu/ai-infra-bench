@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-34246"
+version = "1.0.0"
+description = "Keep multimodal position masks on CPU while merging CUDA embeddings without synchronization or excess allocation."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "multimodal", "cuda", "memory", "synchronization"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__34246", "vllm__issue__38257"]
+repository = "vllm-project/vllm"
+base_commit = "36d7f19897843c9cbdb701ba88d0f2c29954fe44"
+oracle_commit = "4f6eed3bd4a92c6bd513460ee85b917d6df88a17"
+workload_type = "bug_fix"
+difficulty = "medium"
+grader_kind = "gpu_correctness"
+
+[agent]
+timeout_sec = 3600.0
+user = "agent"
+
+[verifier]
+timeout_sec = 900.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 32768
+gpus = 1
+gpu_types = ["A100"]

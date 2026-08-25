@@ -6,6 +6,7 @@ This environment packages the survey base state for `vllm__pr__39832`.
 
 - Upstream repository: `https://github.com/vllm-project/vllm.git`
 - Survey base commit: `f80aa53c9dc2273a19a6855092069db7e1306fff`
+- Canonical root tree: `2af517bd7880077a9fed9a39dc0e8b1e244a48b1`
 - Commit date: `2026-05-09T21:46:52Z`
 - Commit subject: `[Refactor] Nixl util using lazy init (#41392)`
 - Acquisition: SHA-256-checked codeload archive of the exact commit
@@ -28,14 +29,16 @@ use the PyTorch 2.11 / CUDA 13 family.
 - Python: `3.12.13`
 - PyTorch: `2.11.0+cu130`
 - CUDA reported by PyTorch: `13.0`
-- Accelerator probe: NVIDIA A100-SXM4-40GB, GPU 0
+- Accelerator probe: NVIDIA A100-SXM4-40GB, GPU 7
 - Constructor workload: CPU-only; it creates no model or CUDA tensor
 - Runtime network: disabled with `--network none`
 - `VLLM_TARGET_DEVICE`: not overridden
 
 The exact source tree supplies all Python code. Native extensions and the
 generated `_version.py` are copied from the digest-pinned v0.20.1 image into
-that tree. The copied artifact whitelist observed in the built image is:
+that tree. `native-paths.txt` is the machine-readable whitelist; the Dockerfile
+rejects missing, symlinked, non-ELF, or additional shared objects. The locked
+paths are:
 
 ```text
 _C.abi3.so
@@ -65,10 +68,10 @@ Packages added or confirmed by the environment layer are:
 Build networking is needed only for apt and the exact source archive. The
 runtime workload has no model, tokenizer, dataset, or network dependency.
 
-## Reproduction asset
+## Harbor boundary
 
-`environment/public_dev/reproduce_constructor_contract.py` dynamically
-registers concrete external legacy and current KV connectors, executes their
-real factory/base constructors, verifies that the current constructor receives
-the exact KV-cache configuration object, and requires the legacy constructor
-to be rejected before an instance is created. It does not inspect source text.
+No instruction, solution, public locator, or verifier is copied into the
+image. Those assets are outside the `environment` build context and are mounted
+by Harbor. The hidden verifier exercises the real KV-transfer initialization
+consumer, factory/base lifecycle, and connector-internal `TypeError` boundary;
+it does not inspect source text.

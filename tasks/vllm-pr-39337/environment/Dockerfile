@@ -12,7 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /workspace
 
-COPY environment/lock/native.sha256 /tmp/native.sha256
+COPY lock/native.sha256 /tmp/native.sha256
 
 # Acquire the exact survey base and construct one canonical synthetic commit.
 # Docker's predefined proxy args are deliberately not redeclared, so proxy
@@ -25,7 +25,10 @@ RUN set -eux; \
     DEBIAN_FRONTEND=noninteractive apt-get \
         -o Acquire::http::Proxy=false \
         -o Acquire::https::Proxy=false \
-        install -y --no-install-recommends git; \
+        install -y --no-install-recommends \
+        git=1:2.34.1-1ubuntu1.17 \
+        git-man=1:2.34.1-1ubuntu1.17 \
+        liberror-perl=0.17029-1; \
     rm -rf /var/lib/apt/lists/*; \
     curl -fL \
         --retry 8 \
@@ -85,10 +88,6 @@ RUN set -eux; \
     fi; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
-
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-
-RUN chmod 755 /workspace/public_dev/run.sh
 
 ENV PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \

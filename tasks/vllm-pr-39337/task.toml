@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-39337"
+version = "1.0.0"
+description = "Select Model Runner V2 by configuration and propagate the decision to GPUWorker."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "model-runner", "configuration", "gpu-worker"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__39337"]
+repository = "vllm-project/vllm"
+base_commit = "c7560af42487b1570c4e6f4cea5df1605a4d59fc"
+oracle_commit = "0579be818c0d2b438cd41b76d8d09f9338ac1fd8"
+workload_type = "feature_fix"
+difficulty = "hard"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 600.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 1800.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 24576
+gpus = 1
+gpu_types = ["A100"]

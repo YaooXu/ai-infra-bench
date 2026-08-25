@@ -47,18 +47,14 @@ the Git state:
 
 - `git=1:2.34.1-1ubuntu1.17`
 - `git-man=1:2.34.1-1ubuntu1.17`
-- `libcurl3-gnutls=7.81.0-1ubuntu1.26`
 - `liberror-perl=0.17029-1`
 
-## Reproduction asset
+## Verification scope
 
-`environment/public_dev/reproduce_runner_oracle.py` dynamically executes the
-real environment accessor and `VllmConfig` selection/validation methods. It
-checks explicit `0/1` compatibility, the unset tri-state, a synthetic model
-configuration matrix, automatic unsupported-feature fallback, and forced-V2
-validation. It does not inspect source text or download model weights.
-
-Scheduler, GPUWorker, and Distributed FlashInfer integration are intentionally
-not claimed by this asset. They require substantially heavier initialization
-or enter the distributed path associated with an immediate upstream regression.
-This is a config-contract environment, not an end-to-end runner migration test.
+No reproduction or verifier code is copied into this Agent environment. The
+runtime-mounted hidden verifier dynamically executes the real environment
+accessor, `VllmConfig` selection/validation methods, and the production
+GPUWorker constructor. It checks explicit `0/1`, unset tri-state, the synthetic
+model matrix, unsupported fallback, and consumer propagation without source
+inspection or model weights. Scheduler and Distributed FlashInfer are excluded
+from the focused Oracle.

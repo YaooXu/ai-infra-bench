@@ -42,7 +42,7 @@ The exact base archive supplies all Python code. Generated `_version.py` comes
 from the digest-pinned v0.12.0 runtime image. That release's extensions cannot
 load the exact candidate `_custom_ops.py`: the candidate registers
 `_C::cutlass_encode_and_reorder_int4b_grouped`, which is absent from the v0.12
-binary. The failure occurs before the Dev workload, while unmodified v0.12
+binary. The failure occurs before the verifier workload, while unmodified v0.12
 imports its own `_custom_ops` and allocates on A100 successfully.
 
 Native extensions therefore come from a separate, digest-pinned v0.13.0 stage:
@@ -70,11 +70,10 @@ Packages added or confirmed by the environment layer are:
 - `git-man=1:2.34.1-1ubuntu1.17`
 - `liberror-perl=0.17029-1`
 
-## Reproduction asset
+## Harbor verifier boundary
 
-`environment/public_dev/reproduce_parallel_config.py` first executes the
-no-config compatibility entry through a real batched CUDA Triton MoE. It then
-requires an explicit `FusedMoEParallelConfig` to preserve object identity,
-distinguish ordinary from DP+EP configuration, preserve ordinary CUDA results,
-and reject the superseded `ParallelConfig` keyword. It is not a signature or
-source-string test.
+The verifier is deliberately outside the Agent image. It first executes the
+no-config compatibility entry through a real batched CUDA Triton MoE, then
+checks explicit configuration identity, ordinary versus DP+EP behavior,
+numerical preservation, two production consumers, and rejection of the
+superseded keyword. The image contains neither tests nor solution assets.

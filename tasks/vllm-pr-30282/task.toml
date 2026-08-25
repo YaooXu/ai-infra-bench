@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-30282"
+version = "1.0.0"
+description = "Make modular fused-MoE kernels own the explicit MoE parallel configuration."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "moe", "parallel-config", "triton", "refactor"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__30282"]
+repository = "vllm-project/vllm"
+base_commit = "e2ed238885be6af358be1851cd43105b7d036c49"
+oracle_commit = "3778673ea81bf5241f40e9c5e90f989bde377acf"
+workload_type = "refactor"
+difficulty = "hard"
+grader_kind = "gpu_correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1800.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 5400.0
+os = "linux"
+cpus = 8
+memory_mb = 32768
+storage_mb = 65536
+gpus = 1
+gpu_types = ["A100"]

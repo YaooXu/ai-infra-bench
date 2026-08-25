@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-40841"
+version = "1.0.0"
+description = "Implement a node-local supervisor for multi-port data-parallel API servers."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "data-parallel", "supervisor", "multiprocessing", "health-check"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__40841"]
+repository = "vllm-project/vllm"
+base_commit = "9b9d5dbaab852a1c615fe83a7f92881d353503db"
+oracle_commit = "d5ed61238528c4b753bceb761db91318b0d442fb"
+workload_type = "feature_fix"
+difficulty = "hard"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 600.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 1800.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 24576
+gpus = 0

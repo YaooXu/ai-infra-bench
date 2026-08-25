@@ -1,9 +1,66 @@
 # Docker build and baseline validation
 
-Status: environment-ready for the focused node-local supervisor lifecycle.
-The exact base deterministically fails because the supervisor is absent; an
-ephemeral PR-head module injection makes the same behavioral harness pass. It
-is not a Kubernetes end-to-end environment.
+Status: validated Harbor task for the focused node-local supervisor lifecycle.
+The exact base deterministically fails because the supervisor is absent; the
+isolated accepted Oracle passes the same behavioral verifier. It is not a
+Kubernetes end-to-end environment.
+
+## Harbor task upgrade (2026-08-25)
+
+The task now ships an instruction, hidden verifier, and isolated solution. The
+solution is the accepted-head `dp_supervisor.py` addition only; it does not
+include upstream tests, CLI wiring, or any Kubernetes artifact. GitHub's
+compare API reports head `d5ed61238528c4b753bceb761db91318b0d442fb`
+`ahead` by 60, `behind_by=0`, with merge base equal to the locked task base
+`9b9d5dbaab852a1c615fe83a7f92881d353503db`.
+
+```text
+solution/fix.patch sha256 f3d39d3268f3230f13906fe4215ce71c7e9b71b098d1e21d1f23f1525f2666e9
+changed path vllm/entrypoints/openai/dp_supervisor.py
+```
+
+The verifier was mounted into the existing locked Base image on the A100
+host's isolated daemon and both runs used `--network none`:
+
+```text
+Base reward:   0
+Oracle reward: 1
+```
+
+The Oracle run used the production `DPSupervisor`, two real spawned HTTP child
+processes, and three loopback ports. It observed aggregate readiness, killed
+one child with SIGKILL, verified the sibling was terminated, and verified all
+three ports were released. It also exercises production child rank/port
+derivation and rejects an overlapping supervisor port. Heavy model serving is
+the only substituted child target. The task requests no GPU because this
+contract is deliberately node-local orchestration; the candidate image's A100
+source/native integrity remains covered below.
+
+The canonical Docker build context is exactly `tasks/vllm-pr-40841/environment`;
+the Dockerfile has no local `COPY` instruction. Solution, hidden tests,
+reproduction code, instruction, task metadata, and validation evidence are
+outside that context.
+The task-root `.dockerignore` excludes them as defense in depth. None of the
+solved code or hidden verifier is present in the Agent image. The Agent remains
+UID 1000 with a writable synthetic one-commit tree, no remote, and offline
+runtime.
+
+Final environment-context rebuild evidence:
+
+```text
+build context 19.46 kB
+image sha256:5edc57698af5e069431ce056d302763431dc7e0d5d86446be3042b16afeb3a4a
+created 2026-08-25T15:27:10.038973065+08:00
+size 9,309,033,526 bytes
+runtime user agent
+```
+
+The jump-host relay detached before `/usr/bin/time` returned, so no reliable
+elapsed value is claimed for this cached rebuild. Runtime assertions confirmed
+`/workspace/public_dev`, `/tests`, and `/solution` are all absent; UID is 1000,
+the repository is writable and clean with one commit/no remote, and candidate
+Python/native imports resolve below `/workspace/repo`. The rebuilt image again
+produced Base reward `0` and accepted Oracle reward `1` with `--network none`.
 
 ## Atomicity and external testbed gate
 
@@ -15,7 +72,7 @@ remaining process tree. The benchmark is behavior-atomic at that protocol
 boundary.
 
 Kubernetes is a downstream consumer of the admin probe and rank ports, not an
-implementation dependency. The public Dev therefore tests real node-local
+implementation dependency. The hidden verifier therefore tests real node-local
 subprocess, HTTP, port, readiness, and failure-propagation semantics. It does
 not claim Kubernetes Service/probe correctness, multi-node routing, or real
 model throughput.
@@ -114,7 +171,11 @@ real 300.93
 - Synthetic commit: `d7f5214d44d9d0e2e38c84ecbbab6c718090e31e`
 - Git: one commit, branch `benchmark-base`, no remote, clean worktree
 
-## Public baseline
+## Historical curation baseline (removed from Agent image)
+
+The following pre-Harbor harness established the behavior while curating the
+environment. Its code is now the runtime-mounted hidden verifier under
+`tests/`; `/workspace/public_dev` no longer exists in the Agent image.
 
 Command:
 
@@ -181,15 +242,14 @@ matches. `VLLM_TARGET_DEVICE=empty` was never used.
 ## Remaining risks
 
 - Full Kubernetes and actual two-rank model serving are deliberately outside
-  this focused public Dev.
+  this focused hidden verifier.
 - Native extensions are donated by the nearest official pre-cutoff release
   rather than compiled from the exact SHA; this is appropriate only because
   the scoped PR is Python-only. Real `_C` import, CUDA allocation, and exact
   source/native path probes pass, but this remains a same-release ABI donor.
-- The public baseline fails at the missing feature boundary. Behavioral pass
-  was proven by an ephemeral oracle-module mount, not by building a solved
-  image; benchmark publication should keep that oracle out of agent-visible
-  assets.
+- The Base necessarily fails at the missing-module boundary because this is a
+  feature addition. That alone is not counted as proof: the isolated accepted
+  Oracle must pass the full process/HTTP/failure/cleanup verifier.
 
 ## Survey-manual feedback
 

@@ -3,7 +3,7 @@ ARG NATIVE_IMAGE=vllm/vllm-openai:v0.13.0@sha256:d623253f2ba246378421c9642e20885
 
 FROM ${NATIVE_IMAGE} AS native-donor
 USER root
-COPY environment/lock/native-v0.13.0.sha256 /tmp/native-manifest.sha256
+COPY lock/native-v0.13.0.sha256 /tmp/native-manifest.sha256
 RUN set -eux; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
     mkdir -p /opt/native; \
@@ -97,9 +97,6 @@ RUN set -eux; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-RUN chmod 755 /workspace/public_dev/run.sh
-
 ENV PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1 \
@@ -108,4 +105,4 @@ ENV PYTHONPATH=/workspace/repo \
 USER agent
 WORKDIR /workspace/repo
 ENTRYPOINT []
-CMD ["/bin/bash"]
+CMD ["sleep", "infinity"]

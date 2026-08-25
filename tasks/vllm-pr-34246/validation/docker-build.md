@@ -1,240 +1,191 @@
-# Docker build and validation
+# Harbor build and validation record
 
-Status: environment-ready / primitive-scoped. Real A100 Base fails and the
-isolated exact-diff Oracle passes. Full 235B serving remains out of scope.
+## Outcome
 
-## Contract and atomicity
+- Task status: **Harbor-ready**.
+- Environment: built from the standard `task/environment` context.
+- Final strengthened A100 verifier: **Base reward 0, accepted Oracle reward
+  1**.
+- Full 235B/8xH100 serving: deliberately out of scope; the verifier exercises
+  the exact production merge primitive independently validated by the PR test
+  and issue reporter.
 
-PR #34246 has five commits, nine changed files, and `+54/-51`. Two commits merge
-main into the feature branch, but the effective patch remains one coherent
-contract: keep the multimodal position mask on CPU and replace
-`masked_scatter_` with direct indexed assignment, updating the few model/runner
-consumers that had assumed a GPU mask.
+The final verifier imports both `_C` and `_C_stable_libtorch`, and its shell
+wrapper rejects duplicate-registration diagnostics before awarding reward.
 
-The behavior boundary is:
+## Accepted mapping and task boundary
 
-- CPU boolean masks merge multimodal embeddings into exact positions.
-- The merge introduces no CUDA synchronization with PyTorch >=2.9.
-- Temporary CUDA allocation remains bounded instead of copying the large target.
-- Excess multimodal embeddings are rejected rather than silently truncated.
+PR #34246 was squash-merged. The Agent receives the squash parent
+`36d7f19897843c9cbdb701ba88d0f2c29954fe44`; the evaluator patch reconstructs
+accepted commit `4f6eed3bd4a92c6bd513460ee85b917d6df88a17`. Applying the locked patch to a
+fresh Base archive produced a byte-identical Oracle source tree. The solution
+patch is evaluator-only and is not part of the environment context or image.
 
-The public Dev exercises the real production function and allocator; it does
-not inspect a signature or source string.
+The hidden verifier calls the real production
+`vllm.model_executor.models.utils._merge_multimodal_embeddings` with CUDA
+target/source embeddings. It checks:
 
-## Solution and issue mapping
+- CPU masks work without synchronization;
+- no explicit CPU-to-CUDA mask materialization occurs, using Torch dispatch;
+- nested embeddings preserve flattening order and dtype conversion;
+- the input is updated in place and non-placeholder rows remain unchanged;
+- FP16, BF16, and FP32 paths have bounded temporary allocator growth;
+- GPU-mask behavior remains compatible, but is not incorrectly held to the
+  CPU-mask asynchronous contract;
+- both excess and missing multimodal embeddings raise precise cardinality
+  errors;
+- the candidate source and native paths are inside `/workspace/repo`;
+- actual loading of `_C` plus `_C_stable_libtorch` emits no duplicate
+  registration diagnostic.
 
-Issue #38257 reports a 100% OOM on Qwen3-VL-235B-A22B-Instruct, 8xH100, TP8,
-DCP2, EP, data-parallel multimodal encoder, three large images, and roughly 120K
-text tokens. Eager mode and removal of DCP did not fix it. A maintainer identified
-`masked_scatter_` as copying large image-embedding data; the reporter then
-verified that this PR removed the OOM and allowed ChartQA to run concurrently.
-The issue was closed with `Fixed by #34246`.
+## Host, daemon, and immutable image
 
-ChartQA accuracy stayed within reported noise (`0.8740` vs `0.8716` anywhere
-accuracy). The PR author also profiled Qwen3-VL-2B on one L40S and added a CUDA
-unit test that rejects synchronization. This is a unique solution mapping.
+- Host: `bm-baai-dx-zone1-d-a100-40g-2-106`;
+- GPU: physical GPU 1, NVIDIA A100-SXM4-40GB;
+- Docker host:
+  `unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock`;
+- Docker data root:
+  `/data/yaoyaoyao/pr34183-cuda-build/docker-data`;
+- remote task directory:
+  `/data/ai-infra-bench/survey-builds/vllm-pr-34246-harbor`;
+- image tag: `ai-infra-bench/vllm-pr-34246:harbor-base`;
+- image ID:
+  `sha256:816a69704cc034e4014496a7bdf92e56ab8099af9b1dba3b8bbba00fc003218c`;
+- inspect size: `10,075,782,140` bytes;
+- configured user: `agent`.
 
-## Hardware and dependency closure
+Final evaluator asset identities:
 
-The exact 235B reproduction requires 8xH100 and external model/images, so it is
-not available on one A100 40GB. The production merge primitive is independent
-of model weights and executes the same CUDA tensor assignment. A synthetic
-embedding tensor preserves the causal mask/device/allocation behavior without
-shrinking away the operation; it is the same boundary selected by upstream's
-new unit test.
+```text
+test.sh sha256=5c22c88d62c92a77ff413cf6a6a528f9e7dd67cdae9c7330f77f2fd3eb8deaf6
+verify_multimodal_merge.py sha256=1e2a9f0754fa691d6f317fe3c5bfc2e7561a26b4b242d992ba04d60e054ce3ea
+fix.patch sha256=6f4c23941397f5ca178724efd6a002a20ebe5b4075e0319265ebc50ad2d29256
+```
 
-The fix depends on PyTorch PR #156384, present since PyTorch 2.9, which removed
-the CPU-mask indexing synchronization. Candidate and release use PyTorch 2.10.
-No model or dataset dependency is needed for the scoped Verifier.
+No default Docker daemon, pruning, or deletion of another task's images was
+used.
 
-## Docker daemon
+## Standard-context build
 
-All Docker commands use:
+The accepted build context contains only `environment/Dockerfile` and
+`environment/lock/`. `tests/`, `solution/`, `instruction.md`, and `task.toml`
+are siblings outside that context.
 
 ```bash
 export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
+docker build \
+  --network host \
+  --pull=false \
+  -t ai-infra-bench/vllm-pr-34246:harbor-base \
+  /data/ai-infra-bench/survey-builds/vllm-pr-34246-harbor/context/environment
 ```
 
-The daemon data root is
-`/data/yaoyaoyao/pr34183-cuda-build/docker-data`; the default daemon is not used
-and no pruning or deletion is performed.
-
-## Build and validation evidence
-
-### Image selection and closure diagnostic
-
-The untouched pinned v0.18.1 image reported vLLM 0.18.1, Torch
-`2.10.0+cu129`, successful A100 allocation, and successful `vllm._C` and
-`vllm._custom_ops` imports. Its image identity was:
+The successful build took approximately 264 seconds wall time, including the
+31 MB immutable source download and large-layer commits. It proved:
 
 ```text
-sha256:228113d30448941e7a845f57ef0b3d3ea74ffda81be72ded4f8d6dfab0124fe6
-size=9578701871
-created=2026-03-30T23:21:32.922351086Z
+source archive sha256: OK
+canonical tree: 647523aac911ae44a1dcaab79ef66d58290b478e
+synthetic commits: 1
+remotes: 0
+native manifest: all 9 records OK
+regular shared objects: 8
+candidate source: /workspace/repo/vllm/__init__.py
+configured user: agent
 ```
 
-An initial source-exact build exposed a real closure gap rather than the target
-failure: Base Python imports `vllm._C_stable_libtorch`, but the closest earlier
-same-day release does not package that object. That first image (`ff2af09383e3`,
-514.24 seconds) stopped at `ModuleNotFoundError`; it is not the accepted image.
+Docker builds do not expose `libcuda.so.1`; the build-time production import
+therefore logged the expected CUDA-extension warning and continued. GPU/native
+loading belongs to runtime validation.
 
-Official v0.19.0 is the earliest available same-Torch donor found to contain the
-missing object. It was probed independently with Torch `2.10.0+cu129`, A100 CUDA
-allocation, and successful `_C`, `_C_stable_libtorch`, and `_custom_ops`
-imports. Only this explicitly hashed relative path is copied from it:
+## Base = 0
 
-```text
-vllm/vllm-openai:v0.19.0
-digest=sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a6055afdd0caf1e66fb51504
-size=9577342091
-created=2026-04-03T00:07:37.341665339Z
-9fbcc65fb822786590c2e7bf73a471c44e7aa1244dae23ee03c61ea9a7d6d329  _C_stable_libtorch.abi3.so
-```
-
-No donor Python directory, other donor `.so`, or staging directory reaches the
-final image. `base-native.sha256` validates the eight v0.18.1 artifacts, and
-`native.sha256` validates all nine final artifacts (eight `.so` plus generated
-`_version.py`). Every shared object is a regular ELF and the final count is
-asserted to be exactly eight.
-
-### Final build
-
-The final cached build used the isolated daemon and pinned local image digests:
+The verifier and logs were mounted from outside the image. Runtime networking
+was disabled and GPU 1 was selected:
 
 ```bash
-source /data/akg_kernel_bench_lite/A100_proxy.sh
-export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
-cd /data/ai-infra-bench/survey-builds/vllm-pr-34246
-/usr/bin/time -p docker build \
-  --network host --pull=false \
-  --build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY \
-  -t ai-infra-bench/vllm-pr-34246:base \
-  -f context/environment/Dockerfile context
+docker run --rm --network none --gpus device=1 --user root \
+  -v .../context/tests:/tests:ro \
+  -v .../logs/base-final:/logs/verifier \
+  ai-infra-bench/vllm-pr-34246:harbor-base \
+  bash /tests/test.sh
 ```
 
+The exact Base reached the production function and failed for the intended
+reason, not import or environment setup:
+
 ```text
-Successfully built d0d035ae792d
-real 391.35
-user 0.05
-sys 0.04
-image=sha256:d0d035ae792df56be9c47dde2f114f84be4935206349b8ca7ccc6b030a139336
-size=10576787251
+candidate_source=/workspace/repo/vllm/__init__.py
+gpu=NVIDIA A100-SXM4-40GB
+RuntimeError: Expected all tensors to be on the same device, but got mask is
+on cpu, different from other tensors on cuda:0
+ValueError: Error during masked scatter operation
+reward=0
 ```
 
-The build revalidated archive SHA-256, canonical tree, one synthetic commit,
-zero remotes, both native manifests, regular ELF status, exact `.so` count, and
-a clean Git worktree.
+## Accepted Oracle = 1
 
-### Agent and integrity probes
+The accepted patch was mounted read-only and applied only inside a disposable
+offline container. The unchanged hidden verifier was rerun:
 
-All runtime commands used `--network none`; GPU probes additionally used
-`--gpus device=0`. The accepted image produced:
+```bash
+docker run --rm --network none --gpus device=1 --user root \
+  -v .../context/tests:/tests:ro \
+  -v .../context/solution:/solution:ro \
+  -v .../logs/oracle-final:/logs/verifier \
+  ai-infra-bench/vllm-pr-34246:harbor-base \
+  bash -lc 'git apply /solution/fix.patch && bash /tests/test.sh'
+```
+
+Observed final strengthened result:
 
 ```text
-UID=1000
-GID=1000
+peak_ratio[cpu_torch.float16]=1.003
+peak_ratio[cpu_torch.bfloat16]=1.003
+peak_ratio[cpu_torch.float32]=0.500
+peak_ratio[cuda_bfloat16]=1.003
+PASS: production merge is ordered, async, bounded, strict, and CPU-mask native
+reward=1
+```
+
+The same final run actually imported both native modules from the candidate
+tree. The wrapper found zero duplicate-registration matches. A separate
+default-user integrity container recorded:
+
+```text
+uid=1000(agent) gid=1000(agent)
 COMMITS=1
-TREE=a45811fe928b168245e519e4205bbd99c6fa3f57
 REMOTES=0
 DIRTY=0
-SO_COUNT=8
-TORCH=2.10.0+cu129
-CUDA=True
-DEVICE=NVIDIA A100-SXM4-40GB
-VLLM_SOURCE=/workspace/repo/vllm/__init__.py
-C_SOURCE=/workspace/repo/vllm/_C.abi3.so
-STABLE_SOURCE=/workspace/repo/vllm/_C_stable_libtorch.abi3.so
-CUSTOM_OPS_SOURCE=/workspace/repo/vllm/_custom_ops.py
-TARGET_DEVICE=None
-NETWORK_OFFLINE=1
-CUDA_SUM=1024.0
+GPU=NVIDIA A100-SXM4-40GB
+_C=/workspace/repo/vllm/_C.abi3.so
+_C_stable_libtorch=/workspace/repo/vllm/_C_stable_libtorch.abi3.so
 ```
 
-The non-root user can write `/workspace/repo`. A fresh container has zero
-candidate `.pyc`, no `/tmp/native-stage`, no HTTP(S) proxy environment, no IPv4
-route, and only `lo,tunl0` interfaces. Image configuration/history contains no
-proxy credential or proxy value.
+An earlier verifier revision incorrectly placed the GPU-mask compatibility
+control under the no-sync guard. The accepted Oracle correctly exposed that
+GPU boolean indexing may query dynamic cardinality. The final verifier scopes
+the no-sync hard gate only to CPU masks, exactly matching the PR contract; the
+GPU-mask case remains a correctness and allocation control.
 
-Candidate production import succeeds. It emits four duplicate-registration
-diagnostics while loading the v0.18.1 regular extension and v0.19.0 stable
-extension together. The same production import on untouched pinned v0.19.0
-exits zero with no duplicate diagnostics. This proves the warning is a known
-mixed-build risk. The scoped merge executes PyTorch tensor indexing rather than
-a vLLM native operator, so this is recorded rather than hidden.
+## Native risk disposition
 
-### Base
+The old survey image is retired because it mixed v0.18.1 native objects with a
+single v0.19.0 stable-libtorch object and emitted four duplicate-registration
+diagnostics. The Harbor image instead uses all eight extensions from one
+digest-pinned v0.19.0 image and validates their hashes before copying.
 
-Command:
+This removes the mixed-native failure mode. It remains a scoped donor design,
+not an exact Base native build. That limitation is acceptable only because the
+scored primitive is implemented entirely in candidate Python and PyTorch; it
+does not dispatch a vLLM native operator. The verifier imports the native
+objects and rejects warnings so general import health is still a hard gate.
 
-```bash
-docker run --rm --network none --gpus device=0 \
-  ai-infra-bench/vllm-pr-34246:base \
-  bash /workspace/public_dev/run.sh
-```
+## Remaining scope limit
 
-Result (exit 1, expected):
-
-```text
-gpu_mask_peak_ratio=5.009
-FAIL: CPU mask merge raised ValueError: Error during masked scatter operation
-BASE_RC=1
-```
-
-This is the old production contract, not an import failure: same-device
-`masked_scatter_` executes and exhibits the large temporary allocation, while
-the intended CPU mask is rejected.
-
-### Isolated Oracle and Verifier
-
-The exact base-to-head compare diff was downloaded only to the remote validation
-directory, never copied into Docker context or image:
-
-```text
-base=31a719bcd37a195107711dc8b498288e49ef8576
-head=beae1ecede055847be8980528b2b7fc2d9e2fab9
-bytes=12885
-sha256=aa5d75dbb254f00fdfbdfc75d128abbd1098e53cf6b530ebd1ba7a161990d210
-changed_files=9
-```
-
-It passed `git apply --check` and was applied only inside an ephemeral offline
-container. The unchanged public Verifier then produced exit 0:
-
-```text
-gpu_mask_peak_ratio=0.504
-cpu_mask_peak_ratio=0.504
-PASS: CPU mask merge is correct, asynchronous, bounded, and strict
-ORACLE_RC=0
-```
-
-The Oracle therefore establishes both sides of the behavior boundary: direct
-indexed assignment avoids the old target-sized copy, accepts a CPU mask without
-detected synchronization, preserves positions, and precisely rejects excess
-multimodal embeddings.
-
-## Remaining risks
-
-- The synthetic primitive test does not reproduce full 235B serving, TP/DCP/EP,
-  or end-to-end peak VRAM; those remain external upstream evidence.
-- Native artifacts are from the closest pre-cutoff same-Torch release rather
-  than an exact SHA build. The one necessary post-cutoff stable-libtorch donor
-  object creates duplicate-registration diagnostics with Base's regular
-  extension. Imports and the scoped Oracle pass, but unrelated native operators
-  are not certified by this environment.
-
-## Survey-manual feedback
-
-- A huge-model OOM may be minimized to the causal framework primitive only when
-  upstream tests and issue experiments independently establish that boundary.
-- Memory tasks should record allocator deltas and correctness/synchronization,
-  not only catch OOM, because available GPU capacity changes the symptom.
-- Merge commits in a feature branch require effective-diff analysis; commit
-  count alone does not determine atomicity.
-- Keep full-topology evidence separate from the publishable primitive contract.
-- When an exact source falls between official releases, first expose missing
-  native closure with a source-binding import. If a donor is unavoidable, copy
-  only explicit hash-locked ELF paths, prove future Python is invisible, and
-  report mixed-registration warnings even when the target path is unaffected.
-- An Oracle must apply solved code outside Agent assets and rerun the unchanged
-  behavioral Verifier; a Base-only failure cannot distinguish a valid contract
-  from an impossible test.
+The benchmark does not claim end-to-end 235B TP/DCP/EP coverage. Upstream
+provides that evidence: the issue reporter confirmed the PR eliminated the
+8xH100 OOM and preserved ChartQA behavior. The local fixture is credible
+because the upstream PR itself isolates the bug to this production primitive
+and adds a CUDA no-sync test at the same boundary. The verifier adds allocator,
+ordering, dtype, nesting, and strictness coverage without substituting a mock.

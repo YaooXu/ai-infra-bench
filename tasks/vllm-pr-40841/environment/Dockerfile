@@ -60,10 +60,6 @@ RUN set -eux; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
-COPY --chown=agent:agent environment/public_dev /workspace/public_dev
-
-RUN chmod 755 /workspace/public_dev/run.sh
-
 ENV PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1

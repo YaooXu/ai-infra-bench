@@ -1,226 +1,142 @@
-# Docker build and baseline validation
+# Harbor build and validation
 
-## Scope assessment
+Status: Harbor-ready for the scoped GPU-runner continuation contract. The
+entire upstream PR is not atomic: it contains 64 commits, changes 16 files, and
+spans API, scheduler, request, output-processing, and runner layers. This task
+therefore maps only the accepted 41-line production change that updates an
+already-cached request in `GPUModelRunner._update_states`.
 
-The upstream change is not atomic enough to publish as a single ordinary
-bug-fix task: it comprises 64 commits, modifies 16 files, and adds about 2,152
-lines while spanning the public asynchronous API, request lifecycle/state,
-scheduler, output processing, GPU runner, and tests. The environment is
-usable, and its public Dev targets the smallest coherent end-to-end contract,
-but the benchmark must retain a `project-scale / needs-scoping` risk. A safer
-publication plan would split API plumbing from scheduler/session execution.
+## Contract and solution mapping
 
-The minimal public entry point is `AsyncLLM.generate` receiving an async
-generator of `StreamingInput` chunks. No external checkpoint is required: a
-deterministic tiny Llama checkpoint and tokenizer are generated at build time.
-The base fails before model initialization because the public API is absent;
-after a solution supplies the API, the same Dev proceeds through real engine
-execution using the local model.
+The verifier constructs a real `CachedRequestState`, persistent input-batch
+row, `NewRequestData`, and scheduler output, then invokes the production
+`GPUModelRunner._update_states` method. A streaming continuation must preserve
+the request object, remove its stale batch row before re-addition, refresh all
+input state, recalculate prompt length, and clear output tokens that have
+become prompt context.
 
-## Docker daemon and host
+This is not a missing-symbol or source-string smoke test. The base reaches the
+production runner and attempts to add a duplicate stale row. The accepted
+solution is the matching one-file hunk from oracle commit
+`3abe7e7b4942d479f2c43188b8cf414e3a21dd38`; it adds the continuation branch
+and `_update_streaming_request`. The image contains neither that patch nor any
+instruction or verifier asset.
 
-All Docker commands used the dedicated isolated daemon:
+The exercised state transition is CPU-executable: it creates no model and
+runs no CUDA kernel. Accordingly `task.toml` declares `gpus = 0` and uses a
+correctness grader. GPU/native viability is a separate environment-integrity
+probe and is not a task resource gate.
 
-```bash
-export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
-```
+## Locked environment
 
-Its data root is `/data/yaoyaoyao/pr34183-cuda-build/docker-data`. The default
-daemon was never used. No image pruning or deletion was performed.
+- Survey base: `0118cdcc02ae16a137645e2289bf41f5e3da9d80`
+- Canonical source tree: `eb2267901a78dcd021c505f5a6bd50ccc6632a9b`
+- Source archive SHA-256:
+  `75b2632ec1ea5f92539b9c5f6a7e3cd3357874f04cfd6953c9ae851f1b992957`
+- Official base: `vllm/vllm-openai:v0.14.0` at manifest digest
+  `sha256:1d6866b87630d94f5e0cdae55ab5abb4ce0b03fcb84d9d10612f9d518d19d4fd`
+- Native-only donor: `vllm/vllm-openai:v0.15.1` at manifest digest
+  `sha256:8c9aaddfa6011b9651d06834d2fb90bdb9ab6ced4b420ec76925024eb12b22d0`
 
-Validation host: NVIDIA A100-SXM4-40GB GPU 0, driver 580.126.20. Validation
-date: 2026-08-25 (Asia/Shanghai). Runtime commands used `--network none`.
+The post-cutoff v0.15.1 donor remains a material ABI approximation. It is
+needed because the exact candidate Python `_custom_ops` expects bindings that
+the healthy v0.14.0 extension lacks. The donor contributes only seven explicit
+regular ELF `.so` paths. `native-donor.sha256` and `final-native.sha256` lock
+the donor and final bytes; the final manifest also locks v0.14.0 `_version.py`.
+No donor Python package or staging directory remains.
 
-## Source and image selection
+The exact source archive is materialized before native artifacts, checked
+against the canonical tree with `git add -f -A`, and committed as one synthetic
+commit with no remote. Native/generated files remain ignored after the commit.
 
-The survey base is `0118cdcc02ae16a137645e2289bf41f5e3da9d80`, committed
-after v0.14.0 and before v0.14.1. The final image therefore remains based on
-the digest-pinned official v0.14.0 image. The exact source is downloaded from
-the commit-specific codeload endpoint and checked against SHA-256
-`75b2632ec1ea5f92539b9c5f6a7e3cd3357874f04cfd6953c9ae851f1b992957`.
+## Build evidence
 
-The first build used depth-one Git fetch. Apt succeeded, but GitHub disconnected
-after a long transfer:
-
-```text
-error: RPC failed; curl 56 GnuTLS recv error (-54)
-fatal: early EOF
-fatal: fetch-pack: invalid index-pack output
-real 796.55
-```
-
-The codeload archive is only 18.9 MiB, naturally has no upstream `.git`, and
-supports bounded retries. The build extracts it, creates one synthetic commit,
-and asserts one revision, no remote, and a clean worktree.
-
-## Native ABI discovery and anti-leak decision
-
-The unmodified official v0.14.0 image is internally healthy:
-
-```text
-official_vllm 0.14.0 /usr/local/lib/python3.12/dist-packages/vllm/__init__.py
-official_C /usr/local/lib/python3.12/dist-packages/vllm/_C.abi3.so
-official_custom_ops /usr/local/lib/python3.12/dist-packages/vllm/_custom_ops.py
-cuda True tensor([0.], device='cuda:0')
-custom_ops_import=PASS
-```
-
-After overlaying the Jan-23 candidate Python source on the v0.14.0 native
-extension, importing candidate `_custom_ops.py` failed:
-
-```text
-RuntimeError: operator _C::marlin_gemm does not exist
-```
-
-This is an overlay binding mismatch, not an upstream v0.14.0 packaging defect.
-It also blocks real engine use: initializing the local Llama follows the model
-registry into candidate `_custom_ops.py` and fails at the same registration.
-
-The adjacent v0.14.1 image was pulled and tested first. Pull time was
-`1867.52s`, repository digest/local image ID was
-`sha256:6bf34e50e2387dc46dc87a9d6a945fdd616a022bccfddd949052f54063ebcb8c`,
-and the image used Torch 2.9.1+cu129. Its own `_custom_ops` was healthy, but its
-native extension still did not define the operator expected by the Jan-23
-candidate. A v0.14.1 native-only build therefore failed the same strict probe
-and was rejected.
-
-The already-cached v0.15.1 native extension explicitly exposed
-`torch.ops._C.marlin_gemm`. The final Dockerfile uses v0.15.1 only as a
-multi-stage donor. The donor stage copies exactly seven files matching
-`*.so` and asserts that no other file type exists. The final stage starts from
-v0.14.0, copies those native files into `/workspace/repo/vllm`, and removes the
-staging directory. No v0.15.1 Python file or site-packages tree is copied.
-
-Anti-leak evidence from the final image:
-
-```text
-candidate_vllm /workspace/repo/vllm/__init__.py
-native_C /workspace/repo/vllm/_C.abi3.so
-custom_ops /workspace/repo/vllm/_custom_ops.py
-native_staging_exists False
-underlay_vllm 0.14.0 /usr/local/lib/python3.12/dist-packages/vllm/__init__.py
-```
-
-The underlay result was obtained with `PYTHONPATH` cleared and the workdir set
-to `/tmp`, proving the final lower layer is v0.14.0 rather than donor Python.
-The seven candidate-tree native files were `_C`, `_moe_C`, `cumem_allocator`,
-two FlashMLA modules, and the FA2/FA3 modules.
-
-This donor is a post-cutoff ABI approximation, not an exact source build. It
-is a material publication risk and must remain visible. Exact compilation of
-the base SHA's native extensions would be the stronger but substantially more
-expensive alternative.
-
-Dependency boundary: the public baseline itself exits at the missing
-`StreamingInput` import and does not load any native operator. A correct
-streaming implementation continues into real AsyncLLM/Llama execution, whose
-model-registration path unconditionally imports `_custom_ops`; therefore ABI
-completeness is required even though this tiny unquantized model does not
-actually execute the Marlin GEMM kernel.
-
-## Build
-
-The successful build form was:
+All commands used the isolated daemon, never the default daemon:
 
 ```bash
 export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
 source /data/akg_kernel_bench_lite/A100_proxy.sh
-cd /data/ai-infra-bench/survey-builds/vllm-pr-28973
+cd /data/ai-infra-bench/survey-builds/vllm-pr-28973/harbor-context
 /usr/bin/time -p docker build \
-  --network host \
-  --pull=false \
-  --build-arg HTTP_PROXY \
-  --build-arg HTTPS_PROXY \
-  --build-arg NO_PROXY \
-  -t ai-infra-bench/vllm-pr-28973:base \
-  -f context/environment/Dockerfile \
-  context
+  --network host --pull=false \
+  --build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY \
+  -t ai-infra-bench/vllm-pr-28973:harbor \
+  -f environment/Dockerfile environment
 ```
 
-Build network is used only for apt and the exact source archive. Runtime is
-offline. Proxy arguments are Docker's predefined proxy args and are not
-declared in the Dockerfile or retained in image config/history.
-
-Relevant build iterations:
-
-- v0.14.0 native overlay/codeload build: `real 455.78s`.
-- rejected v0.14.1 native-only build: `real 670.54s`.
-- v0.15.1 native-only build: `real 665.96s`.
-- final cached rebuild after raising tiny-model head dimension: `real 252.63s`.
-- Final image ID:
-  `sha256:5989a6dfb0acf49b27ff233d62a159d674c33c5b374c3cc3a5e942902bd389a8`.
-- Final inspect size: `10,622,871,229` bytes.
-- Displayed local size: `34.6GB`.
-- Platform: `linux/amd64`.
-- `docker history --no-trunc` proxy/credential-pattern scan: pass.
-
-## Runtime validation
-
-All final probes used GPU 0 and `--network none`. Candidate/native, GPU, Git,
-offline, and isolation checks passed:
+The standard Harbor `environment` context was 14.85 kB, so `solution/`,
+`tests/`, and `instruction.md` were physically outside the context.
 
 ```text
-candidate_vllm /workspace/repo/vllm/__init__.py
-native_C /workspace/repo/vllm/_C.abi3.so
-custom_ops /workspace/repo/vllm/_custom_ops.py
-versions 0.14.0 2.9.1+cu129 12.9
-marlin_gemm _C.marlin_gemm
-cuda_available True count 1
-gpu NVIDIA A100-SXM4-40GB tensor tensor([0.], device='cuda:0')
-git_subject Synthetic benchmark base
-git_revisions 1
-git_remotes ''
-git_status ''
-VLLM_TARGET_DEVICE unset
-offline 1 1
-public_dev_pyc []
-runtime_route_rows=0
+Successfully built 94ca1f6c7342
+real 772.82
+image sha256:94ca1f6c73422a9aa81ccf954efac9cfbcb7f4d1dd2416ef953ac84add3690f0
+size 10618390313 bytes
+USER agent
+WORKDIR /workspace/repo
 ```
 
-The deterministically generated tiny Llama then completed actual model loading
-and GPU inference offline:
+Build assertions passed for archive hash, canonical tree, one commit, no
+remote, clean Git, seven donor/final ELF objects, exact manifests, and absent
+donor staging. Image config and history scans found no proxy environment or
+credential-shaped proxy URL.
+
+## Runtime integrity
+
+Fresh CPU containers used `--network none` and no `--gpus`. They established:
 
 ```text
-tiny_llama_token_ids [3]
+uid=1000 writable=PASS assets_absent=PASS
+git_count=1 canonical_tree=PASS network_routes=0
+source=/workspace/repo/vllm/__init__.py
+runner=vllm.v1.worker.gpu_model_runner
+SO_COUNT=7 DONOR_STAGE_ABSENT=PASS
 ```
 
-The first tiny model used head dimension 8 and reached model execution before
-FlexAttention rejected dimensions below 16. The final model uses hidden size
-64 and four attention heads (head dimension 16); no test was removed or
-weakened.
-
-## Public baseline
-
-Command:
-
-```bash
-export DOCKER_HOST=unix:///data/yaoyaoyao/pr34183-cuda-build/docker.sock
-docker run --rm --network none --gpus 'device=0' \
-  ai-infra-bench/vllm-pr-28973:base \
-  bash /workspace/public_dev/run.sh
-```
-
-Observed exit code: `1` (expected baseline failure).
+Without a GPU device mapping, direct `vllm._C` import reports missing
+`libcuda.so.1`; this is expected and is not required by the CPU state-update
+contract. An independent A100 GPU7 no-network probe passed the native boundary:
 
 ```text
-FAIL: session-based streaming input API is unavailable
+gpu=NVIDIA A100-SXM4-40GB cuda_count=1 tensor=tensor([0.], device='cuda:0')
+source=/workspace/repo/vllm/__init__.py
+native=/workspace/repo/vllm/_C.abi3.so
+network_routes=0
 ```
 
-The Dev does not print internal request/scheduler state or disclose a repair.
-It checks only the public streaming-session behavior. A solved-tree pass was
-not available during environment construction, so the precise post-solution
-API compatibility remains a residual validation risk.
+## Base and Oracle
 
-## Manual feedback
+Base, with only `tests/` mounted read-only:
 
-- Project-scale PRs need a mandatory atomicity gate before environment work;
-  a working container does not make a 64-commit cross-layer task publishable.
-- Native checks must compare the untouched official image with the candidate
-  overlay before classifying a failure as upstream packaging versus binding.
-- A future native donor must be digest-pinned, multi-stage, file-type
-  whitelisted, stripped of Python source, and labeled as a cutoff/ABI risk.
-- Validation must distinguish what the baseline executes from what a repaired
-  end-to-end path needs; global import completeness is not proof that a kernel
-  is exercised by the target workload.
-- Tiny offline models should satisfy backend minimum head dimensions and must
-  complete a real token-generation smoke test, not only config/model loading.
+```text
+contract_device=cpu
+FAIL: production runner rejected session continuation:
+AssertionError continuation was re-added without removing its stale batch row
+TEST_SH_RC=0 REWARD=0
+```
+
+Isolated Oracle, with `solution/` applied as `agent` before running the same
+verifier:
+
+```text
+SOLVE_RC=0
+contract_device=cpu
+PASS: production runner updated the streaming session in place
+TEST_SH_RC=0 REWARD=1
+```
+
+Both runs were offline and used no GPU. The baseline failure is behavioral and
+the Oracle demonstrates the accepted implementation, rather than merely
+checking that a symbol or signature exists.
+
+## Remaining risks and manual feedback
+
+- The publishable contract is one accepted runner change, not the 64-commit PR.
+  Review and task metadata must preserve this narrow mapping.
+- The v0.15.1 native donor is post-cutoff. It has strict path/hash/ELF and
+  anti-leak controls, but an exact base-SHA native build would be stronger.
+- Hardware requirements should follow the target behavior. A GPU production
+  module can still have a CPU-executable state-management contract; unrelated
+  CUDA integrity must not force GPU grading.
+- Harbor must build from `environment/`, not the task root, so hidden tests and
+  accepted solutions cannot enter the image even if ignore rules regress.

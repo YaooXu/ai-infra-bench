@@ -1,8 +1,74 @@
 # Docker build and baseline validation
 
-Status: environment-ready for the config-contract scope. Base failure and an
-isolated Oracle positive pass were both observed. This remains environment-only:
-consumer integration is explicitly out of scope.
+Status: validated focused Harbor task for configuration selection plus
+production GPUWorker consumer propagation. Base failure and isolated accepted
+Oracle positive pass were both observed on the final anti-leak image.
+
+## Harbor task upgrade (2026-08-25)
+
+The independent task is intentionally narrower than the cumulative upstream
+PR. Its solution maps accepted-head changes in `vllm/envs.py`,
+`vllm/config/vllm.py`, and `vllm/v1/worker/gpu_worker.py`. It excludes upstream
+tests, the unverified Scheduler migration, and the Distributed FlashInfer
+change implicated in the later multi-GPU regression. GitHub's
+compare API reports accepted head
+`0579be818c0d2b438cd41b76d8d09f9338ac1fd8` `ahead` by 55,
+`behind_by=0`, with merge base equal to locked Base
+`c7560af42487b1570c4e6f4cea5df1605a4d59fc`.
+
+```text
+solution/fix.patch sha256 2586b38eb9922dca53bd6312374d1d183292f88cae7da4054df22a79541c745d
+changed paths vllm/config/vllm.py, vllm/envs.py, vllm/v1/worker/gpu_worker.py
+```
+
+The hidden verifier retains the full two-sided configuration matrix and also
+constructs the production `vllm.v1.worker.gpu_worker.Worker` four times. Only
+the unrelated Elastic-EP distributed executor is replaced; the real
+`Worker.__init__`, `WorkerBase.__init__`, and consumer assignment execute. It
+therefore proves that the resolved `VllmConfig` value, rather than a second
+environment read, reaches a runtime consumer for unset dense Qwen, unsupported
+fallback, explicit V1, and explicit V2.
+
+The Triton availability check is part of production selection semantics. A
+no-GPU Oracle correctly fell back to V1 and was rejected by the verifier; the
+task was therefore declared as one A100 rather than weakening the check. With
+physical GPU 2 exposed, all runs still used `--network none` and produced:
+
+```text
+Base reward:   0
+Oracle reward: 1
+```
+
+The accepted Oracle output was:
+
+```text
+PASS: tri-state selection and real GPUWorker consumption agree in both directions
+gpu=NVIDIA A100-SXM4-40GB capability=8.0 uuid=3815a178-ad22-4b81-5669-0533760a7e6b
+```
+
+The canonical Docker build context is exactly `tasks/vllm-pr-39337/environment`;
+its only local `COPY` source is `lock/native.sha256`. Solution, hidden tests,
+reproduction code, instruction, task metadata, and validation evidence are
+outside that context. The task-root `.dockerignore` excludes them as defense
+in depth. Solved code and hidden tests are not Agent-visible. The task keeps the
+locked non-root writable, one-commit/no-remote source tree and offline runtime.
+
+Final environment-context rebuild evidence:
+
+```text
+build context 17.92 kB
+image sha256:b98f42baebd895b6366fa2745504b93ad106058b2efb87416a8d181c0f908e06
+created 2026-08-25T15:37:54.720892464+08:00
+size 8,853,930,961 bytes
+runtime user agent
+```
+
+The jump-host relay detached before `/usr/bin/time` returned, so no reliable
+elapsed value is claimed for this rebuild. Runtime assertions with physical
+GPU 2 and `--network none` confirmed `/workspace/public_dev`, `/tests`, and
+`/solution` are absent; UID is 1000, the repository is writable and clean with
+one commit/no remote, CUDA sees the A100, and candidate Python/native imports
+resolve below `/workspace/repo`.
 
 ## Scope and atomicity
 
@@ -33,19 +99,19 @@ The two-sided boundary is:
 - Unsupported features automatically fall back to V1; forced V2 rejects them.
 
 The production `VllmConfig` methods are executed dynamically. No test searches
-source text. Scheduler, GPUWorker, and FlashInfer consumer integration is not
-verified or claimed: lightweight construction does not exist, and the latter
-would couple the benchmark to the known distributed regression. Publication
-status must therefore remain `config-contract / environment-only`.
+source text. GPUWorker propagation is now exercised through its production
+constructor. Scheduler and Distributed FlashInfer migration remain excluded
+because this task claims only one verified runtime consumer and the latter
+would couple the benchmark to the known distributed regression.
 
 ## External dependency preflight
 
 The original end-to-end scenario names `Qwen/Qwen3-0.6B`, which would require
 external Hugging Face artifacts. The selection behavior is entirely determined
-by `VllmConfig`, so the public Dev uses local synthetic model configuration
-objects and executes production selection methods. It needs no model, tokenizer,
-dataset, network, connector, or service. A separate integrity probe uses A100
-GPU 0 because the behavioral workload is intentionally host-side.
+by `VllmConfig`, so the runtime-mounted verifier uses local synthetic model
+configuration objects and executes production selection methods plus the real
+GPUWorker constructor. It needs no model, tokenizer, dataset, network,
+connector, or service.
 
 ## Docker daemon
 
@@ -133,7 +199,12 @@ sys 0.03
 The manifest-whitespace fix removed the earlier `sha256sum` formatting warning;
 all ten artifact checks completed with only `OK` results in the final build.
 
-### Public Base baseline
+### Historical curation baseline (removed from Agent image)
+
+The following earlier config-only harness established the initial Base/Oracle
+boundary. It is not shipped in the final environment. The publishable score is
+now produced only by `tests/verify_runner_consumers.py`, mounted at verifier
+runtime.
 
 ```bash
 docker run --rm --network none \
@@ -154,7 +225,7 @@ This is a feature-addition Base failure with preserved legacy explicit `0/1`
 behavior. It is not accepted alone; the Oracle pass below proves that the
 public behavior distinguishes the intended solution.
 
-### Isolated Oracle positive pass
+### Historical cumulative Oracle positive pass
 
 The official cumulative PR diff was downloaded only to the remote validation
 directory, never copied into the Agent context or image:
@@ -216,16 +287,16 @@ route_file_lines 1
 user 1000
 ```
 
-Both `/workspace/repo` and `/workspace/public_dev` are writable by `agent`.
+`/workspace/repo` is writable by `agent`; `/workspace/public_dev` is absent.
 
 ## Remaining risks
 
 - Nearest-release native artifacts are not a compilation of the exact SHA,
   though they share Torch/CUDA pins and are not invoked by the target workload.
-- Distributed FlashInfer/NIXL and full Qwen inference are deliberately outside
-  the scoped contract.
-- Scheduler and GPUWorker consumer propagation is not covered. The environment
-  must not be described as validating the complete six-file PR.
+- Distributed FlashInfer/NIXL and real model inference remain outside scope;
+  the task must not be described as validating the complete six-file PR.
+- The verifier requires a CUDA-visible A100 so production `HAS_TRITON` is true;
+  running it as a CPU-only task changes the intended default-selection branch.
 
 ## Survey-manual feedback
 

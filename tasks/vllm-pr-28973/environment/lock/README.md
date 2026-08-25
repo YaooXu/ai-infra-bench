@@ -6,6 +6,7 @@ This environment packages the survey base state for `vllm__pr__28973`.
 
 - Upstream repository: `https://github.com/vllm-project/vllm.git`
 - Survey base commit: `0118cdcc02ae16a137645e2289bf41f5e3da9d80`
+- Canonical root tree: `eb2267901a78dcd021c505f5a6bd50ccc6632a9b`
 - Commit date: `2026-01-23T22:53:10Z`
 - Commit subject: `[fix] add VLLM_OBJECT_STORAGE_SHM_BUFFER_NAME to compile factors (#32912)`
 - Acquisition: SHA-256-checked codeload archive of the exact commit during
@@ -27,7 +28,11 @@ extract seven native `.so` files. No donor Python source is copied into the
 final image; the final lower layers remain v0.14.0 and `PYTHONPATH` resolves
 the candidate tree. This is a practical ABI bridge, but because v0.15.1 is
 well after the source cutoff, it remains an explicit approximation and a
-material publication risk rather than an exact source build.
+material publication risk rather than an exact source build. The donor is not
+scanned recursively: `native-donor.sha256` is an explicit seven-path manifest,
+and `final-native.sha256` locks those seven regular ELF objects plus v0.14.0's
+generated `_version.py`. The final stage asserts the manifest and exact `.so`
+count, then removes donor staging.
 
 ## Base image and runtime
 
@@ -51,22 +56,19 @@ material publication risk rather than an exact source build.
   - `git=1:2.34.1-1ubuntu1.17`
   - `git-man=1:2.34.1-1ubuntu1.17`
   - `liberror-perl=0.17029-1`
-- Accelerator used for validation: NVIDIA A100-SXM4-40GB, GPU 0
+- Target verifier: CPU-only (`gpus = 0`); no model or CUDA kernel is executed
+- Independent native-integrity accelerator: NVIDIA A100-SXM4-40GB, GPU 7
 - Runtime network: disabled with `--network none`
 - `VLLM_TARGET_DEVICE`: not overridden
 
 The build needs network access only for Ubuntu apt metadata/packages and the
-exact Git commit archive. Runtime reproduction has no external dependency: a
-deterministically initialized, tiny Llama checkpoint and tokenizer are created
-from the image's locked libraries at build time and stored under
-`/opt/models/tiny-streaming`.
+exact Git commit archive. Runtime verification has no model, tokenizer,
+dataset, or network dependency.
 
-## Reproduction assets
+## Harbor boundary
 
-`environment/public_dev/reproduce_streaming_session.py` exercises the public
-session-based streaming-input contract through `AsyncLLM`: an async input
-generator supplies two cumulative prompt chunks, the engine produces tokens,
-and the session must finish only when the generator closes. The base fails at
-the missing public API before engine/model initialization. The asset names the
-public contract but does not expose internal scheduler or request-state
-implementation details.
+The image contains only the exact candidate source and locked runtime
+artifacts. Agent instructions, accepted solution, and hidden verifier live
+outside the `environment` build context and are mounted by Harbor. The scoped
+behavior is the production GPU-runner continuation path for an already cached
+request, not the large PR's missing public symbol.

@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-28973"
+version = "1.0.0"
+description = "Update an existing GPU-runner request in place when a streaming session continues."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "streaming-input", "gpu-model-runner", "request-state"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__28973"]
+repository = "vllm-project/vllm"
+base_commit = "0118cdcc02ae16a137645e2289bf41f5e3da9d80"
+oracle_commit = "3abe7e7b4942d479f2c43188b8cf414e3a21dd38"
+workload_type = "feature"
+difficulty = "hard"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 5400.0
+user = "agent"
+
+[verifier]
+timeout_sec = 1200.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 4
+memory_mb = 24576
+storage_mb = 65536
+gpus = 0

@@ -69,14 +69,11 @@ There is no model, tokenizer, dataset, or Kubernetes asset in the image. Build
 networking is used only for the pinned Git packages; the exact source archive
 was served from A100 loopback after its host-side SHA-256 was recorded.
 
-## Reproduction scope
+## Verification scope
 
-The public Dev uses the production supervisor/process launcher with two real
-spawned HTTP child processes and three real loopback ports. It checks aggregate
-readiness and child-crash propagation/cleanup. It does not inspect source text,
-download a model, or require Kubernetes.
-
-This is a node-local lifecycle reproduction, not the full deployment claim.
-Kubernetes startup/readiness probe wiring, Service routing to rank ports,
-multi-node rank assignment, and a real two-GPU model-serving workload remain
-outside this public Dev.
+No reproduction or verifier code is copied into this Agent environment. The
+runtime-mounted hidden verifier uses the production supervisor/process launcher
+with two real spawned HTTP children and three loopback ports. It checks
+aggregate readiness and child-crash cleanup without source-text inspection,
+model downloads, or Kubernetes. Full Kubernetes routing, multi-node rank
+assignment, and real model serving remain outside the task.

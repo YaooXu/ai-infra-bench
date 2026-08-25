@@ -1,4 +1,5 @@
-.git
-validation
+*
+!environment/
+!environment/**
 **/__pycache__
 **/*.pyc

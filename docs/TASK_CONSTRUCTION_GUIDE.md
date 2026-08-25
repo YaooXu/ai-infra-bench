@@ -4,8 +4,10 @@
 Harbor 评分的 AI 基础设施任务。目标不是复刻 PR diff，而是冻结一个真实工程问题，
 使未修复 Base 稳定失败、合法修复通过，并让浅层绕过无法得分。
 
-本仓库 10 个已封装任务的实际 Base/Oracle 结果见
-[vLLM Survey Harbor 封装审计](VLLM_HARBOR_TASK_AUDIT.md)。
+本仓库 16 个已封装任务的实际 Base/Oracle 结果见
+[vLLM Survey Harbor 封装审计](VLLM_HARBOR_TASK_AUDIT.md)；其中 6 个由
+`environment-only` 二次验收升级，细节见
+[vLLM environment-only 二次验收](VLLM_ENVIRONMENT_ONLY_RETRY_AUDIT.md)。
 
 ## 1. 最终交付标准
 
@@ -179,6 +181,11 @@ Issue 没写基础镜像时，按 Base 中的 vLLM version 选择时间上最近
 如果 Issue 没有 GPU 要求，不要人为把 query 写成某个平台问题；但镜像仍要记录实际
 验证硬件。平台是运行合同，不应凭空成为问题定义。
 
+`task.toml` 的 GPU 数量由 scored behavior 决定，不由镜像 provenance probe 决定。
+如果目标 factory、config 或 scheduler consumer 能在 CPU 上真实执行，A100 native
+import/allocation 只作为独立环境证据，正式 task 应声明 `gpus = 0`；不能为了证明镜像
+曾在 A100 上启动，就让每次评分无意义地占用 GPU。
+
 ### 6.2 Source binding 与 Git 防泄漏
 
 镜像必须真正从 Agent 工作树加载 candidate source：
@@ -268,6 +275,11 @@ Docker pull 使用 Docker daemon 的网络。Shell 中执行代理脚本，并�
 Agent-visible Dev test 不是 Harbor schema 硬要求。如果它会泄漏根因，可只提供症状级
 入口或上游测试；不能直接把最终 hidden verifier 暴露给 Agent。
 
+不要因为历史 Docker 环境里曾有 `public_dev/`，就继续把它固化进 Harbor Agent
+镜像。若该脚本已经定位到具体 helper、参数或根因，它会显著缩小搜索空间；应移到
+curator validation 证据中，最终只在运行时挂载 hidden verifier。发布镜像默认不得含
+`/workspace/public_dev`、`/tests` 或 `/solution`。
+
 ### 7.2 公开复现脚本与本地开发测试
 
 “可执行公开复现”是指能够在 Base 环境中实际触发现象的脚本，不只是描述命令。它可以
@@ -345,7 +357,10 @@ tasks/<task-id>/
 保留在 curator 私有 manifest，而不随 Agent task 分发。
 
 Docker build context 只使用 `environment/` 内存在的文件。不得依赖 curator 临时目录，
-也不得把 `solution/` 或 `tests/` COPY 进 Agent 镜像。
+也不得把 `solution/` 或 `tests/` COPY 进 Agent 镜像。Dockerfile 中本地路径相对于
+`environment/`：例如写 `COPY lock/native.sha256 ...`，不能写
+`COPY environment/lock/native.sha256 ...`。手工 A100 构建也必须使用同一个 context，
+不能用 task 根目录构建出一个 Harbor 实际无法重建的镜像。
 
 ## 9. A100 构建与验收流程
 
