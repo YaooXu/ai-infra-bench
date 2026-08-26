@@ -95,6 +95,16 @@ verifier。native 任务必须保留并验证新构建的扩展，不能复用 B
 /data/ai-infra-bench/claude16-eval/runs/<task>/attempt-1/
 ```
 
+16 个完整运行目录也已统一打包：
+
+```text
+/data/ai-infra-bench/claude16-eval/claude-opus-5-vllm-16-full-runs-20260825.zip
+```
+
+- 大小：`261,410,703` bytes；
+- SHA-256：`67490e50d02a7401e020ea0e50b76cd6dad52996e8dd5749e2678ba967b12ae5`；
+- `unzip -tq`：`No errors detected in compressed data`。
+
 每个目录至少包含 `trajectory.raw.jsonl`、`agent.patch`、`metadata.env`、Agent/patch/status/
 verifier exit code、verifier stdout/stderr、container inspect 和 `secret-scan.txt`。轨迹不
 直接提交到 Git；下表给出字节数和 SHA-256，便于核验远端资产未变化。
