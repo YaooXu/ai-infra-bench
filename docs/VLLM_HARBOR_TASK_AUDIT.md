@@ -5,6 +5,8 @@
 `1` 后升级；29595 因 A100 是明确负对照而保持 blocked。当前共 16 项可评分 Harbor
 task。二次验收细节见
 [vLLM environment-only 二次验收](VLLM_ENVIRONMENT_ONLY_RETRY_AUDIT.md)。
+首轮 Claude Opus 5 实跑结果、Agent 轨迹索引和失败分类见
+[16-task Agent 运行审计](CLAUDE_OPUS_5_16_TASK_RUN_AUDIT.md)。
 
 ## 统一格式
 
