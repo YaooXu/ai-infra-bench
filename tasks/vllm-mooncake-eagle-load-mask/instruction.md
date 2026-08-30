@@ -1,14 +1,5 @@
-# Avoid pruning Mooncake receive masks twice with Eagle
+We run two vLLM replicas for a MiniMax model with MTP/EAGLE-3 enabled and share prefixes through MooncakeStoreConnector. A prompt warmed on the first replica returns HTTP 200 when sent to the second replica, but the generated text can hallucinate a system prompt or drop and swap user turns. The same prompt is correct on a cold run and when MTP is disabled.
 
-When Mooncake external KV loading is used with Eagle or MTP speculative
-decoding, lookup already shortens the reported cache hit so the final block is
-recomputed locally. The receive-side load-mask calculation applies the same
-last-block adjustment again, leaving one processable chunk without a mask slot
-and silently skipping its KV transfer.
+Tracing one 64-token stored prefix with a 16-token block size shows that lookup reports a 48-token external hit. The receiving replica enumerates chunks beginning at token offsets 0, 16, and 32, but only the first two are submitted to the store load operation; no transfer error is reported.
 
-Keep the lookup-stage Eagle adjustment, but ensure the receive mask covers
-every chunk in the already-adjusted token range. Preserve behavior without
-Eagle and preserve hybrid full-attention plus sliding-window mask semantics.
-
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+Investigate and fix the cross-instance cache-load corruption. Every chunk covered by the reported external hit must be populated on the receiving replica, while lookup behavior and non-MTP and hybrid-attention cache semantics must remain correct.
