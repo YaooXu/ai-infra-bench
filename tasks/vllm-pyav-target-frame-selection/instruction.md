@@ -1,13 +1,5 @@
-# Return the requested frames when decoding video with PyAV
+While checking that the PyAV video backend is compatible with the existing OpenCV backend, I decoded `/opt/video/sintel-trailer.mp4` with `num_frames=8` through both backends.
 
-When vLLM samples frames from a video with a long group of pictures, the PyAV
-backend can return an earlier keyframe for multiple requested positions while
-reporting those positions as successfully decoded. The result has the expected
-shape and metadata but contains the wrong temporal content.
+Both backends report the same eight target indices and return arrays with the same shape and dtype. OpenCV returns the requested moments, but several PyAV frames come from different moments even though they carry the same position labels.
 
-Make PyAV decoding return the frame at each requested temporal position. Keep
-the output and metadata ordering aligned and preserve the existing public
-video-loading interface.
-
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+Find out why these frames disagree and make PyAV return the requested moments. The rest of the video-loading interface should continue to work as before.

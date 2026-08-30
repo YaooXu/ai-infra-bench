@@ -705,6 +705,20 @@ RUN find . -type d -name __pycache__ -prune -exec rm -rf {} + \
  && test -z "$(git fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)" \
  && test -z "$(git status --porcelain)"
 
+# Optional task-scoped runtime fixture with pinned content and license metadata.
+RUN mkdir -p /opt/video \
+ && curl --http1.1 -L --retry 10 --retry-all-errors --connect-timeout 30 --max-time 600 \
+      --proto '=https' --tlsv1.2 -sSf https://media.w3.org/2010/05/sintel/trailer.mp4 -o /opt/video/sintel-trailer.mp4 \
+ && printf '%s  %s\n' b670602fa00934ca27c4351bb0efe7ea7a07fae57284e44226025eeed7c51254 /opt/video/sintel-trailer.mp4 | sha256sum -c - \
+ && printf '%s\n' \
+      'Source: https://media.w3.org/2010/05/sintel/trailer.mp4' \
+      'License: CC-BY-3.0' \
+      'Attribution: Sintel (c) Blender Foundation | durian.blender.org' \
+      > /opt/video/ATTRIBUTION.txt
+LABEL ai.infra.bench.runtime-file-source="https://media.w3.org/2010/05/sintel/trailer.mp4" \
+      ai.infra.bench.runtime-file-sha256=b670602fa00934ca27c4351bb0efe7ea7a07fae57284e44226025eeed7c51254 \
+      ai.infra.bench.runtime-file-license="CC-BY-3.0"
+
 LABEL ai.infra.bench.environment-template=vllm-harbor-all-in-one \
       ai.infra.bench.base-commit=$VLLM_BASE_SHA \
       ai.infra.bench.dependency-cutoff=$VLLM_DEPENDENCY_CUTOFF \

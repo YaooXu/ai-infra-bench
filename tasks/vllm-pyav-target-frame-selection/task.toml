@@ -15,7 +15,12 @@ subsystems = ["input_processing_multimodal"]
 repository = "vllm-project/vllm"
 base_commit = "a7737cb4f339aa3fe9b232b8986750102afcbf65"
 dependency_cutoff = "2026-05-14T15:49:06Z"
-image_digest = "sha256:348acfbaebaf42635c2e54fc8fc609d13bfe9fb1e82e9f4ce1552bb040a98630"
+runtime_file_url = "https://media.w3.org/2010/05/sintel/trailer.mp4"
+runtime_file_sha256 = "b670602fa00934ca27c4351bb0efe7ea7a07fae57284e44226025eeed7c51254"
+runtime_file_path = "/opt/video/sintel-trailer.mp4"
+runtime_file_license = "CC-BY-3.0"
+runtime_file_attribution = "Sintel (c) Blender Foundation | durian.blender.org"
+image_digest = "sha256:c0c6b7d4f1960a8ac7b595ad06e2aaabbdfa4dd52b7f48ebae0a933ee2762531"
 environment_template = "vllm-harbor-all-in-one"
 publication_state = "staged-smoke-only"
 
