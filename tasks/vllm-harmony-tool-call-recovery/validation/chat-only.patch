@@ -1,0 +1,139 @@
+diff --git a/vllm/entrypoints/openai/chat_completion/stream_harmony.py b/vllm/entrypoints/openai/chat_completion/stream_harmony.py
+index 87f2f9b92275..271f8e8c85a5 100644
+--- a/vllm/entrypoints/openai/chat_completion/stream_harmony.py
++++ b/vllm/entrypoints/openai/chat_completion/stream_harmony.py
+@@ -17,6 +17,10 @@
+     DeltaMessage,
+     DeltaToolCall,
+ )
++from vllm.entrypoints.openai.parser.harmony_utils import (
++    extract_function_from_recipient,
++    is_function_recipient,
++)
+ 
+ 
+ class TokenState(NamedTuple):
+@@ -79,16 +83,12 @@ def extract_harmony_streaming_delta(
+     # This counts completed tool calls in messages
+     base_index = 0
+     for msg in harmony_parser.messages:
+-        if (
+-            (msg.channel == "commentary" or msg.channel == "analysis")
+-            and msg.recipient
+-            and msg.recipient.startswith("functions.")
+-        ):
++        if msg.recipient and is_function_recipient(msg.recipient):
+             base_index += 1
+ 
+     # If there's an ongoing tool call from previous chunk,
+     # the next new tool call starts at base_index + 1
+-    if prev_recipient and prev_recipient.startswith("functions."):
++    if prev_recipient and is_function_recipient(prev_recipient):
+         next_tool_index = base_index + 1
+         # Ongoing call is at base_index
+         ongoing_tool_index = base_index
+@@ -101,15 +101,11 @@ def extract_harmony_streaming_delta(
+         if group.channel == "final":
+             combined_content += group.text
+             content_encountered = True
+-        elif (
+-            (group.channel == "commentary" or group.channel == "analysis")
+-            and group.recipient
+-            and group.recipient.startswith("functions.")
+-        ):
++        elif group.recipient and is_function_recipient(group.recipient):
+             opened_new_call = False
+             if prev_recipient != group.recipient:
+                 # New tool call - emit the opening message
+-                tool_name = group.recipient.split("functions.", 1)[1]
++                tool_name = extract_function_from_recipient(group.recipient)
+                 tool_messages.append(
+                     DeltaToolCall(
+                         id=make_tool_call_id(),
+diff --git a/vllm/entrypoints/openai/parser/harmony_utils.py b/vllm/entrypoints/openai/parser/harmony_utils.py
+index 33e68b4c40e8..7dc3704cea90 100644
+--- a/vllm/entrypoints/openai/parser/harmony_utils.py
++++ b/vllm/entrypoints/openai/parser/harmony_utils.py
+@@ -26,6 +26,42 @@
+ 
+ logger = init_logger(__name__)
+ 
++
++def is_function_recipient(
++    recipient: str,
++    allowed_function_tool_names: frozenset[str] | None = None,
++) -> bool:
++    """Check whether *recipient* refers to a function tool call.
++
++    The optional *allowed_function_tool_names* parameter is used by the
++    Responses API to distinguish bare function-call recipients (missing the
++    ``functions.`` prefix) from MCP tool calls.  When provided, a bare
++    recipient is only treated as a function call if it appears in the set.
++    The Chat Completions path omits this parameter so that all bare
++    recipients are accepted as function calls (the heuristic fallback).
++    """
++    if not recipient:
++        return False
++    if recipient.startswith("<|"):
++        return False
++    if recipient.startswith("functions."):
++        return len(recipient) > len("functions.")
++    if recipient == "assistant":
++        return False
++    if recipient in BUILTIN_TOOL_TO_MCP_SERVER_LABEL:
++        return False
++    first_segment = recipient.split(".", 1)[0]
++    if first_segment in BUILTIN_TOOL_TO_MCP_SERVER_LABEL:
++        return False
++    if allowed_function_tool_names is not None:
++        return recipient in allowed_function_tool_names
++    return True
++
++
++def extract_function_from_recipient(recipient: str) -> str:
++    return recipient.removeprefix("functions.")
++
++
+ REASONING_EFFORT = {
+     "high": ReasoningEffort.HIGH,
+     "medium": ReasoningEffort.MEDIUM,
+diff --git a/vllm/tool_parsers/openai_tool_parser.py b/vllm/tool_parsers/openai_tool_parser.py
+index ee6dd70718b3..e5c37fbd3dfb 100644
+--- a/vllm/tool_parsers/openai_tool_parser.py
++++ b/vllm/tool_parsers/openai_tool_parser.py
+@@ -13,7 +13,11 @@
+     FunctionCall,
+     ToolCall,
+ )
+-from vllm.entrypoints.openai.parser.harmony_utils import parse_output_into_messages
++from vllm.entrypoints.openai.parser.harmony_utils import (
++    extract_function_from_recipient,
++    is_function_recipient,
++    parse_output_into_messages,
++)
+ from vllm.logger import init_logger
+ from vllm.tool_parsers.abstract_tool_parser import (
+     Tool,
+@@ -50,10 +54,12 @@ def extract_tool_calls(
+ 
+         if len(parser.messages) > 0:
+             for msg in parser.messages:
++                if msg.author.role != "assistant":
++                    continue
+                 if len(msg.content) < 1:
+                     continue
+                 msg_text = msg.content[0].text
+-                if msg.recipient and msg.recipient.startswith("functions."):
++                if msg.recipient and is_function_recipient(msg.recipient):
+                     # If no content-type is given assume JSON, as that's the
+                     # most common case with gpt-oss models.
+                     if not msg.content_type or "json" in msg.content_type:
+@@ -72,7 +78,7 @@ def extract_tool_calls(
+                         ToolCall(
+                             type="function",
+                             function=FunctionCall(
+-                                name=msg.recipient.split("functions.")[1],
++                                name=extract_function_from_recipient(msg.recipient),
+                                 arguments=tool_args,
+                             ),
+                         )

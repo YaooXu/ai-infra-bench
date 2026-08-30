@@ -1,0 +1,313 @@
+diff --git a/vllm/entrypoints/openai/parser/harmony_utils.py b/vllm/entrypoints/openai/parser/harmony_utils.py
+index 33e68b4c40e8..7dc3704cea90 100644
+--- a/vllm/entrypoints/openai/parser/harmony_utils.py
++++ b/vllm/entrypoints/openai/parser/harmony_utils.py
+@@ -26,6 +26,42 @@
+ 
+ logger = init_logger(__name__)
+ 
++
++def is_function_recipient(
++    recipient: str,
++    allowed_function_tool_names: frozenset[str] | None = None,
++) -> bool:
++    """Check whether *recipient* refers to a function tool call.
++
++    The optional *allowed_function_tool_names* parameter is used by the
++    Responses API to distinguish bare function-call recipients (missing the
++    ``functions.`` prefix) from MCP tool calls.  When provided, a bare
++    recipient is only treated as a function call if it appears in the set.
++    The Chat Completions path omits this parameter so that all bare
++    recipients are accepted as function calls (the heuristic fallback).
++    """
++    if not recipient:
++        return False
++    if recipient.startswith("<|"):
++        return False
++    if recipient.startswith("functions."):
++        return len(recipient) > len("functions.")
++    if recipient == "assistant":
++        return False
++    if recipient in BUILTIN_TOOL_TO_MCP_SERVER_LABEL:
++        return False
++    first_segment = recipient.split(".", 1)[0]
++    if first_segment in BUILTIN_TOOL_TO_MCP_SERVER_LABEL:
++        return False
++    if allowed_function_tool_names is not None:
++        return recipient in allowed_function_tool_names
++    return True
++
++
++def extract_function_from_recipient(recipient: str) -> str:
++    return recipient.removeprefix("functions.")
++
++
+ REASONING_EFFORT = {
+     "high": ReasoningEffort.HIGH,
+     "medium": ReasoningEffort.MEDIUM,
+diff --git a/vllm/entrypoints/openai/responses/context.py b/vllm/entrypoints/openai/responses/context.py
+index f0920ab09f4e..644dc8cfaaa6 100644
+--- a/vllm/entrypoints/openai/responses/context.py
++++ b/vllm/entrypoints/openai/responses/context.py
+@@ -524,10 +524,12 @@ def __init__(
+         self,
+         messages: list,
+         available_tools: list[str],
++        function_tool_names: frozenset[str] | None = None,
+     ):
+         self._messages = messages
+         self.finish_reason: str | None = None
+         self.available_tools = available_tools
++        self.function_tool_names = function_tool_names
+         self._tool_sessions: dict[str, ClientSession | Tool] = {}
+         self.called_tools: set[str] = set()
+ 
+diff --git a/vllm/entrypoints/openai/responses/harmony.py b/vllm/entrypoints/openai/responses/harmony.py
+index 313a621d08c8..cfe5fb67bd24 100644
+--- a/vllm/entrypoints/openai/responses/harmony.py
++++ b/vllm/entrypoints/openai/responses/harmony.py
+@@ -31,7 +31,9 @@
+ 
+ from vllm.entrypoints.openai.parser.harmony_utils import (
+     BUILTIN_TOOL_TO_MCP_SERVER_LABEL,
++    extract_function_from_recipient,
+     flatten_chat_text_content,
++    is_function_recipient,
+ )
+ from vllm.entrypoints.openai.responses.protocol import (
+     ResponseInputOutputItem,
+@@ -294,7 +296,7 @@ def _parse_browser_tool_call(message: Message, recipient: str) -> ResponseOutput
+ 
+ def _parse_function_call(message: Message, recipient: str) -> list[ResponseOutputItem]:
+     """Parse function calls into function tool call items."""
+-    function_name = recipient.split(".")[-1]
++    function_name = extract_function_from_recipient(recipient)
+     output_items = []
+     for content in message.content:
+         random_id = random_uuid()
+@@ -410,7 +412,10 @@ def _parse_message_no_recipient(
+ # ---------------------------------------------------------------------------
+ 
+ 
+-def harmony_to_response_output(message: Message) -> list[ResponseOutputItem]:
++def harmony_to_response_output(
++    message: Message,
++    function_tool_names: frozenset[str] | None = None,
++) -> list[ResponseOutputItem]:
+     """Parse a Harmony message into a list of output response items.
+ 
+     This is the main dispatcher that routes based on channel and recipient.
+@@ -429,8 +434,8 @@ def harmony_to_response_output(message: Message) -> list[ResponseOutputItem]:
+         if recipient.startswith("browser."):
+             output_items.append(_parse_browser_tool_call(message, recipient))
+ 
+-        # Function calls (should only happen on commentary channel)
+-        elif message.channel == "commentary" and recipient.startswith("functions."):
++        # Function calls (with or without "functions." prefix)
++        elif is_function_recipient(recipient, function_tool_names):
+             output_items.extend(_parse_function_call(message, recipient))
+ 
+         # Built-in MCP tools (python, browser, container)
+@@ -450,6 +455,7 @@ def harmony_to_response_output(message: Message) -> list[ResponseOutputItem]:
+ 
+ def parser_state_to_response_output(
+     parser: StreamableParser,
++    function_tool_names: frozenset[str] | None = None,
+ ) -> list[ResponseOutputItem]:
+     """Extract in-progress response items from incomplete parser state.
+ 
+@@ -464,15 +470,15 @@ def parser_state_to_response_output(
+     if current_recipient is not None and current_recipient.startswith("browser."):
+         return []
+ 
+-    if current_recipient and parser.current_channel in ("commentary", "analysis"):
+-        if current_recipient.startswith("functions."):
++    if current_recipient:
++        if is_function_recipient(current_recipient, function_tool_names):
+             rid = random_uuid()
+             return [
+                 ResponseFunctionToolCall(
+                     arguments=parser.current_content,
+                     call_id=f"call_{rid}",
+                     type="function_call",
+-                    name=current_recipient.split(".")[-1],
++                    name=extract_function_from_recipient(current_recipient),
+                     id=f"fc_{rid}",
+                     status="in_progress",
+                 )
+diff --git a/vllm/entrypoints/openai/responses/serving.py b/vllm/entrypoints/openai/responses/serving.py
+index 92b19f175ced..68f71bd5d41b 100644
+--- a/vllm/entrypoints/openai/responses/serving.py
++++ b/vllm/entrypoints/openai/responses/serving.py
+@@ -89,6 +89,7 @@
+ from vllm.entrypoints.openai.responses.utils import (
+     construct_input_messages,
+     construct_tool_dicts,
++    extract_function_tool_names,
+     extract_tool_types,
+ )
+ from vllm.entrypoints.serve.render.serving import OpenAIServingRender
+@@ -449,11 +450,16 @@ async def _create_responses(
+             )
+ 
+             context: ConversationContext
++            function_tool_names = extract_function_tool_names(request.tools)
+             if self.use_harmony:
+                 if request.stream:
+-                    context = StreamingHarmonyContext(messages, available_tools)
++                    context = StreamingHarmonyContext(
++                        messages, available_tools, function_tool_names
++                    )
+                 else:
+-                    context = HarmonyContext(messages, available_tools)
++                    context = HarmonyContext(
++                        messages, available_tools, function_tool_names
++                    )
+             else:
+                 if envs.VLLM_USE_EXPERIMENTAL_PARSER_CONTEXT:
+                     # This is a feature in development for parsing
+@@ -1070,10 +1076,11 @@ def _make_response_output_items_with_harmony(
+     ) -> list[ResponseOutputItem]:
+         output_items: list[ResponseOutputItem] = []
+         num_init_messages = context.num_init_messages
++        fn_names = context.function_tool_names
+         for msg in context.messages[num_init_messages:]:
+-            output_items.extend(harmony_to_response_output(msg))
++            output_items.extend(harmony_to_response_output(msg, fn_names))
+         # Handle the generation stopped in the middle (if any).
+-        last_items = parser_state_to_response_output(context.parser)
++        last_items = parser_state_to_response_output(context.parser, fn_names)
+         if last_items:
+             output_items.extend(last_items)
+         return output_items
+@@ -1448,7 +1455,9 @@ async def _process_harmony_streaming_events(
+             if ctx.is_expecting_start():
+                 if len(ctx.parser.messages) > 0:
+                     previous_item = ctx.parser.messages[-1]
+-                    for event in emit_previous_item_done_events(previous_item, state):
++                    for event in emit_previous_item_done_events(
++                        previous_item, state, ctx.function_tool_names
++                    ):
+                         yield _increment_sequence_number_and_return(event)
+                 state.reset_for_new_item()
+ 
+diff --git a/vllm/entrypoints/openai/responses/streaming_events.py b/vllm/entrypoints/openai/responses/streaming_events.py
+index 425ae379b638..b49c46fc5390 100644
+--- a/vllm/entrypoints/openai/responses/streaming_events.py
++++ b/vllm/entrypoints/openai/responses/streaming_events.py
+@@ -62,6 +62,10 @@
+ 
+ from vllm.entrypoints.mcp.tool_server import ToolServer
+ from vllm.entrypoints.openai.engine.protocol import DeltaMessage
++from vllm.entrypoints.openai.parser.harmony_utils import (
++    extract_function_from_recipient,
++    is_function_recipient,
++)
+ from vllm.entrypoints.openai.responses.context import StreamingHarmonyContext
+ from vllm.entrypoints.openai.responses.protocol import (
+     ResponseReasoningPartAddedEvent,
+@@ -111,19 +115,19 @@ def reset_for_new_item(self) -> None:
+         self.current_call_id = ""
+ 
+ 
+-def is_mcp_tool_by_namespace(recipient: str | None) -> bool:
++def is_mcp_tool_by_namespace(
++    recipient: str | None,
++    allowed_function_tool_names: frozenset[str] | None = None,
++) -> bool:
+     """
+     Determine if a tool call is an MCP tool based on recipient prefix.
+ 
+-    - Tools starting with "functions." are function calls
+-    - Everything else is an MCP tool
++    Inverse of :func:`is_function_recipient` — everything that is not
++    a function call is an MCP tool.
+     """
+     if recipient is None:
+         return False
+-
+-    # Function calls have "functions." prefix
+-    # Everything else is an MCP tool
+-    return not recipient.startswith("functions.")
++    return not is_function_recipient(recipient, allowed_function_tool_names)
+ 
+ 
+ # =====================================================================
+@@ -575,16 +579,16 @@ def emit_content_delta_events(
+         return emit_text_delta_events(delta, state)
+     elif channel == "analysis" and recipient is None:
+         return emit_reasoning_delta_events(delta, state)
+-    # built-in tools will be triggered on the analysis channel
+-    # However, occasionally built-in tools will
+-    # still be output to commentary.
+-    elif channel in ("commentary", "analysis") and recipient is not None:
+-        if recipient.startswith("functions."):
+-            function_name = recipient[len("functions.") :]
++    elif recipient is not None:
++        fn_names = ctx.function_tool_names
++        if is_function_recipient(recipient, fn_names):
++            function_name = extract_function_from_recipient(recipient)
+             return emit_function_call_delta_events(delta, function_name, state)
+         elif recipient == "python":
+             return emit_code_interpreter_delta_events(delta, state)
+-        elif recipient.startswith("mcp.") or is_mcp_tool_by_namespace(recipient):
++        elif recipient.startswith("mcp.") or is_mcp_tool_by_namespace(
++            recipient, fn_names
++        ):
+             return emit_mcp_delta_events(delta, state, recipient)
+ 
+     return []
+@@ -593,6 +597,7 @@ def emit_content_delta_events(
+ def emit_previous_item_done_events(
+     previous_item: HarmonyMessage,
+     state: StreamingState,
++    function_tool_names: frozenset[str] | None = None,
+ ) -> list[StreamingResponsesResponse]:
+     """Emit done events for the previous item when expecting a new start.
+ 
+@@ -602,13 +607,13 @@ def emit_previous_item_done_events(
+     text = previous_item.content[0].text
+     if previous_item.recipient is not None:
+         # Deal with tool call
+-        if previous_item.recipient.startswith("functions."):
+-            function_name = previous_item.recipient[len("functions.") :]
++        if is_function_recipient(previous_item.recipient, function_tool_names):
++            function_name = extract_function_from_recipient(previous_item.recipient)
+             return emit_function_call_done_events(function_name, text, state)
+         elif previous_item.recipient == "python":
+             return emit_code_interpreter_completion_events(previous_item, state)
+         elif (
+-            is_mcp_tool_by_namespace(previous_item.recipient)
++            is_mcp_tool_by_namespace(previous_item.recipient, function_tool_names)
+             and state.current_item_id is not None
+             and state.current_item_id.startswith("mcp_")
+         ):
+@@ -792,9 +797,12 @@ def emit_tool_action_events(
+         and state.sent_output_item_added
+     ):
+         recipient = previous_item.recipient
++        fn_names = ctx.function_tool_names
+         if recipient == "python":
+             events.extend(emit_code_interpreter_completion_events(previous_item, state))
+-        elif recipient.startswith("mcp.") or is_mcp_tool_by_namespace(recipient):
++        elif recipient.startswith("mcp.") or is_mcp_tool_by_namespace(
++            recipient, fn_names
++        ):
+             events.extend(
+                 emit_mcp_completion_events(
+                     recipient, previous_item.content[0].text, state
+diff --git a/vllm/entrypoints/openai/responses/utils.py b/vllm/entrypoints/openai/responses/utils.py
+index 319fd5a17acd..9556867f5c36 100644
+--- a/vllm/entrypoints/openai/responses/utils.py
++++ b/vllm/entrypoints/openai/responses/utils.py
+@@ -236,6 +236,10 @@ def _construct_message_from_response_item(
+     return item  # type: ignore[arg-type]
+ 
+ 
++def extract_function_tool_names(tools: list[Tool]) -> frozenset[str]:
++    return frozenset(tool.name for tool in tools if tool.type == "function")
++
++
+ def extract_tool_types(tools: list[Tool]) -> set[str]:
+     """
+     Extracts the tool types from the given tools.

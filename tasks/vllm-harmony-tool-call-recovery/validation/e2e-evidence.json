@@ -1,0 +1,125 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T01:57:19+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-154",
+    "instance_id": "vllm-project__vllm-42454",
+    "base_commit": "b3c69595a63f14243388d8632e263490457d6126",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/42454",
+    "directly_linked_issue": null,
+    "reported_origin": "A private long-context gpt-oss request produced a bare webSearch recipient roughly half the time; Chat Completions reported a tool-call stop but returned no tool call."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-harmony-tool-call-recovery:base-b3c69595a63f",
+    "image_id": "sha256:602e40b65a44e5a653ddcfdb711adb21973c834f377e7872cafe0b8422641b43",
+    "dockerfile_sha256": "408a0e4448e19a35c00575b706e698d30ae2fcd7bb0aec12500ee84fe0aec4a1",
+    "dependency_lock_sha256": "58b1a8c1d41fa95f4c0bf08e0ee9b85595a0f97f256cf53aef18d179723292ad",
+    "dependency_lock_manifest_sha256": "770e82e27f62e4c5fb3fe4bd49c120ce008a3b891bc76d2dd05ae54f38855c58",
+    "runtime_file": {
+      "path": "/opt/harmony-cache/fb374d419588a4632f3f557e76b4b70aebbca790",
+      "sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+      "model_weights": false
+    }
+  },
+  "artifacts": {
+    "instruction_sha256": "37af9a65c8d91d57b7d838c393b87fd3d887b76e7d05cd27e6ea6ad9c54361be",
+    "oracle_patch_sha256": "da0f51dcde220f74417f03c167af172167ce01af17d1308d8a987383345e231c",
+    "test_script_sha256": "624e8e79ba5fafa928c7a9a90a25e4db6ba5423fecb618d10b3a53954ceca9ba",
+    "regression_test_sha256": "d03c2d95a59a3c2200e70b264f810aedbc87f74e42206658e45e5d6269aa20be",
+    "junit_checker_sha256": "3ebf5642bb725b68366b9e852ddeb7b4fdb7e2065be0d4413a429fefe64f641d",
+    "real_pipeline_test_sha256": "d1b76febdc988613107ad110864fab29bf34d25cb0026eb13ac003feeddcab6b"
+  },
+  "verifier_contract": {
+    "asserts_private_implementation_structure": false,
+    "behavior_cases": 26,
+    "behaviors": [
+      "bare, dotted, and prefixed declared functions survive Chat non-streaming parsing",
+      "bare and prefixed functions survive Chat streaming on standard and non-standard channels",
+      "Responses routes declared bare names as functions and unknown names as MCP",
+      "empty tool lists do not invent function calls",
+      "assistant, built-in, dotted built-in, and non-assistant recipients are not promoted"
+    ],
+    "collection_integrity": "JUnit must contain exactly 26 unique, passing, non-skipped cases"
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real encoded Harmony output through Chat and Responses parsers",
+    "entrypoint": "o200k Harmony token stream",
+    "channels": ["analysis", "comment"],
+    "uses_real_openai_harmony_encoding": true,
+    "uses_real_chat_nonstream_parser": true,
+    "uses_real_chat_stream_parser": true,
+    "uses_real_responses_conversion": true,
+    "model_runner_executed": false,
+    "limitation": "The private gpt-oss prompt and model weights are unavailable; the verifier starts from deterministic raw Harmony output at the public parser boundary."
+  },
+  "repeated_runs": [
+    {
+      "case": "base",
+      "rounds": 5,
+      "rewards": [0, 0, 0, 0, 0],
+      "behavior_tests_each_round": {"passed": 7, "failed": 19},
+      "e2e_exit_codes": [1, 1, 1, 1, 1]
+    },
+    {
+      "case": "oracle",
+      "rounds": 5,
+      "rewards": [1, 1, 1, 1, 1],
+      "behavior_tests_each_round": {"passed": 26, "failed": 0},
+      "e2e_exit_codes": [0, 0, 0, 0, 0]
+    }
+  ],
+  "adversarial_runs": [
+    {
+      "case": "chat_paths_only",
+      "patch_sha256": "98d26ecaa11f417b6fd31b15e08b357e74cbb4c785c4a97888ab28ecccc4ab0b",
+      "reward": 0,
+      "tests_passed": 15,
+      "tests_failed": 11,
+      "e2e_exit_code": 1
+    },
+    {
+      "case": "responses_paths_only",
+      "patch_sha256": "e50a5ec03b6bed4c8e86464892b4817d3902048290f789963f2366cd48d03577",
+      "reward": 0,
+      "tests_passed": 18,
+      "tests_failed": 8,
+      "e2e_exit_code": 1
+    },
+    {
+      "case": "empty_tool_list_uses_heuristic_fallback",
+      "patch_sha256": "95a7ae09b6956c06dcee898f755bae8c162bdee8f340af2591495e23b604d61a",
+      "reward": 0,
+      "tests_passed": 25,
+      "tests_failed": 1,
+      "e2e_exit_code": 0
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "f8188ac5-39d3-422e-846e-797ed67f282e",
+    "trial_id": "5bedea23-8b57-4e06-b476-49dd8b9c1150",
+    "input_task_checksum": "9f6873f03c8020663989bac658282d37e3365b36a04aa1121597030ad4bb4ed2",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "e2e_exit_code": 0,
+    "runtime_seconds": 26,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}

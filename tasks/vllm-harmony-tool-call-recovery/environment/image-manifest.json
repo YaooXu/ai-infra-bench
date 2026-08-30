@@ -1,0 +1,48 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-harmony-tool-call-recovery",
+  "canonical_tag": "ai-infra-bench/vllm-harmony-tool-call-recovery:base-b3c69595a63f",
+  "image_id": "sha256:602e40b65a44e5a653ddcfdb711adb21973c834f377e7872cafe0b8422641b43",
+  "repo_digests": [
+    "ai-infra-bench/vllm-harmony-tool-call-recovery@sha256:602e40b65a44e5a653ddcfdb711adb21973c834f377e7872cafe0b8422641b43"
+  ],
+  "size_bytes": 1716118178,
+  "created": "2026-08-31T01:51:25.203834304+08:00",
+  "recorded_at": "2026-08-30T17:57:05.646017+00:00",
+  "base_commit": "b3c69595a63f14243388d8632e263490457d6126",
+  "dependency_cutoff": "2026-05-13T17:52:35Z",
+  "runtime_assets": null,
+  "runtime_file": {
+    "url": "https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken",
+    "sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+    "path": "/opt/harmony-cache/fb374d419588a4632f3f557e76b4b70aebbca790",
+    "license": "MIT",
+    "attribution": "OpenAI o200k_base encoding vocabulary from tiktoken"
+  },
+  "dockerfile_sha256": "408a0e4448e19a35c00575b706e698d30ae2fcd7bb0aec12500ee84fe0aec4a1",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "58b1a8c1d41fa95f4c0bf08e0ee9b85595a0f97f256cf53aef18d179723292ad",
+  "dependency_lock_manifest_sha256": "770e82e27f62e4c5fb3fe4bd49c120ce008a3b891bc76d2dd05ae54f38855c58",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "b3c69595a63f14243388d8632e263490457d6126-58b1a8c1d41fa95f",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+gb3c69595a63f14243388d8632e263490457d6126.cpu",
+    "torch": "2.11.0+cpu",
+    "av": null,
+    "opencv-python-headless": "4.13.0.92",
+    "numpy": "2.3.5",
+    "pytest": "9.0.3",
+    "ray": null
+  }
+}

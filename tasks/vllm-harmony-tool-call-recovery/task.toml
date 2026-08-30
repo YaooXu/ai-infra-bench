@@ -1,0 +1,42 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-harmony-tool-call-recovery"
+version = "0.0.1"
+description = "Recover real-world Harmony function calls that are missing from API responses."
+authors = [{name = ""}]
+keywords = ["vllm", "cpu", "harmony", "tool-calls", "responses-api"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+track = "representative"
+workload_type = "bug_fix"
+subsystems = ["serving_api"]
+repository = "vllm-project/vllm"
+base_commit = "b3c69595a63f14243388d8632e263490457d6126"
+dependency_cutoff = "2026-05-13T17:52:35Z"
+runtime_file_url = "https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken"
+runtime_file_sha256 = "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d"
+runtime_file_path = "/opt/harmony-cache/fb374d419588a4632f3f557e76b4b70aebbca790"
+runtime_file_cache_env = "TIKTOKEN_RS_CACHE_DIR"
+runtime_file_license = "MIT"
+runtime_file_attribution = "OpenAI o200k_base encoding vocabulary from tiktoken"
+image_digest = "sha256:602e40b65a44e5a653ddcfdb711adb21973c834f377e7872cafe0b8422641b43"
+environment_template = "vllm-harbor-all-in-one"
+publication_state = "staged-smoke-only"
+
+[agent]
+timeout_sec = 3600
+user = "root"
+network_mode = "no-network"
+
+[environment]
+build_timeout_sec = 14400
+cpus = 8
+memory_mb = 49152
+storage_mb = 20480
+workdir = "/workspace/vllm"
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 900

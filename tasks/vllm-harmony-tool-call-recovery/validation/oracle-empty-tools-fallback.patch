@@ -1,0 +1,7 @@
+diff --git a/vllm/entrypoints/openai/parser/harmony_utils.py b/vllm/entrypoints/openai/parser/harmony_utils.py
+--- a/vllm/entrypoints/openai/parser/harmony_utils.py
++++ b/vllm/entrypoints/openai/parser/harmony_utils.py
+@@ -57,2 +57,2 @@ def is_function_recipient(
+-    if allowed_function_tool_names is not None:
++    if allowed_function_tool_names:
+         return recipient in allowed_function_tool_names
