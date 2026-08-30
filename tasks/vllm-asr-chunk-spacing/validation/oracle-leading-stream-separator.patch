@@ -1,0 +1,6 @@
+diff --git a/vllm/entrypoints/openai/speech_to_text/speech_to_text.py b/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
+--- a/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
++++ b/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
+@@ -640 +640 @@
+-                        result_generator is not list_result_generator[0]
++                        True

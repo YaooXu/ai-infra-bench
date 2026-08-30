@@ -1,0 +1,6 @@
+diff --git a/vllm/entrypoints/openai/speech_to_text/speech_to_text.py b/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
+--- a/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
++++ b/vllm/entrypoints/openai/speech_to_text/speech_to_text.py
+@@ -550 +550 @@
+-            text = separator.join(text_parts)
++            text = "".join(text_parts)
