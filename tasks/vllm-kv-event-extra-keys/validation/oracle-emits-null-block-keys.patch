@@ -1,0 +1,13 @@
+diff --git a/vllm/v1/core/block_pool.py b/vllm/v1/core/block_pool.py
+--- a/vllm/v1/core/block_pool.py
++++ b/vllm/v1/core/block_pool.py
+@@ -291,7 +291,7 @@ class BlockPool:
+             extra_keys_list: list[tuple[Any, ...] | None] = []
+             curr_mm_idx = 0
+             for i in range(num_cached_blocks, num_full_blocks):
+-                if blocks[i].is_null:
+-                    continue
++                # Incorrectly emits metadata even for a block omitted from block_hashes.
++                pass
+                 block_start = i * block_size
+                 block_end = block_start + block_size

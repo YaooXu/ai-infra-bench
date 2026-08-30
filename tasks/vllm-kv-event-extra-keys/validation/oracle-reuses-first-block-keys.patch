@@ -1,0 +1,13 @@
+diff --git a/vllm/v1/core/block_pool.py b/vllm/v1/core/block_pool.py
+--- a/vllm/v1/core/block_pool.py
++++ b/vllm/v1/core/block_pool.py
+@@ -293,7 +293,7 @@ class BlockPool:
+             for i in range(num_cached_blocks, num_full_blocks):
+                 if blocks[i].is_null:
+                     continue
+-                block_start = i * block_size
+-                block_end = block_start + block_size
++                block_start = 0
++                block_end = block_size
+                 extra_keys, curr_mm_idx = generate_block_hash_extra_keys(
+                     request, block_start, block_end, curr_mm_idx

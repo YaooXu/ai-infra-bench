@@ -1,0 +1,38 @@
+{
+  "schema_version": "vllm_dependency_lock.v1",
+  "resolver": "uv 0.11.28",
+  "base_commit": "991d6bff38ff02f7cf47a3833efce58b27db8bb8",
+  "dependency_cutoff": "2026-02-21T04:03:32Z",
+  "dependency_cutoff_overrides": [],
+  "python_version": "3.12",
+  "python_platform": "x86_64-manylinux_2_28",
+  "torch_backend": "cpu",
+  "index_strategy": "first-index",
+  "inputs": {
+    "requirements/cpu.txt": {
+      "source_sha256": "ef2179991816560858b704d9132cfa9904cda65b8e220d04e1dced75eae67ee1",
+      "resolver_input_sha256": "ef2179991816560858b704d9132cfa9904cda65b8e220d04e1dced75eae67ee1"
+    },
+    "requirements/common.txt": {
+      "source_sha256": "708faa85a40e3ce8d00df8cd0a5fcac5bdd894b5b97e81183649e73387a896fc",
+      "resolver_input_sha256": "708faa85a40e3ce8d00df8cd0a5fcac5bdd894b5b97e81183649e73387a896fc"
+    },
+    "requirements/cpu-build.txt": {
+      "source_sha256": "ee537183bab11704a85f34244811c3bd505dba5ea77663438a06c6ddb9299e8c",
+      "resolver_input_sha256": "ee537183bab11704a85f34244811c3bd505dba5ea77663438a06c6ddb9299e8c"
+    },
+    "extras.in": {
+      "sha256": "ba21efb7e4a36f39e6492aa1d5b01e6f9bbe4ccfedcef40a36ef6f8ddca50719"
+    }
+  },
+  "normalization": {
+    "removed_line": "--extra-index-url https://download.pytorch.org/whl/cpu",
+    "reason": "uv --torch-backend cpu scopes the PyTorch index to torch packages; removing the generic extra index prevents unrelated packages without upload timestamps from bypassing the cutoff"
+  },
+  "command": "uv pip compile requirements/cpu.txt requirements/cpu-build.txt extras.in --python-version 3.12 --python-platform x86_64-manylinux_2_28 --exclude-newer 2026-02-21T04:03:32Z --torch-backend cpu --index-strategy first-index --output-file requirements.txt",
+  "output": {
+    "path": "environment/lock/requirements.txt",
+    "packages": 163,
+    "sha256": "656b61b422cd9b59a5da983cf796107dcb0010da7fd8f73b23456aeb41573718"
+  }
+}

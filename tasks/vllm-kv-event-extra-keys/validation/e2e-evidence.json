@@ -1,0 +1,130 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T03:18:03+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-032",
+    "instance_id": "vllm-project__vllm-33304",
+    "base_commit": "991d6bff38ff02f7cf47a3833efce58b27db8bb8",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/33304",
+    "directly_linked_issue": null,
+    "reported_origin": "Dynamo's backend-independent KV-aware router could not reconstruct vLLM block identity from engine-specific hashes when equal multimodal placeholder tokens represented different images. Review expanded the required identity material to cache salt, LoRA, and compact prompt-embedding range hashes, and identified null-block alignment as a consumer correctness boundary."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-kv-event-extra-keys:base-991d6bff38ff",
+    "image_id": "sha256:a46820b8e453081d635e7a116facfe7b4aa8d94fefc53311ee4cf00988dfa157",
+    "size_bytes": 1566992343,
+    "dockerfile_sha256": "cbedb1448a0ca6c74d3ef253a66c2395fc16995befe448492062b38668fef4d2",
+    "dependency_lock_sha256": "656b61b422cd9b59a5da983cf796107dcb0010da7fd8f73b23456aeb41573718",
+    "dependency_lock_manifest_sha256": "0c6ab94f6be41b0a0c5cc189741766866b3a87c8af34a17881c5ec12b4c38d9d"
+  },
+  "artifacts": {
+    "instruction_sha256": "25eaeb26db147671b78f856d1797f62e79071bc5bf8e6863b74cd9b930bef737",
+    "oracle_patch_sha256": "5717d6fcd3d5f1168716c689fcd7a647a23b4931fe85c8153d0d325b4d920a24",
+    "test_script_sha256": "797eaee28e5eb4a2789cc94c740803e26b6938a5a2ba8e58a47c00be17b5714c",
+    "regression_test_sha256": "62fe985af4d24cd0660b59daeced773b79c90a864a77f458d399be45a8e5103a",
+    "junit_checker_sha256": "f6dd342505ce3ee8ef6e3b3168c1de3abef6d4104d6765854229b542919e6c37",
+    "real_transport_test_sha256": "5db5bf76548b43691aeac12f549e9677e3801f05c33f690fd7f2f18780a733f5"
+  },
+  "verifier_contract": {
+    "behavior_cases": 19,
+    "behaviors": [
+      "BlockStored exposes optional per-block identity material without changing existing fields",
+      "multimodal identifiers remain distinct for equal placeholder token sequences and align per emitted block",
+      "cache salt, LoRA identity, and mixed identity inputs preserve their block ordering",
+      "prompt embeddings use stable compact per-range fingerprints rather than tensor payloads",
+      "null physical blocks do not change the number of identity entries relative to emitted hashes",
+      "incremental caching preserves the logical parent and only emits newly stored blocks",
+      "an external consumer can reconstruct emitted block hashes from token blocks and identity material",
+      "msgpack batches preserve event types, order, existing fields, and extra keys"
+    ],
+    "collection_integrity": "JUnit must contain at least 19 passing, unique, non-skipped cases including null alignment, compact embeddings, msgpack, and hidden mixed reconstruction."
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real Request hashing and BlockPool cache emission through the production ZMQ event publisher to a msgpack-decoding subscriber",
+    "entrypoint": "Request -> get_request_block_hasher -> BlockPool.cache_full_blocks -> KVEventBatch -> ZmqEventPublisher -> ZMQ SUB -> msgspec decode",
+    "published_blocks": 3,
+    "identity_entries": 3,
+    "consumer_reconstruction_verified": true,
+    "model_runner_executed": false,
+    "limitation": "This feature ends at CPU scheduler metadata and event transport, so the complete production boundary is exercised without loading model weights or running a GPU model runner."
+  },
+  "repeated_runs": [
+    {
+      "case": "base",
+      "rounds": 5,
+      "rewards": [0, 0, 0, 0, 0],
+      "behavior_tests_each_round": {"passed": 0, "failed": 19},
+      "transport_exit_codes": [1, 1, 1, 1, 1]
+    },
+    {
+      "case": "oracle",
+      "rounds": 5,
+      "rewards": [1, 1, 1, 1, 1],
+      "behavior_tests_each_round": {"passed": 19, "failed": 0},
+      "transport_exit_codes": [0, 0, 0, 0, 0]
+    }
+  ],
+  "adversarial_runs": [
+    {
+      "case": "schema_without_producer",
+      "patch_sha256": "0383511270910c231d240a884a6b25a8f4bf892d5477e232064ecd57778b86c6",
+      "reward": 0,
+      "tests_passed": 6,
+      "tests_failed": 13,
+      "transport_exit_code": 1
+    },
+    {
+      "case": "reuse_first_block_keys",
+      "patch_sha256": "9fd8fd2527fdabcda9c44981b5cd1be5198c38580a12e69a9d5346c95e757872",
+      "reward": 0,
+      "tests_passed": 11,
+      "tests_failed": 8,
+      "transport_exit_code": 1
+    },
+    {
+      "case": "raw_prompt_embeddings",
+      "patch_sha256": "98df9c3e35011abf14fec482d660e87fa5ef0a7b84c9612986feaca12e8fd1e7",
+      "reward": 0,
+      "tests_passed": 17,
+      "tests_failed": 2,
+      "transport_exit_code": 0
+    },
+    {
+      "case": "emit_null_block_keys",
+      "patch_sha256": "521f3c2500a8c773cc73ca1aaf3212afdb7e87c827ee711ecf00b5116341b462",
+      "reward": 0,
+      "tests_passed": 18,
+      "tests_failed": 1,
+      "transport_exit_code": 0
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "c0b326c2-884e-4848-b3e5-cdd332c4f156",
+    "trial_id": "246d699c-aa13-472a-a5aa-1b98228f8990",
+    "input_task_checksum": "a5ee5ddbd7465fb82cd539015e32bb8c719b6d265467c7d7e3ae72c243eb81b5",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "transport_exit_code": 0,
+    "runtime_seconds": 24,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_task_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "build_context_empty": true,
+    "runtime_network_disabled": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-kv-event-extra-keys",
+  "canonical_tag": "ai-infra-bench/vllm-kv-event-extra-keys:base-991d6bff38ff",
+  "image_id": "sha256:a46820b8e453081d635e7a116facfe7b4aa8d94fefc53311ee4cf00988dfa157",
+  "repo_digests": [
+    "ai-infra-bench/vllm-kv-event-extra-keys@sha256:a46820b8e453081d635e7a116facfe7b4aa8d94fefc53311ee4cf00988dfa157"
+  ],
+  "size_bytes": 1566992343,
+  "created": "2026-08-31T03:09:56.742281344+08:00",
+  "recorded_at": "2026-08-30T19:14:41.473826+00:00",
+  "base_commit": "991d6bff38ff02f7cf47a3833efce58b27db8bb8",
+  "dependency_cutoff": "2026-02-21T04:03:32Z",
+  "runtime_assets": null,
+  "runtime_file": null,
+  "dockerfile_sha256": "cbedb1448a0ca6c74d3ef253a66c2395fc16995befe448492062b38668fef4d2",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "656b61b422cd9b59a5da983cf796107dcb0010da7fd8f73b23456aeb41573718",
+  "dependency_lock_manifest_sha256": "0c6ab94f6be41b0a0c5cc189741766866b3a87c8af34a17881c5ec12b4c38d9d",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "991d6bff38ff02f7cf47a3833efce58b27db8bb8-656b61b422cd9b59",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+g991d6bff38ff02f7cf47a3833efce58b27db8bb8.cpu",
+    "torch": "2.10.0+cpu",
+    "av": null,
+    "opencv-python-headless": "4.13.0.92",
+    "numpy": "2.2.6",
+    "pytest": "9.0.2",
+    "ray": null
+  }
+}

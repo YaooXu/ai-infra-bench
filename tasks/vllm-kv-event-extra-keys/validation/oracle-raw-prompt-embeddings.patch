@@ -1,0 +1,19 @@
+diff --git a/vllm/v1/core/kv_cache_utils.py b/vllm/v1/core/kv_cache_utils.py
+--- a/vllm/v1/core/kv_cache_utils.py
++++ b/vllm/v1/core/kv_cache_utils.py
+@@ -481,12 +481,6 @@ def _gen_prompt_embeds_extra_hash_keys(
+     """
+     if request.prompt_embeds is None:
+         return []
+-    block_range = (start_token_idx, end_token_idx)
+-    embeds_hash = request._prompt_embeds_per_block_hashes.get(block_range)
+-    if embeds_hash is None:
+-        block_prompt_embeds = request.prompt_embeds[start_token_idx:end_token_idx]
+-        # Hash prompt embeds once per block and cache on request
+-        embeds_hash = hashlib.sha256(tensor_data(block_prompt_embeds)).digest()
+-        request._prompt_embeds_per_block_hashes[block_range] = embeds_hash
+-    return [embeds_hash]
++    block_prompt_embeds = request.prompt_embeds[start_token_idx:end_token_idx]
++    return [tensor_data(block_prompt_embeds).tobytes()]
+ 
+ 

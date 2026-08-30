@@ -1,0 +1,5 @@
+Our external KV-aware router consumes vLLM `BlockStored` events and builds a backend-independent radix tree. For multimodal requests, different images can produce identical placeholder token sequences, so the event’s engine-specific block hash alone does not tell the router whether a cached block belongs to image A or image B. The same problem applies to cache salt, LoRA identity, and prompt embeddings that participate in block hashing.
+
+Extend stored-block events with optional per-block hash material so an event consumer can reconstruct the identity inputs for each emitted block. When the field is present, entries must align one-to-one with `block_hashes`, including requests that contain null or skipped blocks. A block without additional material may use an empty aligned entry. Prompt embeddings must be represented by their compact per-range hash rather than serialized tensor contents.
+
+The data must survive the existing KV-event serialization and subscriber path, preserve current event fields and ordering, and remain correct for multimodal identifiers, cache salt, LoRA, prompt embeddings, and combinations of those inputs.
