@@ -1,0 +1,5 @@
+Our deployment stores model artifacts in object storage and deliberately sets `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` so startup never contacts Hugging Face. Running `vllm serve s3://my-bucket/my-model` now fails before model loading with `HFValidationError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': 's3://my-bucket/my-model'`.
+
+The same deployment supports `s3://`, `gs://`, and `az://` locations through the existing object-storage loader. Some services also provide separate model and tokenizer locations, for example `s3://bucket/model/` and `s3://bucket/tokenizer/`; startup must preserve and fetch each URI independently rather than using the model location for both. Local paths and normal Hugging Face IDs must retain their existing offline-cache resolution.
+
+Investigate and fix the startup path so cloud-backed model and tokenizer configurations reach the object-storage loader without any Hugging Face network access or repo-id validation, while ordinary offline model resolution and distinct URI handling continue to work.

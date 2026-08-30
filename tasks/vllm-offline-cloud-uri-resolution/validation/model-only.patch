@@ -1,0 +1,13 @@
+diff --git a/vllm/config/model.py b/vllm/config/model.py
+index 547ec342f967..811798859b84 100644
+--- a/vllm/config/model.py
++++ b/vllm/config/model.py
+@@ -888,7 +888,7 @@ def maybe_pull_model_tokenizer_for_runai(self, model: str, tokenizer: str) -> No
+         if is_runai_obj_uri(tokenizer):
+             object_storage_tokenizer = ObjectStorageModel(url=tokenizer)
+             object_storage_tokenizer.pull_files(
+-                model,
++                tokenizer,
+                 ignore_pattern=["*.pt", "*.safetensors", "*.bin", "*.tensors", "*.pth"],
+             )
+             self.tokenizer = object_storage_tokenizer.dir

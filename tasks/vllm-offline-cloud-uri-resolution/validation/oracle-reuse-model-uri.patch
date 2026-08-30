@@ -1,0 +1,6 @@
+diff --git a/vllm/config/model.py b/vllm/config/model.py
+--- a/vllm/config/model.py
++++ b/vllm/config/model.py
+@@ -891 +891 @@
+-                tokenizer,
++                model,

@@ -1,0 +1,83 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T02:51:49+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-179",
+    "instance_id": "vllm-project__vllm-39155",
+    "base_commit": "03d9cc2fe296c58cdb7f9f77218d165a1997abdf",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/39155",
+    "issue": "https://github.com/vllm-project/vllm/issues/39112"
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-offline-cloud-uri-resolution:base-03d9cc2fe296",
+    "image_id": "sha256:94a9da2be071372a29b5d86060dee86410ae7de47b7465fc3ed6b39bc853977e",
+    "dockerfile_sha256": "b12878b5e204aa072f8816abc02364603dace9e228696c66ce4027cd7be18bc2",
+    "dependency_lock_sha256": "825ec268341da405d864901bcf1d3980714b1378e50aa6eec311b330fada2e48",
+    "dependency_lock_manifest_sha256": "5643c8b4b2d844b0004344bab3029ece489e238625e66342966bc04bcb359524"
+  },
+  "artifacts": {
+    "instruction_sha256": "f2819e81215ea119d52bc4932e0f6b40d86ea972cb5cec78d2f5163156c07e02",
+    "oracle_patch_sha256": "153c35f90843c04c914a9fb52ccb12c5ed534b0a30998b149ee11650d0a987d3",
+    "test_script_sha256": "9476fac727f56b2891cb7fa54b1a2af88257c44b01bdf7bf309f5d7db96a36e5",
+    "regression_test_sha256": "55156e289e970bdc20411b33692ada8abe7557d876190adddfa2474a2a78b90c",
+    "junit_checker_sha256": "1f70106e8ead570cb94c9eb60689eb16b0422a65a15e8e5ca8d5c8f73ced91ef",
+    "real_pipeline_test_sha256": "4537a5887caf20d3d49cadcdeda7e4e017bcf39b7648dea1539e318a2023c24e"
+  },
+  "verifier_contract": {
+    "behavior_cases": 15,
+    "schemes": ["s3", "gs", "az"],
+    "behaviors": [
+      "offline cloud model and tokenizer URIs bypass Hugging Face resolution",
+      "ordinary Hugging Face IDs and local paths keep offline resolution",
+      "distinct cloud model and tokenizer URIs are pulled independently",
+      "shared model/tokenizer URIs reuse one cache directory",
+      "a missing tokenizer does not add a resolution call"
+    ],
+    "collection_integrity": "JUnit must contain exactly 15 unique, passing, non-skipped cases"
+  },
+  "real_lifecycle_boundary": {
+    "kind": "offline EngineArgs startup followed by ModelConfig object-storage preparation",
+    "entrypoints": ["EngineArgs.__post_init__", "ModelConfig.maybe_pull_model_tokenizer_for_runai"],
+    "hf_hub_offline": true,
+    "huggingface_calls": 0,
+    "transport_simulated": true,
+    "limitation": "The object-store transport is patched at pull_files; URI routing and startup control flow are real and run without network."
+  },
+  "repeated_runs": [
+    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 6, "failed": 9}, "e2e_exit_codes": [1, 1, 1, 1, 1]},
+    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 15, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
+  ],
+  "adversarial_runs": [
+    {"case": "engine_args_only", "patch_sha256": "f8c5f36ff513b9a016cd8dcd48e14aeb5a071ba0884aedf5fa687113f1f48287", "reward": 0, "tests_passed": 12, "tests_failed": 3, "e2e_exit_code": 1},
+    {"case": "model_config_only", "patch_sha256": "07cc9caf18b30aa209a34820c11cb06a7eedfb9a53e0f6fc4ecbaaba36fb983b", "reward": 0, "tests_passed": 9, "tests_failed": 6, "e2e_exit_code": 1},
+    {"case": "tokenizer_reuses_model_uri", "patch_sha256": "31e874b7b480ebe317672159668bf8ca5bf0ea0016fb6c591a4abe84e3352eee", "reward": 0, "tests_passed": 12, "tests_failed": 3, "e2e_exit_code": 1}
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "cac993e8-2e92-4327-be81-cbcd6081e705",
+    "trial_id": "4cecd472-e2d5-48ba-afa0-5e22c21137ba",
+    "input_task_checksum": "8ec68e6c5908914b98df74c319edefc379b9e202589b4e584bb8a54fe85e9d82",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "e2e_exit_code": 0,
+    "runtime_seconds": 25,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}
