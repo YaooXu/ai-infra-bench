@@ -1,0 +1,10 @@
+diff --git a/vllm/transformers_utils/processors/pixtral.py b/vllm/transformers_utils/processors/pixtral.py
+--- a/vllm/transformers_utils/processors/pixtral.py
++++ b/vllm/transformers_utils/processors/pixtral.py
+@@ -57,5 +57,5 @@ class MistralCommonImageProcessor:
+         if isinstance(image_url_or_urls, str):
+             return load_image(image_url_or_urls)
+-        if is_valid_image(image_url_or_urls):
++        if isinstance(image_url_or_urls, Image.Image):
+             return image_url_or_urls
+         raise TypeError(

@@ -1,0 +1,42 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-mistral-image-fetching",
+  "canonical_tag": "ai-infra-bench/vllm-mistral-image-fetching:base-d598d239737c",
+  "image_id": "sha256:6b6d827406072de9c5ae34b8d67083e6028ee708d285d59bfa8d376a3234fbb6",
+  "repo_digests": [
+    "ai-infra-bench/vllm-mistral-image-fetching@sha256:6b6d827406072de9c5ae34b8d67083e6028ee708d285d59bfa8d376a3234fbb6"
+  ],
+  "size_bytes": 2569975356,
+  "created": "2026-08-31T03:27:10.844053712+08:00",
+  "recorded_at": "2026-08-30T19:30:44.683444+00:00",
+  "base_commit": "d598d239737cfa37bcfcb98886ec3f3557fc7198",
+  "dependency_cutoff": "2026-06-11T08:12:14Z",
+  "runtime_assets": null,
+  "runtime_file": null,
+  "dockerfile_sha256": "c0dfada7e1463bfa3600a60e6d692b27786f1d4d0fe4bf2fc9e0fde6d3fc938e",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "c4619e3be91197aab1f9b5bfc424925344672a14eaed08e2e20ce67935e0fc1c",
+  "dependency_lock_manifest_sha256": "152b5071e9db1e910c07bff6398deb8803230f558174007c8c2b28b04b48f849",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "d598d239737cfa37bcfcb98886ec3f3557fc7198-c4619e3be91197aa",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+gd598d239737cfa37bcfcb98886ec3f3557fc7198.cpu",
+    "torch": "2.11.0+cpu",
+    "av": null,
+    "opencv-python-headless": "4.13.0.92",
+    "numpy": "2.3.5",
+    "pytest": "9.0.3",
+    "ray": null
+  }
+}

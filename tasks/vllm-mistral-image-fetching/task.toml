@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-mistral-image-fetching"
+version = "0.0.1"
+description = "Restore Mistral vision input preparation with current Transformers."
+authors = [{name = ""}]
+keywords = ["vllm", "cpu", "mistral", "multimodal", "images"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+track = "representative"
+workload_type = "bugfix"
+subsystems = ["input_processing_multimodal"]
+repository = "vllm-project/vllm"
+base_commit = "d598d239737cfa37bcfcb98886ec3f3557fc7198"
+dependency_cutoff = "2026-06-11T08:12:14Z"
+image_digest = "sha256:6b6d827406072de9c5ae34b8d67083e6028ee708d285d59bfa8d376a3234fbb6"
+environment_template = "vllm-harbor-all-in-one"
+publication_state = "staged-smoke-only"
+
+[agent]
+timeout_sec = 3600
+user = "root"
+network_mode = "no-network"
+
+[environment]
+build_timeout_sec = 14400
+cpus = 8
+memory_mb = 49152
+storage_mb = 20480
+workdir = "/workspace/vllm"
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 900

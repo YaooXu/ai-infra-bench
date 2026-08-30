@@ -1,0 +1,131 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T03:33:09+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-200",
+    "instance_id": "vllm-project__vllm-45180",
+    "base_commit": "d598d239737cfa37bcfcb98886ec3f3557fc7198",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/45180",
+    "directly_linked_issue": null,
+    "related_issue": "https://github.com/vllm-project/vllm/issues/44911",
+    "superseded_pull_request": "https://github.com/vllm-project/vllm/pull/44989",
+    "reported_origin": "Issue #44911 reported that Devstral Small stopped reaching ready after upgrading vLLM from 0.21.0 to 0.22.1. Startup failed when Transformers prepared dummy image inputs, while disabling vision avoided the failure. PR #44989 first addressed the issue and was then superseded by the merged PR #45180."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-mistral-image-fetching:base-d598d239737c",
+    "image_id": "sha256:6b6d827406072de9c5ae34b8d67083e6028ee708d285d59bfa8d376a3234fbb6",
+    "size_bytes": 2569975356,
+    "dockerfile_sha256": "c0dfada7e1463bfa3600a60e6d692b27786f1d4d0fe4bf2fc9e0fde6d3fc938e",
+    "dependency_lock_sha256": "c4619e3be91197aab1f9b5bfc424925344672a14eaed08e2e20ce67935e0fc1c",
+    "dependency_lock_manifest_sha256": "152b5071e9db1e910c07bff6398deb8803230f558174007c8c2b28b04b48f849"
+  },
+  "artifacts": {
+    "instruction_sha256": "6cb68387ceae8d82e6785b70dda0aef9e8767deb34d94352056b6b40d42cc3e3",
+    "oracle_patch_sha256": "af6e0cd0ac107c6f2c33a7a6471bf791fe4d7762fff538db1576c7681d23d181",
+    "test_script_sha256": "6e0b1e2b17702cc571b1ceea101ad88d4dcb2b523729788672c3486e184b26b0",
+    "regression_test_sha256": "e59f5f90fd0b685699d9bc9d0c748ae44589a3a2a0546f2fc7a47b4760aa22f6",
+    "junit_checker_sha256": "6ca0153b2b0ac8ff7531bdaa9938afaed916be6ff4ff211be9e6d510721ad242",
+    "real_pipeline_test_sha256": "5da66a8f95667287eba7a00403d538981fbb53b89cd0c7462c8378ff79dc6463"
+  },
+  "verifier_contract": {
+    "behavior_cases": 20,
+    "behaviors": [
+      "decoded RGB, grayscale, RGBA, NumPy, and Torch images pass through without identity loss",
+      "flat, nested, tuple, empty, and mixed batches preserve order and nesting without mutating the input",
+      "real local PNG paths load dimensions and pixel contents",
+      "paths and decoded images resolve correctly inside nested batches",
+      "unsupported scalar and nested values raise a clear TypeError",
+      "existing image patch counting remains unchanged",
+      "a fetched image continues through the existing Mistral image encoder boundary"
+    ],
+    "collection_integrity": "JUnit must contain at least 20 passing, unique, non-skipped cases including nesting, real local files, invalid nested values, and the existing encoder boundary."
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real HTTP image retrieval through Transformers input layout preparation and vLLM's Mistral image processor",
+    "entrypoint": "local HTTP server -> ProcessorMixin.prepare_inputs_layout -> MistralCommonImageProcessor -> Pillow image",
+    "input_forms": ["HTTP URL", "decoded Pillow image"],
+    "output_images": 2,
+    "pixel_content_verified": true,
+    "model_runner_executed": false,
+    "limitation": "The regression occurs before model execution during multimodal input preparation, so the complete failing boundary is exercised with real Transformers, HTTP, and image decoding without downloading Devstral weights."
+  },
+  "repeated_runs": [
+    {
+      "case": "base",
+      "rounds": 5,
+      "rewards": [0, 0, 0, 0, 0],
+      "behavior_tests_each_round": {"passed": 1, "failed": 19},
+      "pipeline_exit_codes": [1, 1, 1, 1, 1]
+    },
+    {
+      "case": "oracle",
+      "rounds": 5,
+      "rewards": [1, 1, 1, 1, 1],
+      "behavior_tests_each_round": {"passed": 20, "failed": 0},
+      "pipeline_exit_codes": [0, 0, 0, 0, 0]
+    }
+  ],
+  "adversarial_runs": [
+    {
+      "case": "keep_path_strings",
+      "patch_sha256": "733ddae6af444266de29439cf29179145189dd38efed03dba94002400ab96f17",
+      "reward": 0,
+      "tests_passed": 17,
+      "tests_failed": 3,
+      "pipeline_exit_code": 1
+    },
+    {
+      "case": "only_flattish_lists",
+      "patch_sha256": "4acb2871480df2b28472c8a1915617e6dbe8691bbd84cd2179efdc1c6c8eddf9",
+      "reward": 0,
+      "tests_passed": 15,
+      "tests_failed": 5,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "accept_invalid_values",
+      "patch_sha256": "22e73f844afcaea42030618319f2895d51c138810a20302a31b97d3dbb9905b4",
+      "reward": 0,
+      "tests_passed": 15,
+      "tests_failed": 5,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "pil_only",
+      "patch_sha256": "d6ecde8b58f896dffc1a540f509ad186e213a08213b432b6e14c054bbdfd6f97",
+      "reward": 0,
+      "tests_passed": 17,
+      "tests_failed": 3,
+      "pipeline_exit_code": 0
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "fa83394c-53f6-49a8-9838-53ebd1313e87",
+    "trial_id": "61c0e942-e09b-480c-b62d-58be6df20f9d",
+    "input_task_checksum": "a32dd04d65f7efa3ec19d264d1f780ddc7c567f263a1af179cf87dc2d6324b84",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "pipeline_exit_code": 0,
+    "runtime_seconds": 26,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_task_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "build_context_empty": true,
+    "runtime_network_disabled": true
+  }
+}
