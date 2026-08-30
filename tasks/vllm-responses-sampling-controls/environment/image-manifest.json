@@ -1,0 +1,42 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-responses-sampling-controls",
+  "canonical_tag": "ai-infra-bench/vllm-responses-sampling-controls:base-10546f925aef",
+  "image_id": "sha256:a64f9e8f7044f52ee1f3debdfba044f5e351a509ac8fa5c2d159d621f9e0021a",
+  "repo_digests": [
+    "ai-infra-bench/vllm-responses-sampling-controls@sha256:a64f9e8f7044f52ee1f3debdfba044f5e351a509ac8fa5c2d159d621f9e0021a"
+  ],
+  "size_bytes": 1542252364,
+  "created": "2026-08-31T02:58:15.874299118+08:00",
+  "recorded_at": "2026-08-30T19:01:53.514766+00:00",
+  "base_commit": "10546f925aef5d805e41f0f40c6610d08ff1a037",
+  "dependency_cutoff": "2026-02-03T04:56:25Z",
+  "runtime_assets": null,
+  "runtime_file": null,
+  "dockerfile_sha256": "feb62023fdf71c7b888131db2485752f202f7a69f23ea4ac977ba8f19d8fce59",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "43c105149f9f8beb8806413e0b17f75443cfe1c37c7b8a8711dd60df95350808",
+  "dependency_lock_manifest_sha256": "747fbdd719a98f55c9fbaa3ed87341ff48ef45398ee993355a58d6c06a9e231a",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "10546f925aef5d805e41f0f40c6610d08ff1a037-43c105149f9f8beb",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+g10546f925aef5d805e41f0f40c6610d08ff1a037.cpu",
+    "torch": "2.10.0+cpu",
+    "av": null,
+    "opencv-python-headless": "4.13.0.90",
+    "numpy": "2.2.6",
+    "pytest": "9.0.2",
+    "ray": null
+  }
+}

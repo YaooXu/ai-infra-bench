@@ -1,0 +1,5 @@
+We are moving an agent workload from Chat Completions to `/v1/responses`, but the Responses request schema cannot express several controls the custom model requires. Calls that need stop sequences, a reproducible seed, repetition control, EOS suppression, or model-specific extension arguments must currently fall back to `/v1/chat/completions`.
+
+Add optional Responses API fields for `stop`, `seed`, `repetition_penalty`, `ignore_eos`, and `vllm_xargs`, and carry them into the actual vLLM sampling configuration. `stop` should accept either one string or a list. Seed bounds and existing validation must remain enforced. When a field is omitted, model-wide default sampling parameters must still apply rather than being overwritten by a protocol default.
+
+Existing Responses requests and Open Responses core semantics must remain unchanged, including streaming and non-streaming calls. The new controls are vLLM extensions and should behave consistently with their existing Chat Completions counterparts.

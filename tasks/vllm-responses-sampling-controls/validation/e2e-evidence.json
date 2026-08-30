@@ -1,0 +1,84 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T03:01:57+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-004",
+    "instance_id": "vllm-project__vllm-32609",
+    "base_commit": "10546f925aef5d805e41f0f40c6610d08ff1a037",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/32609",
+    "directly_linked_issue": null,
+    "reported_origin": "A concrete Responses API workload needed stop and vllm_xargs, plus seed, repetition_penalty, and ignore_eos, without falling back to Chat Completions."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-responses-sampling-controls:base-10546f925aef",
+    "image_id": "sha256:a64f9e8f7044f52ee1f3debdfba044f5e351a509ac8fa5c2d159d621f9e0021a",
+    "dockerfile_sha256": "feb62023fdf71c7b888131db2485752f202f7a69f23ea4ac977ba8f19d8fce59",
+    "dependency_lock_sha256": "43c105149f9f8beb8806413e0b17f75443cfe1c37c7b8a8711dd60df95350808",
+    "dependency_lock_manifest_sha256": "747fbdd719a98f55c9fbaa3ed87341ff48ef45398ee993355a58d6c06a9e231a"
+  },
+  "artifacts": {
+    "instruction_sha256": "b0a2d766f7cdf8de30026861988fe8c947591b60dd01818b7ed891762871d570",
+    "oracle_patch_sha256": "49f9ea88366abb72ab1c0193c88b13d16ad8b54f447305f252c355667d393b14",
+    "test_script_sha256": "c945206a7537c158013db562bc7f850762d644ace0dbaf91de094f36fffa5bda",
+    "regression_test_sha256": "4e9615543c8047df3b1a6f258246b2db8e1451b18174b5904e25a06ce97ff49f",
+    "junit_checker_sha256": "32359cde3f79d7e75b1208135b1064b53a4ca4c43ff831e9bec412fe9c2bb144",
+    "real_http_test_sha256": "0375465b25e7698d9e0ebf2d8008e4595d541645a27bce1aecc54379f0e51227"
+  },
+  "verifier_contract": {
+    "behavior_cases": 18,
+    "behaviors": [
+      "five optional Responses extensions map to SamplingParams individually and together",
+      "stop accepts string, list, null, and empty list forms",
+      "omitted repetition_penalty inherits model defaults",
+      "seed accepts and enforces torch.long bounds",
+      "vllm_xargs accepts documented scalar and list values",
+      "existing temperature, top_p, top_k, and max token behavior remains unchanged"
+    ],
+    "collection_integrity": "JUnit must contain exactly 18 unique, passing, non-skipped cases"
+  },
+  "real_lifecycle_boundary": {
+    "kind": "HTTP Responses payload through the real ResponsesRequest schema and SamplingParams mapper",
+    "entrypoint": "POST /v1/responses",
+    "http_status": 200,
+    "model_default_inheritance_verified": true,
+    "model_runner_executed": false,
+    "limitation": "The feature ends at request validation and sampling conversion; a local ASGI endpoint exercises that complete boundary without model execution."
+  },
+  "repeated_runs": [
+    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 6, "failed": 12}, "e2e_exit_codes": [1, 1, 1, 1, 1]},
+    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 18, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
+  ],
+  "adversarial_runs": [
+    {"case": "seed_without_bounds", "patch_sha256": "4d378d383776f1425418c858e2b4f58e37b20466e1e28e5979c427495061f72e", "reward": 0, "tests_passed": 16, "tests_failed": 2, "e2e_exit_code": 0},
+    {"case": "ignore_model_sampling_default", "patch_sha256": "189f14a1c472bab18cec385198d5799c57b282b5e6819b71e83def7255d73446", "reward": 0, "tests_passed": 17, "tests_failed": 1, "e2e_exit_code": 1},
+    {"case": "drop_vllm_xargs", "patch_sha256": "2ca3450e88f001b7974ff3d724ef94cf4dd71812d4e33d1aa56068c1d043fcda", "reward": 0, "tests_passed": 14, "tests_failed": 4, "e2e_exit_code": 1}
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "dd016053-6e12-4f8a-a02d-e0be170d171a",
+    "trial_id": "e929d7fe-a0df-4b7d-93ad-dca05cceb30a",
+    "input_task_checksum": "94a732ce95dfb296855c0f216498091993df194df624ed363583591a8ef93bfa",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "e2e_exit_code": 0,
+    "runtime_seconds": 26,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}

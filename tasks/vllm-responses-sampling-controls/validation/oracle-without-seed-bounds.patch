@@ -1,0 +1,6 @@
+diff --git a/vllm/entrypoints/openai/responses/protocol.py b/vllm/entrypoints/openai/responses/protocol.py
+--- a/vllm/entrypoints/openai/responses/protocol.py
++++ b/vllm/entrypoints/openai/responses/protocol.py
+@@ -238 +238 @@
+-    seed: int | None = Field(None, ge=_LONG_INFO.min, le=_LONG_INFO.max)
++    seed: int | None = None

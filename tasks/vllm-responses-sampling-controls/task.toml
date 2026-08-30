@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-responses-sampling-controls"
+version = "0.0.1"
+description = "Expose essential vLLM sampling controls through the Responses API."
+authors = [{name = ""}]
+keywords = ["vllm", "cpu", "responses-api", "sampling", "frontend"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+track = "representative"
+workload_type = "feature"
+subsystems = ["serving_api"]
+repository = "vllm-project/vllm"
+base_commit = "10546f925aef5d805e41f0f40c6610d08ff1a037"
+dependency_cutoff = "2026-02-03T04:56:25Z"
+image_digest = "sha256:a64f9e8f7044f52ee1f3debdfba044f5e351a509ac8fa5c2d159d621f9e0021a"
+environment_template = "vllm-harbor-all-in-one"
+publication_state = "staged-smoke-only"
+
+[agent]
+timeout_sec = 3600
+user = "root"
+network_mode = "no-network"
+
+[environment]
+build_timeout_sec = 14400
+cpus = 8
+memory_mb = 49152
+storage_mb = 20480
+workdir = "/workspace/vllm"
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 900

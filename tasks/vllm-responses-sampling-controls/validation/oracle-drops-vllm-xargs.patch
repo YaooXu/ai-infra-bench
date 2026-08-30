@@ -1,0 +1,6 @@
+diff --git a/vllm/entrypoints/openai/responses/protocol.py b/vllm/entrypoints/openai/responses/protocol.py
+--- a/vllm/entrypoints/openai/responses/protocol.py
++++ b/vllm/entrypoints/openai/responses/protocol.py
+@@ -355 +355 @@
+-            extra_args=self.vllm_xargs or {},
++            extra_args={},
