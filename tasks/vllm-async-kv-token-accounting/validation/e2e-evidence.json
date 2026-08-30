@@ -1,0 +1,52 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-30T18:47:29+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-053",
+    "instance_id": "vllm-project__vllm-34616",
+    "base_commit": "ecde7af9c492077bbf1bd8df16d941b1b441b60b"
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-async-kv-token-accounting:base-ecde7af9c492",
+    "image_id": "sha256:80fd7a5b9238516802f9e3f81f2364901f0d9493bb29eb359d05698ba73ca7e5",
+    "dockerfile_sha256": "54c3e088202b07f5e1554f92cea8e3cbe9bf4e82411d8d35f8eb656b95934357",
+    "dependency_lock_sha256": "80d5a5df86a37f16a9dced7454e9938437d0b0339fe513688e27e2e1c2afb3d9",
+    "dependency_lock_manifest_sha256": "d4958e5c4e77b901a49483d52654c94ef324a7bbc70d8f056b0b11f8dde3fb7f"
+  },
+  "artifacts": {
+    "instruction_sha256": "e53dc2369d76cf651d03317cc918959e384878fcedfd60322c700e4b8c9ee4d6",
+    "oracle_patch_sha256": "16d0b16869e3933a6cae72fbdf59aea094f8dacf8148ac8001512c17073dfb6a",
+    "test_script_sha256": "7485ed9be5076a9af398aebd1936427f9b905dfe9360e2a01719a737292febc1",
+    "regression_test_sha256": "dca5efd8c5d04021e3c7fdf3ef01b492464ff0f1393959e2571cb560a427fbe9"
+  },
+  "runs": [
+    {"case": "base", "reward": 0, "command_exit_code": 1, "tests_passed": 0, "tests_failed": 2},
+    {"case": "oracle", "reward": 1, "command_exit_code": 0, "tests_passed": 2, "tests_failed": 0},
+    {"case": "wait_state_only", "reward": 0, "command_exit_code": 1, "tests_passed": 1, "tests_failed": 1}
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "3cfdbd99-22e3-4247-a09e-5450c7df1982",
+    "trial_id": "d8e9164e-d6dc-44b9-a9da-62876a269ee6",
+    "input_task_checksum": "7c7b8c8e228b4d2ef0684deed78f5093c4ba4f05a1878f08808eea6684380897",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "runtime_seconds": 26,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cache_only_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}

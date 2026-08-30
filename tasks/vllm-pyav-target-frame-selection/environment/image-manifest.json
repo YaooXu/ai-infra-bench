@@ -1,0 +1,39 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-pyav-target-frame-selection",
+  "canonical_tag": "ai-infra-bench/vllm-pyav-target-frame-selection:base-a7737cb4f339",
+  "image_id": "sha256:348acfbaebaf42635c2e54fc8fc609d13bfe9fb1e82e9f4ce1552bb040a98630",
+  "repo_digests": [
+    "ai-infra-bench/vllm-pyav-target-frame-selection@sha256:348acfbaebaf42635c2e54fc8fc609d13bfe9fb1e82e9f4ce1552bb040a98630"
+  ],
+  "size_bytes": 1757214205,
+  "created": "2026-08-30T17:56:08.559062296+08:00",
+  "recorded_at": "2026-08-30T09:57:10.238247+00:00",
+  "base_commit": "a7737cb4f339aa3fe9b232b8986750102afcbf65",
+  "dependency_cutoff": "2026-05-14T15:49:06Z",
+  "dockerfile_sha256": "ec5ef4391c6f991393a58d2ad2bf021bf32821c13aa1fc21543044a74caa0e83",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "0801c53e2b7d0d0090ad7d7e86570516be9742b630ab9664d3e55003cba147eb",
+  "dependency_lock_manifest_sha256": "df221ccda504452ca95e6b4e14f4be81be753f6a8a180b63fff94cdc9df0af07",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "a7737cb4f339aa3fe9b232b8986750102afcbf65-0801c53e2b7d0d00",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+ga7737cb4f339aa3fe9b232b8986750102afcbf65.cpu",
+    "torch": "2.11.0+cpu",
+    "av": "16.1.0",
+    "opencv-python-headless": "4.13.0.92",
+    "numpy": "2.3.5",
+    "pytest": "9.0.3"
+  }
+}

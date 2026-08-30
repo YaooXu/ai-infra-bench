@@ -1,0 +1,75 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-30T18:32:49+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-124",
+    "instance_id": "vllm-project__vllm-35736",
+    "base_commit": "82531edbfb6b33e1c8667dea15c8622f011dcef0"
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-ray-zero-copy-logprobs:base-82531edbfb6b",
+    "image_id": "sha256:8b7235d341a2e3a81b921b9ea8636332be0eb59390beba12a73d42a995e205f8",
+    "dockerfile_sha256": "e6bf00e8067a97facd3af96f460b376e19d2740818df2839fbff4cd8b67eeb62",
+    "dependency_lock_sha256": "ae003ec67fa78617c07c537734b7ee727d588732e99fad379efdc9b7fb61fc97",
+    "dependency_lock_manifest_sha256": "7cd9d75edca214bc70118daf30a3fb6e82b46d449d4f8b085feb09699e239dff"
+  },
+  "artifacts": {
+    "instruction_sha256": "42413c1cce5b4b7f7e08d1a4c5733ef3731a99e0c3d6a5aaee0aad2d810b0d1b",
+    "oracle_patch_sha256": "466e1258010553ae22e20785cd019171555233afcaeff84490e591eb211e0dcb",
+    "test_script_sha256": "cccf09642ece6da1bb4f70296a20b13556b694443df8f6f22850ac3ec37388be",
+    "regression_test_sha256": "d468005656c8014b840578f5c2a4b08577752add3974cf1ddfc4dd5ff53fa731"
+  },
+  "runs": [
+    {
+      "case": "base",
+      "network_mode": "none",
+      "reward": 0,
+      "command_exit_code": 1,
+      "tests_passed": 1,
+      "tests_failed": 3
+    },
+    {
+      "case": "oracle",
+      "network_mode": "none",
+      "reward": 1,
+      "command_exit_code": 0,
+      "tests_passed": 4,
+      "tests_failed": 0
+    },
+    {
+      "case": "nonblocking_paths_only",
+      "network_mode": "none",
+      "reward": 0,
+      "command_exit_code": 1,
+      "tests_passed": 2,
+      "tests_failed": 2
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "8b34b78e-6b1b-45c4-a453-17ebb593d940",
+    "trial_id": "3ff5941e-60ef-4ff1-a041-5b405c4581d3",
+    "input_task_checksum": "ddbe05e6bcf5ca80da9096175d778d743b957293f507cabd77fae2b5fd56d46b",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "runtime_seconds": 21,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "latest_reachable_commit_time": "2026-04-16T15:48:17+00:00",
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "torch_release_window_override_documented": true,
+    "cache_only_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "vllm_harbor_image.v1",
+  "task": "ai-infra-bench/vllm-ray-zero-copy-logprobs",
+  "canonical_tag": "ai-infra-bench/vllm-ray-zero-copy-logprobs:base-82531edbfb6b",
+  "image_id": "sha256:8b7235d341a2e3a81b921b9ea8636332be0eb59390beba12a73d42a995e205f8",
+  "repo_digests": [
+    "ai-infra-bench/vllm-ray-zero-copy-logprobs@sha256:8b7235d341a2e3a81b921b9ea8636332be0eb59390beba12a73d42a995e205f8"
+  ],
+  "size_bytes": 1643592317,
+  "created": "2026-08-30T18:29:11.406622753+08:00",
+  "recorded_at": "2026-08-30T10:32:02.653170+00:00",
+  "base_commit": "82531edbfb6b33e1c8667dea15c8622f011dcef0",
+  "dependency_cutoff": "2026-04-16T15:48:17Z",
+  "dockerfile_sha256": "e6bf00e8067a97facd3af96f460b376e19d2740818df2839fbff4cd8b67eeb62",
+  "template_sha256": "937254afa48676af36edf5f67a127f939ef222505711e06da3f98e1e34fdcc8c",
+  "dependency_lock_sha256": "ae003ec67fa78617c07c537734b7ee727d588732e99fad379efdc9b7fb61fc97",
+  "dependency_lock_manifest_sha256": "7cd9d75edca214bc70118daf30a3fb6e82b46d449d4f8b085feb09699e239dff",
+  "build_context": "empty",
+  "cache_policy": {
+    "shared": [
+      "source-independent OCI layers",
+      "uv download cache"
+    ],
+    "base_and_lock_scoped": [
+      "ccache",
+      "CMake FetchContent"
+    ],
+    "namespace": "82531edbfb6b33e1c8667dea15c8622f011dcef0-ae003ec67fa78617",
+    "remote_cache_imported": false
+  },
+  "installed_versions": {
+    "vllm": "0.0.0+g82531edbfb6b33e1c8667dea15c8622f011dcef0.cpu",
+    "torch": "2.11.0+cpu",
+    "av": null,
+    "opencv-python-headless": "4.13.0.92",
+    "numpy": "2.2.6",
+    "pytest": "9.0.3"
+  }
+}
