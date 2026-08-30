@@ -1,22 +1,18 @@
-# Adapt Anthropic inline system messages to the selected chat template
+I am using Claude Code through vLLM's Anthropic Messages API with Qwen3.6-27B. The following production conversation returns HTTP 400 even though its first message is already a system message:
 
-Anthropic requests may contain `system` messages inside the conversation, not
-only in the top-level `system` field. Some model chat templates accept those
-messages in place, while others reject every system message that is not first.
-The server currently preserves all inline system messages, so a valid Anthropic
-request can fail during rendering with the latter templates.
+```json
+[
+  {"role": "system", "content": "You are a helpful assistant."},
+  {"role": "user", "content": "Please check the GPU status for vLLM."},
+  {"role": "assistant", "content": "Sure, I will check it."},
+  {"role": "user", "content": "Show me the nvidia-smi output."},
+  {"role": "assistant", "content": "The GPU status looks normal, with utilization around 15%."},
+  {"role": "user", "content": "Write up the results as a report."},
+  {"role": "system", "content": "Task instruction: Based on the conversation above, generate a brief GPU status report."},
+  {"role": "user", "content": "Please summarize the above."}
+]
+```
 
-At service initialization, determine whether the configured chat template can
-render a conversation containing a system message after a user turn. Treat a
-missing template or a template-rendering error conservatively as requiring a
-merge. For templates that require system-first ordering, merge non-billing
-inline system text into the leading top-level system block and omit the original
-inline entries. For templates that accept inline system messages, preserve their
-positions so existing prefix-cache behavior is retained.
+The response is `System message must be at the beginning.` The later system message is inserted by an auxiliary task after earlier conversation turns. Other model templates accept this ordering, where preserving the existing turn sequence avoids invalidating the reusable conversation prefix.
 
-Apply the selected behavior consistently to both message generation and token
-counting requests. Preserve existing billing-header filtering and conversion of
-non-system messages.
-
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+Fix the Anthropic request handling so this request works with model templates that require system-first ordering without unnecessarily changing the message order for templates that already accept it. Message generation and token counting must apply the same behavior.

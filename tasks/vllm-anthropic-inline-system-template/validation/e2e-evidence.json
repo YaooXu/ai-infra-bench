@@ -1,10 +1,12 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-30T19:56:00+08:00",
+  "recorded_at": "2026-08-30T21:54:00+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-218",
     "instance_id": "vllm-project__vllm-46025",
-    "base_commit": "16908e132e10f75af93049e865130f8987573f5d"
+    "base_commit": "16908e132e10f75af93049e865130f8987573f5d",
+    "origin_issue": "vllm-project__vllm-41114",
+    "predecessor_pr": "vllm-project__vllm-44602"
   },
   "image": {
     "canonical_tag": "ai-infra-bench/vllm-anthropic-inline-system-template:base-16908e132e10",
@@ -14,29 +16,29 @@
     "dependency_lock_manifest_sha256": "932599cabdb1f19d802ba1a186f46677c1e6d0e0691273cc503e04306451f756"
   },
   "artifacts": {
-    "instruction_sha256": "3a3578aaac898bd4142ce8e9f94491613a5710614a554d157355a5af702a7c0d",
+    "instruction_sha256": "c32a96692614c196182236557641c8eb40723db5c67ae888acaab3330d74ce06",
     "oracle_patch_sha256": "051548c2d8302dcbfde564eaf1b8255bf41f7cf865352c085f082ff4b8e060a2",
     "test_script_sha256": "cd5ba834fef54bd52ab619c26fd56bdf3a62969c14f05f67abba7b2344c38f09",
-    "regression_test_sha256": "400c4ecbb903cdfc650ac3041e1d6c3accaa1059c3b8db2f4fb9c64fb3eb724c",
+    "regression_test_sha256": "1f7985c6ee2b6c839c39d60394df5652106f7fd58aceb00c204051a250b370b9",
     "insufficient_patch_sha256": "2ed4ea1daf8e0e6fadd940d2275a7e29d5a13cf4c48415977662289bcba7c369"
   },
   "runs": [
-    {"case": "base", "reward": 0, "command_exit_code": 1, "tests_passed": 0, "tests_failed": 8},
-    {"case": "oracle", "reward": 1, "command_exit_code": 0, "tests_passed": 8, "tests_failed": 0},
-    {"case": "template_detection_only", "reward": 0, "command_exit_code": 1, "tests_passed": 5, "tests_failed": 3}
+    {"case": "base", "repetitions": 5, "rewards": [0, 0, 0, 0, 0], "tests_passed": 2, "tests_failed": 4},
+    {"case": "oracle", "repetitions": 5, "rewards": [1, 1, 1, 1, 1], "tests_passed": 6, "tests_failed": 0},
+    {"case": "template_detection_only", "reward": 0, "tests_passed": 2, "tests_failed": 4}
   ],
   "harbor": {
     "version": "0.22.0",
-    "job_id": "d205e371-0c75-46c5-8f52-3fcc2cf386c1",
-    "trial_id": "06f3594e-761e-499c-807b-6c5b06b72598",
-    "input_task_checksum": "8c82f659c9118a63add34987529d78e3991cc0e0210a102ef6b9f095600c8962",
+    "job_id": "cd5b6c33-ea1e-49d3-82d2-474084551e0a",
+    "trial_id": "fae66df7-66a9-49d3-aa6b-8002638db246",
+    "input_task_checksum": "4b013c48eb0a5235c31f0436edc164a05bc43b71830291982d8714b4ec96f1d5",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,
     "n_errored_trials": 0,
     "reward": 1,
     "command_exit_code": 0,
-    "runtime_seconds": 25,
+    "runtime_seconds": 26,
     "canonical_image_retained_after_run": true
   },
   "provenance_gates": {

@@ -24,60 +24,31 @@ def _request():
     return AnthropicMessagesRequest(
         model="test-model",
         max_tokens=32,
-        system="top|",
+        system="You are a helpful assistant.",
         messages=[
-            {"role": "user", "content": "hello"},
-            {"role": "system", "content": "mid|"},
-            {"role": "assistant", "content": "hi"},
-            {"role": "system", "content": "last|"},
+            {"role": "user", "content": "Please check the GPU status for vLLM."},
+            {"role": "assistant", "content": "Sure, I will check it."},
+            {"role": "user", "content": "Show me the nvidia-smi output."},
+            {
+                "role": "assistant",
+                "content": "The GPU status looks normal, with utilization around 15%.",
+            },
+            {"role": "user", "content": "Write up the results as a report."},
+            {
+                "role": "system",
+                "content": "Task instruction: Based on the conversation above, generate a brief GPU status report.",
+            },
+            {"role": "user", "content": "Please summarize the above."},
         ],
     )
 
 
-@pytest.mark.parametrize(
-    ("template", "expected"),
-    [
-        (RESTRICTIVE_TEMPLATE, True),
-        (PERMISSIVE_TEMPLATE, False),
-        (None, True),
-    ],
-)
-def test_template_capability_is_detected_by_rendering(template, expected):
-    assert AnthropicServingMessages._detect_merge_inline_system(template) is expected
+def _service(monkeypatch, template):
+    def initialize_parent(self, *args, **kwargs):
+        self.chat_template = kwargs.get("chat_template")
 
-
-def test_conversion_merges_only_when_the_template_requires_it():
-    merged = AnthropicServingMessages._convert_anthropic_to_openai_request(
-        _request(), merge_inline_system=True
-    )
-    assert [message["role"] for message in merged.messages] == [
-        "system",
-        "user",
-        "assistant",
-    ]
-    assert merged.messages[0]["content"] == "top|mid|last|"
-
-    preserved = AnthropicServingMessages._convert_anthropic_to_openai_request(
-        _request(), merge_inline_system=False
-    )
-    assert [message["role"] for message in preserved.messages] == [
-        "system",
-        "user",
-        "system",
-        "assistant",
-        "system",
-    ]
-
-
-@pytest.mark.parametrize(
-    ("template", "expected"),
-    [(RESTRICTIVE_TEMPLATE, True), (PERMISSIVE_TEMPLATE, False)],
-)
-def test_service_initialization_records_template_capability(
-    monkeypatch, template, expected
-):
-    monkeypatch.setattr(OpenAIServingChat, "__init__", lambda self, *args, **kwargs: None)
-    serving = AnthropicServingMessages(
+    monkeypatch.setattr(OpenAIServingChat, "__init__", initialize_parent)
+    return AnthropicServingMessages(
         None,
         None,
         "assistant",
@@ -86,51 +57,90 @@ def test_service_initialization_records_template_capability(
         chat_template=template,
         chat_template_content_format="auto",
     )
-    assert serving._merge_inline_system is expected
+
+
+def _assert_message_behavior(chat_request, *, should_merge):
+    roles = [message["role"] for message in chat_request.messages]
+    if should_merge:
+        assert roles == [
+            "system",
+            "user",
+            "assistant",
+            "user",
+            "assistant",
+            "user",
+            "user",
+        ]
+        assert chat_request.messages[0]["content"] == (
+            "You are a helpful assistant."
+            "Task instruction: Based on the conversation above, generate a brief GPU status report."
+        )
+    else:
+        assert roles == [
+            "system",
+            "user",
+            "assistant",
+            "user",
+            "assistant",
+            "user",
+            "system",
+            "user",
+        ]
+        assert chat_request.messages[6]["content"].startswith("Task instruction:")
 
 
 @pytest.mark.asyncio
-async def test_generation_endpoint_uses_detected_mode():
-    serving = AnthropicServingMessages.__new__(AnthropicServingMessages)
-    serving._merge_inline_system = True
+@pytest.mark.parametrize(
+    ("template", "should_merge"),
+    [
+        (RESTRICTIVE_TEMPLATE, True),
+        (PERMISSIVE_TEMPLATE, False),
+        (None, True),
+    ],
+)
+async def test_message_generation_adapts_to_template(
+    monkeypatch, template, should_merge
+):
+    serving = _service(monkeypatch, template)
     captured = []
-    sentinel_request = object()
 
-    def convert(request, *, merge_inline_system=False):
-        captured.append(merge_inline_system)
-        return sentinel_request
-
-    async def create_chat_completion(request, raw_request):
-        assert request is sentinel_request
+    async def create_chat_completion(chat_request, raw_request):
+        captured.append(chat_request)
         return object()
 
-    serving._convert_anthropic_to_openai_request = convert
     serving.create_chat_completion = create_chat_completion
     serving.message_stream_converter = lambda _generator: "stream-result"
 
-    result = await AnthropicServingMessages.create_messages(serving, _request())
+    result = await serving.create_messages(_request())
+
     assert result == "stream-result"
-    assert captured == [True]
+    assert len(captured) == 1
+    _assert_message_behavior(captured[0], should_merge=should_merge)
 
 
 @pytest.mark.asyncio
-async def test_count_tokens_endpoint_uses_detected_mode():
-    serving = AnthropicServingMessages.__new__(AnthropicServingMessages)
-    serving._merge_inline_system = True
+@pytest.mark.parametrize(
+    ("template", "should_merge"),
+    [
+        (RESTRICTIVE_TEMPLATE, True),
+        (PERMISSIVE_TEMPLATE, False),
+        (None, True),
+    ],
+)
+async def test_count_tokens_uses_the_same_template_behavior(
+    monkeypatch, template, should_merge
+):
+    serving = _service(monkeypatch, template)
     captured = []
-    sentinel_request = object()
 
-    def convert(request, *, merge_inline_system=False):
-        captured.append(merge_inline_system)
-        return sentinel_request
-
-    async def render_chat_request(request):
-        assert request is sentinel_request
+    async def render_chat_request(chat_request):
+        captured.append(chat_request)
         return None, [{"prompt_token_ids": [1, 2, 3]}]
 
-    serving._convert_anthropic_to_openai_request = convert
     serving.render_chat_request = render_chat_request
 
-    result = await AnthropicServingMessages.count_tokens(serving, _request())
+    result = await serving.count_tokens(_request())
+
     assert result.input_tokens == 3
-    assert captured == [True]
+    assert len(captured) == 1
+    _assert_message_behavior(captured[0], should_merge=should_merge)
