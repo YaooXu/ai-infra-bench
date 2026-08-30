@@ -1,16 +1,9 @@
-# Prevent KV-cache admission thrashing with long prompts
+I am seeing a severe throughput drop while serving a workload with long prompts. Chunked prefill is enabled, and the same request repeatedly reports that it was preempted without making visible progress.
 
-With chunked prefill enabled, the scheduler may admit a long request because
-its first chunk fits even though the request's full input cannot fit in the
-remaining KV cache. The request later exhausts the cache, is preempted, returns
-to the queue, and repeats the same prefill work. Under load this can starve
-decode traffic and collapse output throughput.
+The logs contain repeated entries like these:
 
-Add an admission policy that can account for the full input sequence while
-respecting prefix-cache hits, already-computed tokens, encoder tokens, sliding
-window limits, and the configured maximum model length. Preserve existing
-scheduler behavior outside this admission decision and expose the policy
-through the normal configuration path.
+    (EngineCore_DP0 pid=11842) WARNING 03-17 15:39:29 [scheduler.py:928] Request cmpl-bench-5f83f700-51-0-bfc32831 preempted (num_tokens=40000, computed_tokens=32568, preemption_count=7) due to insufficient KV cache blocks.
+    (EngineCore_DP0 pid=11842) WARNING 03-17 15:39:30 [scheduler.py:928] Request cmpl-bench-5f83f700-51-0-bfc32831 preempted (num_tokens=40000, computed_tokens=32568, preemption_count=8) due to insufficient KV cache blocks.
+    (EngineCore_DP0 pid=11842) WARNING 03-17 15:39:32 [scheduler.py:928] Request cmpl-bench-5f83f700-51-0-bfc32831 preempted (num_tokens=40000, computed_tokens=32568, preemption_count=9) due to insufficient KV cache blocks.
 
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+And while this is happening, requests that are already decoding slow down substantially. Investigate why this request keeps cycling without progress and fix the scheduler behavior.
