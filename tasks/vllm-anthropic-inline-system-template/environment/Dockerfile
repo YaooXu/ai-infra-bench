@@ -701,6 +701,29 @@ RUN find . -type d -name __pycache__ -prune -exec rm -rf {} + \
  && test -z "$(git fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)" \
  && test -z "$(git status --porcelain)"
 
+# Optional task-scoped runtime metadata, pinned before the task base commit.
+# Only the allow-listed files are downloaded; model tensors are forbidden.
+RUN python - <<'VLLM_RUNTIME_ASSET_EOF'
+from huggingface_hub import snapshot_download
+
+snapshot_download(
+    repo_id='Qwen/Qwen3.5-27B',
+    revision='fc05daec18b0a78c049392ed2e771dde82bdf654',
+    local_dir='/opt/harbor-assets/qwen3.5-27b',
+    allow_patterns=['config.json', 'tokenizer.json', 'tokenizer_config.json', 'chat_template.jinja'],
+)
+VLLM_RUNTIME_ASSET_EOF
+RUN rm -rf /opt/harbor-assets/qwen3.5-27b/.cache /root/.cache/huggingface \
+ && test -f /opt/harbor-assets/qwen3.5-27b/config.json \
+ && test -f /opt/harbor-assets/qwen3.5-27b/tokenizer.json \
+ && test -f /opt/harbor-assets/qwen3.5-27b/tokenizer_config.json \
+ && test -f /opt/harbor-assets/qwen3.5-27b/chat_template.jinja \
+ && test -z "$(find /opt/harbor-assets/qwen3.5-27b -type f \
+      \( -name '*.bin' -o -name '*.gguf' -o -name '*.pt' -o -name '*.pth' -o -name '*.safetensors' \) \
+      -print -quit)"
+LABEL ai.infra.bench.runtime-asset-repository=Qwen/Qwen3.5-27B \
+      ai.infra.bench.runtime-asset-revision=fc05daec18b0a78c049392ed2e771dde82bdf654
+
 LABEL ai.infra.bench.environment-template=vllm-harbor-all-in-one \
       ai.infra.bench.base-commit=$VLLM_BASE_SHA \
       ai.infra.bench.dependency-cutoff=$VLLM_DEPENDENCY_CUTOFF \

@@ -24,8 +24,8 @@ def _request():
     return AnthropicMessagesRequest(
         model="test-model",
         max_tokens=32,
-        system="You are a helpful assistant.",
         messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Please check the GPU status for vLLM."},
             {"role": "assistant", "content": "Sure, I will check it."},
             {"role": "user", "content": "Show me the nvidia-smi output."},
