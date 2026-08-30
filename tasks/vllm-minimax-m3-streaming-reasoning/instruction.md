@@ -1,0 +1,5 @@
+We serve `MiniMaxAI/MiniMax-M3-MXFP8` through the OpenAI-compatible Chat Completions API with both `--reasoning-parser minimax_m3` and `--tool-call-parser minimax_m3`. Non-streaming responses separate reasoning and final content correctly, but streaming responses never populate `delta.reasoning`.
+
+The stream instead returns complete MiniMax markers and the thinking text through `delta.content`: first `<mm:think>`, then the reasoning text, then `</mm:think>`, followed by the final answer. Each marker arrives wholly inside one delta rather than being split across network chunks. The real tokenizer contains vocabulary entries for both markers, and changing the chat template or forcing a server-wide thinking mode only works around the problem.
+
+Investigate and fix the streaming parser so marker text is consumed, reasoning is emitted only as reasoning, final text remains content, and tool parsing can begin after reasoning ends. Preserve correct non-streaming behavior and handle marker text whether the tokenizer emits it as one token or as a sequence of ordinary tokens.
