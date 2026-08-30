@@ -1,0 +1,86 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T02:27:17+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-133",
+    "instance_id": "vllm-project__vllm-40473",
+    "base_commit": "fe57be7809672e5c4d100b55ce8649dd34d3bbc0",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/40473",
+    "directly_linked_issue": null,
+    "related_proposal": "https://github.com/vllm-project/vllm/pull/39794"
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-human-readable-json-cli:base-fe57be780967",
+    "image_id": "sha256:77667f40a5be366e9bbaeb808a0d48357c29e29a99e8f8a9de0148634e50f19d",
+    "dockerfile_sha256": "d16aca2e60e1108679f5d113f621b0348aed1099b45a1134972ace797074f961",
+    "dependency_lock_sha256": "db2c327de82e28e7f3c2cc4a6d2e6436337fe4dec2369cd71c2ce20ff5ac8bfc",
+    "dependency_lock_manifest_sha256": "a64c07c5bca2cf39da9d0230148d00c00c66f46faca4f9317da5fd2b8de3fe78",
+    "cutoff_overrides": ["torch", "torchaudio", "torchvision"]
+  },
+  "artifacts": {
+    "instruction_sha256": "46a460e08987fd4b3d74a242e6261dc42e1305d6499a70a809bbf848eadf43c0",
+    "oracle_patch_sha256": "f048f0fe5eaa5d76314c2b33903aac77a5e323d3509be8a4b8c550ee547fe009",
+    "test_script_sha256": "8325dacb9ff0680b8786b23d92fb27df710d7e453247671b2e68173d02bdbd82",
+    "regression_test_sha256": "22fc97ab2c558ff39434cc56314fe62d4fe7d1e74354e965a28fada0de21b254",
+    "junit_checker_sha256": "bcc022aa76f4947298ce2c911ed39d21fa8fb199493548f2d71ca07f1f8c8e0e",
+    "real_cli_test_sha256": "2c032f07dac8d2b74b4c6da2ff32902e2290f27970fd2e4f54c1408347d9ca94"
+  },
+  "verifier_contract": {
+    "behavior_cases": 19,
+    "behaviors": [
+      "lowercase decimal and uppercase binary suffixes parse inside JSON dataclasses",
+      "fractional lowercase values and multiple nested values parse correctly",
+      "dotted dataclass overrides use the same convention",
+      "quoted strings are preserved",
+      "malformed tokens, partial word matches, and fractional binary values remain errors",
+      "auto and minus-one behavior remains unchanged"
+    ],
+    "collection_integrity": "JUnit must contain exactly 19 unique, passing, non-skipped cases"
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real EngineArgs CLI parser and from_cli_args conversion",
+    "entrypoint": "EngineArgs.add_cli_args",
+    "forms": ["nested JSON", "dotted override"],
+    "parsed_values": {"cpu_bytes_to_use": 80000000, "max_cudagraph_capture_size": 1000},
+    "model_server_started": false,
+    "limitation": "The feature is complete at argument conversion; starting a model server would not exercise additional parsing behavior."
+  },
+  "repeated_runs": [
+    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 5, "failed": 14}, "e2e_exit_codes": [2, 2, 2, 2, 2]},
+    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 19, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
+  ],
+  "adversarial_runs": [
+    {"case": "dotted_overrides_only", "patch_sha256": "6474c65921a4a9844db8a1538cd10c854dbb312dbb96eb1aa7e351502dcd6e3b", "reward": 0, "tests_passed": 10, "tests_failed": 9, "e2e_exit_code": 2},
+    {"case": "json_dataclasses_only", "patch_sha256": "fa979af41ff1e653ae57796a6ac156ad798861ba1906d74edf562380794eafd4", "reward": 0, "tests_passed": 15, "tests_failed": 4, "e2e_exit_code": 2},
+    {"case": "regex_without_word_boundaries", "patch_sha256": "5a661c3e38c7c179b9844ba81e97a9f394dc7c06b88525ce4883ca02cbcf2ff9", "reward": 0, "tests_passed": 18, "tests_failed": 1, "e2e_exit_code": 0},
+    {"case": "rewrite_quoted_suffix_values", "patch_sha256": "596a7e50ccc2fa82f6f6fb2563795dd6c769fd095cde1146ec6041f568c1ad17", "reward": 0, "tests_passed": 18, "tests_failed": 1, "e2e_exit_code": 0}
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "3345de72-09b6-43ae-b962-5ef558addbf1",
+    "trial_id": "e004b162-64b5-46ee-a467-cc10b5d76220",
+    "input_task_checksum": "aed373bf51297dea0a47daa7bdec38cfea3b7cf2b22bbe15d540ff56b73e644c",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "e2e_exit_code": 0,
+    "runtime_seconds": 27,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "runtime_network_disabled": true
+  }
+}

@@ -1,0 +1,7 @@
+diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
+--- a/vllm/engine/arg_utils.py
++++ b/vllm/engine/arg_utils.py
+@@ -270,2 +270,2 @@ def _expand_json_human_readable_numbers(val: str) -> str:
+-    parts = re.split(r'("(?:[^"\\]|\\.)*")', val)
++    parts = [val]
+     for i in range(0, len(parts), 2):  # even indices = outside strings

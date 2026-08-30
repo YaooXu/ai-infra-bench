@@ -1,0 +1,5 @@
+We configure large memory and graph limits from shell scripts, but nested vLLM options currently require long raw integers. For example, we want `--kv-transfer-config '{"kv_connector":"OffloadingConnector","kv_connector_extra_config":{"cpu_bytes_to_use":80m},"kv_role":"kv_both"}'` to represent 80,000,000 bytes, and `--compilation-config.max_cudagraph_capture_size 1k` to represent 1,000.
+
+Add the same human-readable numeric convention already available to simple integer flags to JSON dataclass arguments and dotted nested overrides. Lowercase `k/m/g/t` means decimal powers, uppercase means binary powers, and lowercase decimal values such as `1.5g` are allowed. Quoted JSON strings, plain numbers, key names, and text containing suffix-like substrings must remain unchanged; malformed tokens and fractional binary values must still produce normal argument errors rather than partial replacements.
+
+The behavior should work through the actual CLI parser for both whole JSON objects and dotted fields, without changing existing `auto`, `-1`, help, or ordinary configuration parsing.

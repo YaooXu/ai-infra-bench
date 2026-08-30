@@ -1,0 +1,7 @@
+diff --git a/vllm/engine/arg_utils.py b/vllm/engine/arg_utils.py
+--- a/vllm/engine/arg_utils.py
++++ b/vllm/engine/arg_utils.py
+@@ -274,2 +274,2 @@ def _expand_json_human_readable_numbers(val: str) -> str:
+-            r"\b\d+(?:\.\d+)?[kKmMgGtT]\b",
++            r"\d+(?:\.\d+)?[kKmMgGtT]",
+             lambda m: str(human_readable_int(m.group())),

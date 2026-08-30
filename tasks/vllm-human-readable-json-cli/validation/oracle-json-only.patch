@@ -1,0 +1,16 @@
+diff --git a/vllm/utils/argparse_utils.py b/vllm/utils/argparse_utils.py
+--- a/vllm/utils/argparse_utils.py
++++ b/vllm/utils/argparse_utils.py
+@@ -407,10 +407,5 @@ def recursive_dict_update(
+                 try:
+                     value = json.loads(value_str)
+                 except json.decoder.JSONDecodeError:
+-                    # Support human-readable suffixes (e.g. 1k, 80g) for
+-                    # dotted config args like --config.field 80g
+-                    try:
+-                        value = human_readable_int(value_str)  # type: ignore[assignment]
+-                    except (ValueError, ArgumentTypeError):
+-                        value = value_str
++                    value = value_str
+ 
+                 # Merge all values with the same key into a single dict
