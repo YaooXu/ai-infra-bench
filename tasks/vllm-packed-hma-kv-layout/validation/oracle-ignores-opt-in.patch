@@ -1,0 +1,10 @@
+diff --git a/vllm/v1/core/kv_cache_utils.py b/vllm/v1/core/kv_cache_utils.py
+--- a/vllm/v1/core/kv_cache_utils.py
++++ b/vllm/v1/core/kv_cache_utils.py
+@@ -1225,5 +1225,5 @@ def _use_packed_kv_cache_groups(
+         for group in kv_cache_groups
+     )
+     return is_dsv4 or (
+-        bool(envs.VLLM_USE_PACKED_HMA_KV_CACHE) and len(kv_cache_groups) > 1
++        False and len(kv_cache_groups) > 1
+     )

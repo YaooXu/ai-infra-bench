@@ -1,0 +1,142 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T03:48:01+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-221",
+    "instance_id": "vllm-project__vllm-46205",
+    "base_commit": "77148992cfc905ded5fbd34d746553aa7f099da4",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/46205",
+    "directly_linked_issue": null,
+    "reported_origin": "Profiling showed that attention-only HMA models exposed multiple CPU tensors even when their per-group views shared one allocation. The PR reported 12 tensors and about 144.37 ms CPU-hit latency for gpt-oss versus one tensor and about 124.95 ms with packed HMA; Gemma used four versus one tensor with nearly flat latency. The implementation was intentionally opt-in and retained the existing DeepSeek V4 packed path."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-packed-hma-kv-layout:base-77148992cfc9",
+    "image_id": "sha256:b94a58f5676858ee17b21b5f7718dd792cca36033770316967d4bb67529a3692",
+    "size_bytes": 2573759637,
+    "dockerfile_sha256": "2e1beacd189cd5b57c36d88771be670f72181176c9ab8e197f5212dbf5dae095",
+    "dependency_lock_sha256": "5b5b44b0885b65ad9eb62468717f8a8000203a2fe5392aca3da4343d3af0d31c",
+    "dependency_lock_manifest_sha256": "faa6647bb60dfe60573a02334f9a643c201973fd20ce497ee8e29cc4b46bf6db"
+  },
+  "artifacts": {
+    "instruction_sha256": "eb227de01e4447f037c4c5731b47b5e407a4a2ffc3e580089ce978f82128697e",
+    "oracle_patch_sha256": "74cd9e18461c4118af25b44100022e53b8b0775abee949a5726262757c78eeb7",
+    "test_script_sha256": "e287da591d34ca375e9bf53895c00fe7a5f154a072a0b913ef70aa9480361a83",
+    "regression_test_sha256": "6ccca3b2a0ee9c46c370ee3ca59d1a591208527a6a1944be23eba815534084d0",
+    "junit_checker_sha256": "0b08b7ca3885b94467996d386f734b679a3ac6364ac111282d5a531115434283",
+    "real_pipeline_test_sha256": "14de1811e3abc31c2d806c196f2c053fd1e56f2cb0ad093d53081d939436dd36"
+  },
+  "verifier_contract": {
+    "behavior_cases": 22,
+    "behaviors": [
+      "the opt-in environment setting parses predictably and defaults off",
+      "default multi-group, single-group, and existing DeepSeek V4 layouts retain their behavior",
+      "enabled multi-group HMA layouts share one backing allocation across equal and varied page sizes",
+      "per-view offsets and block strides partition each row without cross-view or cross-block corruption",
+      "usable block capacity remains unchanged by packing and all layers remain represented exactly once",
+      "Simple CPU offload counts packed storage once and preserves offset and stride metadata",
+      "partially strided invalid layouts are rejected",
+      "connector registration exposes one canonical packed tensor and one full-row reference per group",
+      "unpacked connector registration remains unchanged"
+    ],
+    "collection_integrity": "JUnit must contain at least 22 passing, unique, non-skipped cases including varied page sizes, CPU capacity, canonical connector registration, and invalid partial-stride handling."
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real KV layout planning through torch shared-storage views, connector canonical registration, Simple CPU mirror derivation, and selected block row round-trip",
+    "entrypoint": "get_kv_cache_config_from_groups -> torch.as_strided views -> OffloadingConnectorWorker.register_kv_caches -> CanonicalKVCaches -> SimpleCPUOffloadScheduler._derive_cpu_config -> CPU row copy and restore",
+    "kv_groups": 3,
+    "canonical_tensors": 1,
+    "gpu_blocks": 384,
+    "cpu_blocks": 768,
+    "cross_group_storage_identity_verified": true,
+    "untargeted_block_preservation_verified": true,
+    "gpu_dma_executed": false,
+    "limitation": "The environment is CPU-only, so the verifier executes the complete layout, registration, addressing, capacity, and byte round-trip contract but does not launch CUDA/XPU DMA handlers."
+  },
+  "repeated_runs": [
+    {
+      "case": "base",
+      "rounds": 5,
+      "rewards": [0, 0, 0, 0, 0],
+      "behavior_tests_each_round": {"passed": 8, "failed": 14},
+      "pipeline_exit_codes": [1, 1, 1, 1, 1]
+    },
+    {
+      "case": "oracle",
+      "rounds": 5,
+      "rewards": [1, 1, 1, 1, 1],
+      "behavior_tests_each_round": {"passed": 22, "failed": 0},
+      "pipeline_exit_codes": [0, 0, 0, 0, 0]
+    }
+  ],
+  "adversarial_runs": [
+    {
+      "case": "ignore_opt_in",
+      "patch_sha256": "f576dedd7c17a15d1511d91ba1f9895804424454e4db2df94e67b92d0408295b",
+      "reward": 0,
+      "tests_passed": 12,
+      "tests_failed": 10,
+      "pipeline_exit_code": 1
+    },
+    {
+      "case": "pack_single_group",
+      "patch_sha256": "96dd707b6b6b270183564ba9b4c0cb295be005cf8d582fc3c00da6820e01bfbc",
+      "reward": 0,
+      "tests_passed": 21,
+      "tests_failed": 1,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "double_count_simple_offload",
+      "patch_sha256": "8427d9460064249c221814b2c47aaa0a286809cc211ae9d252ba560bdc4435c2",
+      "reward": 0,
+      "tests_passed": 21,
+      "tests_failed": 1,
+      "pipeline_exit_code": 1
+    },
+    {
+      "case": "skip_canonical_packing",
+      "patch_sha256": "43e5da4f8944f8bc4399b832703376e9dfa5bb473043502174acf806cf0c4cc7",
+      "reward": 0,
+      "tests_passed": 20,
+      "tests_failed": 2,
+      "pipeline_exit_code": 1
+    },
+    {
+      "case": "drop_cpu_layout_metadata",
+      "patch_sha256": "9083ce4fc92cc278a2e978201bbf5e25e747a2472b94706af2b70e74c2646ee4",
+      "reward": 0,
+      "tests_passed": 21,
+      "tests_failed": 1,
+      "pipeline_exit_code": 1
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "b3dffef6-be7d-41be-893a-4e2dcb7a4b74",
+    "trial_id": "a534b6f8-5de8-4476-8da3-bc29eb0aaf14",
+    "input_task_checksum": "b2bc7b0c3bfbb03a1953d23838a4558bc44cada8c1a9c0155786bf78f58c5123",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "pipeline_exit_code": 0,
+    "runtime_seconds": 25,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_task_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "build_context_empty": true,
+    "runtime_network_disabled": true
+  }
+}

@@ -1,0 +1,10 @@
+diff --git a/vllm/distributed/kv_transfer/kv_connector/v1/offloading/worker.py b/vllm/distributed/kv_transfer/kv_connector/v1/offloading/worker.py
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/offloading/worker.py
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/offloading/worker.py
+@@ -130,5 +130,5 @@ class OffloadingConnectorWorker:
+             for group in kv_cache_config.kv_cache_groups
+         )
+-        if packed_kv_cache_tensor is not None and not is_dsv4:
++        if False and packed_kv_cache_tensor is not None and not is_dsv4:
+             (tensor,) = tensors_per_block[packed_kv_cache_tensor.shared_by[0]]
+             block_stride = tensor.stride(0)

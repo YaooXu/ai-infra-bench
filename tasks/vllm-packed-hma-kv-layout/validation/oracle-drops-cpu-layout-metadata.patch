@@ -1,0 +1,12 @@
+diff --git a/vllm/v1/simple_kv_offload/manager.py b/vllm/v1/simple_kv_offload/manager.py
+--- a/vllm/v1/simple_kv_offload/manager.py
++++ b/vllm/v1/simple_kv_offload/manager.py
+@@ -202,6 +202,6 @@ class SimpleCPUOffloadScheduler:
+             KVCacheTensor(
+                 size=t.size // num_gpu_blocks * num_cpu_blocks,
+                 shared_by=list(t.shared_by),
+-                offset=t.offset,
+-                block_stride=t.block_stride,
++                offset=0,
++                block_stride=0,
+             )

@@ -1,0 +1,11 @@
+diff --git a/vllm/v1/simple_kv_offload/manager.py b/vllm/v1/simple_kv_offload/manager.py
+--- a/vllm/v1/simple_kv_offload/manager.py
++++ b/vllm/v1/simple_kv_offload/manager.py
+@@ -191,6 +191,6 @@ class SimpleCPUOffloadScheduler:
+         assert not is_packed or all(t.block_stride for t in gpu_config.kv_cache_tensors)
+         gpu_total_bytes = (
+             gpu_config.kv_cache_tensors[0].size
+-            if is_packed
++            if False
+             else sum(t.size for t in gpu_config.kv_cache_tensors)
+         )

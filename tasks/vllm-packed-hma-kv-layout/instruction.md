@@ -1,0 +1,5 @@
+While profiling CPU KV offload for attention-only HMA models, we found that groups which share one physical KV allocation are still exposed to offload as many separate tensors. In our gpt-oss run this meant 12 CPU tensors and about 144 ms for a CPU-hit iteration; a packed experiment used one backing tensor and took about 125 ms. Gemma showed the same registration pattern with four tensors, although its latency difference was small.
+
+Add an opt-in packed per-block layout for multi-group attention-only HMA models, controlled by `VLLM_USE_PACKED_HMA_KV_CACHE`. With the option enabled, group views must share one correctly sized backing allocation while retaining the offsets and strides needed to address each block independently. The default layout, single-group models, and the existing packed DeepSeek V4 path must keep their current behavior.
+
+Both KV connector offload and the native/simple CPU offload path must understand the packed layout: register and capacity-account the shared allocation only once, preserve layout metadata in the CPU mirror, and copy every group's block data without overlap or corruption.
