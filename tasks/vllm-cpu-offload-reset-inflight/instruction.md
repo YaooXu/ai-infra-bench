@@ -1,15 +1,11 @@
-# Reset CPU-offload cache state with in-flight transfers
+We benchmark cold-cache time to first token and request throughput across different serving configurations. The suite reuses the same prompt set, so before each run it clears both the local and connector-managed prefix caches to prevent later runs from benefiting from KV data produced by earlier ones.
 
-The simple CPU offload connector cannot currently participate in prefix-cache
-reset. Resetting scheduler-side state is unsafe while asynchronous store or
-load DMA still owns CPU or GPU block references: freeing those blocks early can
-let an old transfer write into storage that has already been reused.
+With `SimpleCPUOffloadConnector` enabled, calling `llm.reset_prefix_cache(reset_connector=True)` fails with:
 
-Implement cache reset for the connector. Pending eager stores, lazy stores, and
-loads must be abandoned without becoming cacheable, while their block
-references remain pinned until completion arrives. Reset must report that it is
-not yet complete while such work remains, then clear the CPU prefix cache once
-all abandoned transfers have drained. Stale completion events must be harmless.
+```text
+NotImplementedError: SimpleCPUOffloadConnector does not support reset_cache().
+```
 
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+Implement this missing reset feature for both eager and lazy CPU-offload configurations. We may request a reset as soon as a benchmark run finishes, while data from the final requests is still being stored to CPU or loaded back for reuse.
+
+If outstanding work prevents an immediate reset, the call should return `False`; retrying after that work settles should return `True`. After a successful reset, the next benchmark run must not hit entries from the previous one, delayed completions must not make old entries visible again, and subsequent requests must continue to run normally.
