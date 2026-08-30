@@ -1,0 +1,5 @@
+We are qualifying direct Mooncake P/D disaggregation for Qwen3.5 and DeepSeek V4 Flash. Qwen3.5 combines full-attention KV pages with GDN recurrent state; the current Mooncake path cannot initialize this layout and reaches `GDNAttentionBackend.get_kv_cache_shape()`, which is not implemented. A pure full-attention Qwen3 deployment continues to work.
+
+DeepSeek V4 Flash starts, but a 1-prefiller/1-decoder GSM8K run produced about 0.0485 accuracy while the standalone model produced about 0.9507. The model's MLA cache uses padded physical rows and shared allocations, so a successful transfer must preserve the logical payload of every requested block without touching neighboring packed data.
+
+Extend Mooncake P/D transfer to handle hybrid full-attention and GDN/Mamba cache groups as well as padded MLA and sliding-window MLA layouts. Registration and request planning must retain each group's block identity, ignore placeholder blocks, stay within registered storage, and produce the same decode-visible state as local execution. Existing pure full-attention Mooncake behavior and the NIXL connector must remain compatible.

@@ -1,0 +1,17 @@
+diff --git a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+@@ -1710,11 +1710,11 @@ class MooncakeConnectorWorker:
+                     self._layer_group_indices[layer_name]
+                 )
+                 storage = cache.untyped_storage()
+-                storage_addr = storage.data_ptr()
++                storage_addr = base_addr
+                 if storage_addr not in seen_storage_ptrs:
+                     seen_storage_ptrs.add(storage_addr)
+                     kv_data_ptrs.append(storage_addr)
+-                    kv_data_lens.append(storage.nbytes())
++                    kv_data_lens.append(cache.nbytes)
+ 
+         self.kv_caches_base_addr = region_base_addresses
+         self.seen_base_addresses = kv_data_ptrs

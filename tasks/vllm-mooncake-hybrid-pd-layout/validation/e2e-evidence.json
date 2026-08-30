@@ -1,0 +1,150 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-08-31T04:03:49+08:00",
+  "source": {
+    "candidate_id": "vllm-cpu-300-240",
+    "instance_id": "vllm-project__vllm-46807",
+    "base_commit": "97b5ce5c3931173b3efebca58e597b8e58730cd3",
+    "pull_request": "https://github.com/vllm-project/vllm/pull/46807",
+    "directly_linked_issue": null,
+    "reported_origin": "Mooncake P/D disaggregation lacked support for Qwen3.5-style hybrid full-attention and GDN state groups. During review, DeepSeek V4 Flash exposed a second layout failure: standalone GSM8K accuracy was about 0.9507 while the pre-existing 1P1D Mooncake path produced about 0.0485. Investigation separated physical row stride from effective MLA payload and expanded the change to shared storage registration, per-group blocks, null-state placeholders, and recurrent-state prompt boundaries."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-mooncake-hybrid-pd-layout:base-97b5ce5c3931",
+    "image_id": "sha256:f64ed84e246bcb8299536a7a836d837d752d90a26fda18c18f3eda1c08455e3b",
+    "size_bytes": 2585355458,
+    "dockerfile_sha256": "e121df4e529b1faa49975d016b1f633a9dae5142b05e2cd97f5292fe5cf88ed2",
+    "dependency_lock_sha256": "8bbdd18586742d39295cd38d624a7246f4caed21d59f11a56838d1910c7d216e",
+    "dependency_lock_manifest_sha256": "7f9c3e7f46ed6a77c9ffb557d440f43f6e54618429a61cea3e131384092328c0"
+  },
+  "artifacts": {
+    "instruction_sha256": "bec9277f821d7fa5cc52acf534215b0185d98cb6b765ae26bc684f5697a9ffbc",
+    "oracle_patch_sha256": "8fa78ba89e8c212f55395d5d7c69fe020913ddac76bef627cd562bb2c2e8ab8b",
+    "test_script_sha256": "cb84ac59e1bee3daa3c4179993d5053c3be0fd04e2aa51c1c79519bac7c87db3",
+    "regression_test_sha256": "fc021dbf67cd0a2d6eb98c4fc2938c208fd1681d259a4782f0f51d2c5ea0afb2",
+    "junit_checker_sha256": "193eeb776de23529c2d107a31afd757cece604260a61553fa69786e306e021c7",
+    "real_pipeline_test_sha256": "3a4480849e9b15a7c8f8939e64d0e941a3b4a4949f772a9aa8142c10bc94ba45"
+  },
+  "verifier_contract": {
+    "behavior_cases": 24,
+    "behaviors": [
+      "transfer regions preserve physical row stride, effective payload length, layer order, and KV group identity",
+      "blocks-first full attention splits K and V while GDN, MLA, and sliding-window MLA remain whole payload regions",
+      "metadata round-trips all layout fields and rejects incompatible producer/consumer groups",
+      "hybrid remote prefill and decode preserve the recurrent-state final-token boundary for token IDs and prompt embeddings",
+      "pure attention and NIXL remote-prefill behavior remains compatible",
+      "logical block expansion applies to attention groups but not GDN state slots",
+      "hybrid registration exposes both FA and GDN regions and deduplicates shared backing storage",
+      "padded MLA and sliding-window MLA address by physical stride but copy only effective payload bytes",
+      "per-group transfer planning skips null placeholders, trims partial hits, reports group mismatches, and keeps empty state groups empty"
+    ],
+    "collection_integrity": "JUnit must contain at least 23 passing, unique, non-skipped cases including MLA stride/payload, per-group/null planning, recurrent prompt handling, and shared-storage registration."
+  },
+  "real_lifecycle_boundary": {
+    "kind": "real Mooncake registration and transfer planning over CPU tensors with an in-memory byte-copy transport engine",
+    "entrypoint": "producer register_kv_caches -> transfer-region alignment -> _build_transfer_params -> batch_transfer_sync_write -> decoder tensors",
+    "kv_groups": 2,
+    "transfer_descriptors": 2,
+    "bytes_copied": 300,
+    "fa_blocks_copied": 2,
+    "gdn_state_slots_copied": 1,
+    "neighboring_rows_preserved": true,
+    "native_mooncake_rdma_executed": false,
+    "limitation": "The CPU image does not load the optional native Mooncake RDMA engine. The verifier executes production registration, region alignment, group-aware address planning, and actual pointer-based byte copies through a deterministic in-memory transport replacement; it does not claim network or GPU DMA coverage."
+  },
+  "repeated_runs": [
+    {
+      "case": "base",
+      "rounds": 5,
+      "rewards": [0, 0, 0, 0, 0],
+      "behavior_tests_each_round": {"passed": 4, "failed": 20},
+      "pipeline_exit_codes": [1, 1, 1, 1, 1]
+    },
+    {
+      "case": "oracle",
+      "rounds": 5,
+      "rewards": [1, 1, 1, 1, 1],
+      "behavior_tests_each_round": {"passed": 24, "failed": 0},
+      "pipeline_exit_codes": [0, 0, 0, 0, 0]
+    }
+  ],
+  "adversarial_runs": [
+    {
+      "case": "without_mamba_boundary",
+      "patch_sha256": "ad4aa475dbc2c132eff148c1643a7d908f354ea3f68b796689766a89c03394fb",
+      "reward": 0,
+      "tests_passed": 23,
+      "tests_failed": 1,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "flatten_group_identity",
+      "patch_sha256": "82ca91bd29e7b608c352ce3dfa6c82ddab81fb32ea055bb904e9ad2fb0d0bb8d",
+      "reward": 0,
+      "tests_passed": 22,
+      "tests_failed": 2,
+      "pipeline_exit_code": 1
+    },
+    {
+      "case": "use_payload_as_mla_stride",
+      "patch_sha256": "908efd861551adf71355c7cf3093c5733139b565aed143f216900b33e399012f",
+      "reward": 0,
+      "tests_passed": 22,
+      "tests_failed": 2,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "register_views_separately",
+      "patch_sha256": "101901ebd6a478912a7d922e14095d69455442c1cc02ea37f113ded3037878f9",
+      "reward": 0,
+      "tests_passed": 22,
+      "tests_failed": 2,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "expand_gdn_block_ids",
+      "patch_sha256": "b6bfecf9e0290b943293d0a8db396d57d29441c13dd9b68db70d4f0dae391ad8",
+      "reward": 0,
+      "tests_passed": 22,
+      "tests_failed": 2,
+      "pipeline_exit_code": 0
+    },
+    {
+      "case": "break_nixl_compatibility",
+      "patch_sha256": "416a58a450765056bcdde272e31a48a2867a084d6a540204441c7756c25c8abe",
+      "reward": 0,
+      "tests_passed": 23,
+      "tests_failed": 1,
+      "pipeline_exit_code": 0
+    }
+  ],
+  "harbor": {
+    "version": "0.22.0",
+    "job_id": "75b5e8e7-3073-4fbe-8e4d-978971964c35",
+    "trial_id": "cba19cc4-4431-4d8a-bdd6-9208b4b74bd6",
+    "input_task_checksum": "a9f2695bd373c03c3108093ff559c5955243d31cf5ebfc9bd0fb714abfa891d2",
+    "agent": "oracle",
+    "environment": "docker",
+    "n_completed_trials": 1,
+    "n_errored_trials": 0,
+    "reward": 1,
+    "command_exit_code": 0,
+    "pytest_exit_code": 0,
+    "integrity_exit_code": 0,
+    "pipeline_exit_code": 0,
+    "runtime_seconds": 26,
+    "canonical_image_retained_after_run": true
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_and_task_tests_absent_from_image": true,
+    "vllm_imports_from_base_worktree": true,
+    "installed_dependencies_match_lock": true,
+    "cached_rebuild_digest_stable": true,
+    "build_context_empty": true,
+    "runtime_network_disabled": true
+  }
+}

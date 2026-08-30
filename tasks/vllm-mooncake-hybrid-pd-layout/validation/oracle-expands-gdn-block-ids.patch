@@ -1,0 +1,10 @@
+diff --git a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+@@ -1410,5 +1410,5 @@ class MooncakeConnectorWorker:
+                 self._physical_blocks_per_logical_kv_block,
+                 block_arange,
+             ).tolist()
+-            if not isinstance(group_specs[i].kv_cache_spec, MambaSpec)
++            if True
+             else group

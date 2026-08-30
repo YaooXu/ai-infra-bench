@@ -1,0 +1,10 @@
+diff --git a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/mooncake/mooncake_connector.py
+@@ -1689,4 +1689,6 @@ class MooncakeConnectorWorker:
+                 base_addr = cache.data_ptr()
+                 block_len = cache.stride(0) * cache.element_size()
++                if isinstance(layer_spec, (MLAAttentionSpec, SlidingWindowMLASpec)):
++                    block_len = layer_spec.page_size_bytes
+                 region_base_addresses.append(base_addr)
+ 
