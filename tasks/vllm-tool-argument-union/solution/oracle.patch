@@ -1,0 +1,17 @@
+diff --git a/vllm/tool_parsers/qwen3coder_tool_parser.py b/vllm/tool_parsers/qwen3coder_tool_parser.py
+index 92e8ca0..0285a1c 100644
+--- a/vllm/tool_parsers/qwen3coder_tool_parser.py
++++ b/vllm/tool_parsers/qwen3coder_tool_parser.py
+@@ -157,6 +157,12 @@ class Qwen3CoderToolParser(ToolParser):
+             and "type" in param_config[param_name]
+         ):
+             param_type = str(param_config[param_name]["type"]).strip().lower()
++        elif (
++            isinstance(param_config[param_name], dict)
++            and "anyOf" in param_config[param_name]
++        ):
++            # anyOf has no top-level "type"; treat as object to trigger json.loads.
++            param_type = "object"
+         else:
+             param_type = "string"
+         if param_type in ["string", "str", "text", "varchar", "char", "enum"]:

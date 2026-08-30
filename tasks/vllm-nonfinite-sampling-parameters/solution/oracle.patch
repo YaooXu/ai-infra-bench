@@ -1,0 +1,92 @@
+diff --git a/tests/samplers/test_non_finite_params.py b/tests/samplers/test_non_finite_params.py
+new file mode 100644
+index 0000000..57fe90f
+--- /dev/null
++++ b/tests/samplers/test_non_finite_params.py
+@@ -0,0 +1,51 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++"""Tests that non-finite float values (NaN, Inf) are rejected by
++SamplingParams validation, preventing them from propagating to GPU kernels.
++
++Addresses advisory GHSA-7h4p-rffg-7823.
++"""
++
++import math
++
++import pytest
++
++from vllm import SamplingParams
++from vllm.exceptions import VLLMValidationError
++
++
++class TestNonFiniteTemperature:
++    """Verify that NaN and Infinity temperature values are rejected."""
++
++    @pytest.mark.parametrize(
++        "value",
++        [float("nan"), float("inf"), float("-inf"), math.nan, math.inf],
++        ids=["nan", "inf", "-inf", "math.nan", "math.inf"],
++    )
++    def test_non_finite_temperature_rejected(self, value: float):
++        with pytest.raises(VLLMValidationError, match="temperature"):
++            SamplingParams(temperature=value)
++
++    def test_finite_temperature_accepted(self):
++        SamplingParams(temperature=0.0)
++        SamplingParams(temperature=0.5)
++        SamplingParams(temperature=1.0)
++        SamplingParams(temperature=2.0)
++
++
++class TestNonFiniteRepetitionPenalty:
++    """Verify that NaN and Infinity repetition_penalty values are rejected."""
++
++    @pytest.mark.parametrize(
++        "value",
++        [float("nan"), float("inf"), float("-inf"), math.nan, math.inf],
++        ids=["nan", "inf", "-inf", "math.nan", "math.inf"],
++    )
++    def test_non_finite_repetition_penalty_rejected(self, value: float):
++        with pytest.raises(ValueError, match="repetition_penalty"):
++            SamplingParams(repetition_penalty=value)
++
++    def test_finite_repetition_penalty_accepted(self):
++        SamplingParams(repetition_penalty=0.5)
++        SamplingParams(repetition_penalty=1.0)
++        SamplingParams(repetition_penalty=2.0)
+diff --git a/vllm/sampling_params.py b/vllm/sampling_params.py
+index 6beb142..3c1ff8a 100644
+--- a/vllm/sampling_params.py
++++ b/vllm/sampling_params.py
+@@ -4,6 +4,7 @@
+ 
+ import copy
+ import json as json_mod
++import math
+ from dataclasses import field
+ from enum import Enum, IntEnum
+ from functools import cached_property
+@@ -503,11 +504,22 @@ class SamplingParams(
+             raise ValueError(
+                 f"frequency_penalty must be in [-2, 2], got {self.frequency_penalty}."
+             )
++        if not math.isfinite(self.repetition_penalty):
++            raise ValueError(
++                "repetition_penalty must be a finite number, "
++                f"got {self.repetition_penalty}."
++            )
+         if self.repetition_penalty <= 0.0:
+             raise ValueError(
+                 "repetition_penalty must be greater than zero, got "
+                 f"{self.repetition_penalty}."
+             )
++        if not math.isfinite(self.temperature):
++            raise VLLMValidationError(
++                f"temperature must be a finite number, got {self.temperature}.",
++                parameter="temperature",
++                value=self.temperature,
++            )
+         if self.temperature < 0.0:
+             raise VLLMValidationError(
+                 f"temperature must be non-negative, got {self.temperature}.",
