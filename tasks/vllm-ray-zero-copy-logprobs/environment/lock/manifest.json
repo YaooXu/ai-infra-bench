@@ -26,7 +26,7 @@
       "resolver_input_sha256": "af4a1b38f44f5851c8f6b425addb720d0c0f4bef08e1259a2d43a36f8a1afe2e"
     },
     "extras.in": {
-      "sha256": "ba21efb7e4a36f39e6492aa1d5b01e6f9bbe4ccfedcef40a36ef6f8ddca50719"
+      "sha256": "ae51a1cc1fcb0faa6a5be184cbae47b29c7daaf68a670a36bc88ad58f7ffb08e"
     }
   },
   "normalization": {
@@ -36,7 +36,7 @@
   "command": "uv pip compile requirements/cpu.txt requirements/build/cpu.txt extras.in --python-version 3.12 --python-platform x86_64-manylinux_2_28 --exclude-newer 2026-04-16T15:48:17Z --torch-backend cpu --index-strategy first-index --output-file requirements.txt --exclude-newer-package torch=2026-05-01T23:59:59Z --exclude-newer-package torchaudio=2026-05-01T23:59:59Z --exclude-newer-package torchvision=2026-05-01T23:59:59Z",
   "output": {
     "path": "environment/lock/requirements.txt",
-    "packages": 163,
-    "sha256": "ae003ec67fa78617c07c537734b7ee727d588732e99fad379efdc9b7fb61fc97"
+    "packages": 184,
+    "sha256": "35fd63b5f0cf66a6ed169897ba3955bf8973080d9ab2a61a1a1632019a3e0094"
   }
 }

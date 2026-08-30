@@ -1,14 +1,26 @@
-# Release Ray shared-memory ownership from returned logprobs
+Our monitoring pipeline records the selected tokens' log probabilities and samples unusually low-likelihood completions for developers to debug. The vLLM service runs on a two-node Ray cluster with one GPU per node, TP set to 1, PP set to 2.
 
-Ray compiled-DAG channels may deserialize NumPy logprob arrays as read-only
-zero-copy views backed by Ray shared memory. If model-runner outputs retain
-those views after a result is returned to the scheduler, later channel reads
-can stall while trying to acquire the shared-memory read lock.
+One completion request returns HTTP 200 with both text and logprobs:
 
-Ensure outputs leaving Ray executor result boundaries no longer retain
-read-only NumPy logprob buffers owned by the channel. Cover blocking and
-non-blocking execution, with and without KV-output aggregation. Preserve array
-values and leave ordinary writable arrays and unrelated output fields intact.
+```python
+import requests
 
-Work in `/workspace/vllm`. Leave the source change in the working tree. Do not
-modify task metadata or verifier files.
+response = requests.post(
+    "http://localhost:8000/v1/completions",
+    json={
+        "prompt": "Summarize this customer-support ticket in one sentence: The app closes whenever I upload a photo.",
+        "max_tokens": 24,
+        "logprobs": 0,
+    },
+)
+print(response.json())
+```
+
+Around 30 seconds after the successful response, EngineCore exits with:
+
+```text
+ray.exceptions.RayChannelTimeoutError: System error: Timed out acquiring the read lock.
+vllm.v1.engine.exceptions.EngineDeadError: EngineCore encountered an issue.
+```
+
+I tried to debug the problem in a single-node Ray setup, but could not reproduce it there. Fix the multi-node crash so the service remains healthy and its existing completion behavior, including returned log probabilities, continues to work normally.

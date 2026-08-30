@@ -4,7 +4,7 @@
 
 ARG VLLM_BASE_SHA=82531edbfb6b33e1c8667dea15c8622f011dcef0
 ARG VLLM_DEPENDENCY_CUTOFF=2026-04-16T15:48:17Z
-ARG VLLM_CACHE_NAMESPACE=82531edbfb6b33e1c8667dea15c8622f011dcef0-ae003ec67fa78617
+ARG VLLM_CACHE_NAMESPACE=82531edbfb6b33e1c8667dea15c8622f011dcef0-35fd63b5f0cf66a6
 ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 ######################### PINNED SOURCE #########################
@@ -80,7 +80,7 @@ RUN case "$TARGETARCH" in \
  && cargo nextest --version
 
 ARG VLLM_DEPENDENCY_CUTOFF
-# Exact task dependency lock (sha256:ae003ec67fa78617c07c537734b7ee727d588732e99fad379efdc9b7fb61fc97) is embedded so this
+# Exact task dependency lock (sha256:35fd63b5f0cf66a6ed169897ba3955bf8973080d9ab2a61a1a1632019a3e0094) is embedded so this
 # Dockerfile remains independently buildable with an empty context.
 RUN --mount=type=cache,id=vllm-uv-downloads-v3,target=/root/.cache/uv,sharing=locked <<'VLLM_INSTALL_EOF'
 set -eu
@@ -91,7 +91,12 @@ cat > /tmp/vllm-requirements.lock <<'VLLM_REQUIREMENTS_EOF'
 aiohappyeyeballs==2.6.1
     # via aiohttp
 aiohttp==3.13.5
-    # via -r requirements/common.txt
+    # via
+    #   -r requirements/common.txt
+    #   aiohttp-cors
+    #   ray
+aiohttp-cors==0.8.1
+    # via ray
 aiosignal==1.4.0
     # via aiohttp
 annotated-doc==0.0.4
@@ -136,6 +141,7 @@ charset-normalizer==3.4.7
     # via requests
 click==8.3.2
     # via
+    #   ray
     #   rich-toolkit
     #   typer
     #   uvicorn
@@ -143,18 +149,28 @@ cloudpickle==3.1.2
     # via -r requirements/common.txt
 cmake==4.3.1
     # via -r requirements/build/cpu.txt
+colorful==0.5.8
+    # via ray
 compressed-tensors==0.15.0.1
     # via -r requirements/common.txt
 coverage==7.13.5
     # via pytest-cov
 cryptography==46.0.7
-    # via pyjwt
+    # via
+    #   google-auth
+    #   pyjwt
+cuda-pathfinder==1.5.3
+    # via cupy-cuda12x
+cupy-cuda12x==14.0.1
+    # via ray
 depyf==0.20.0
     # via -r requirements/common.txt
 dill==0.4.1
     # via depyf
 diskcache==5.6.3
     # via -r requirements/common.txt
+distlib==0.4.0
+    # via virtualenv
 distro==1.9.0
     # via
     #   anthropic
@@ -185,7 +201,10 @@ filelock==3.28.0
     # via
     #   -r requirements/common.txt
     #   huggingface-hub
+    #   python-discovery
+    #   ray
     #   torch
+    #   virtualenv
 frozenlist==1.8.0
     # via
     #   aiohttp
@@ -196,12 +215,19 @@ fsspec==2026.3.0
     #   torch
 gguf==0.18.0
     # via -r requirements/common.txt
+google-api-core==2.30.3
+    # via opencensus
+google-auth==2.49.2
+    # via google-api-core
 googleapis-common-protos==1.74.0
     # via
+    #   google-api-core
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
 grpcio==1.80.0
-    # via opentelemetry-exporter-otlp-proto-grpc
+    # via
+    #   opentelemetry-exporter-otlp-proto-grpc
+    #   ray
 h11==0.16.0
     # via
     #   httpcore
@@ -261,6 +287,7 @@ jsonschema==4.26.0
     # via
     #   mcp
     #   mistral-common
+    #   ray
 jsonschema-specifications==2025.9.1
     # via jsonschema
 lark==1.2.2
@@ -287,6 +314,8 @@ model-hosting-container-standards==0.1.14
     # via -r requirements/common.txt
 mpmath==1.3.0
     # via sympy
+msgpack==1.1.2
+    # via ray
 msgspec==0.21.1
     # via -r requirements/common.txt
 multidict==6.7.1
@@ -304,6 +333,7 @@ numba==0.61.2
 numpy==2.2.6
     # via
     #   -r requirements/common.txt
+    #   cupy-cuda12x
     #   gguf
     #   mistral-common
     #   numba
@@ -315,6 +345,10 @@ openai==2.32.0
     # via -r requirements/common.txt
 openai-harmony==0.0.8
     # via -r requirements/common.txt
+opencensus==0.11.4
+    # via ray
+opencensus-context==0.1.3
+    # via opencensus
 opencv-python-headless==4.13.0.92
     # via
     #   -r requirements/common.txt
@@ -324,6 +358,7 @@ opentelemetry-api==1.41.0
     #   -r requirements/common.txt
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
+    #   opentelemetry-exporter-prometheus
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
 opentelemetry-exporter-otlp==1.41.0
@@ -336,17 +371,22 @@ opentelemetry-exporter-otlp-proto-grpc==1.41.0
     # via opentelemetry-exporter-otlp
 opentelemetry-exporter-otlp-proto-http==1.41.0
     # via opentelemetry-exporter-otlp
+opentelemetry-exporter-prometheus==0.62b0
+    # via ray
 opentelemetry-proto==1.41.0
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
+    #   ray
 opentelemetry-sdk==1.41.0
     # via
     #   -r requirements/common.txt
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
+    #   opentelemetry-exporter-prometheus
     #   opentelemetry-semantic-conventions-ai
+    #   ray
 opentelemetry-semantic-conventions==0.62b0
     # via
     #   opentelemetry-sdk
@@ -362,6 +402,7 @@ packaging==26.1
     #   lm-format-enforcer
     #   pytest
     #   pytest-rerunfailures
+    #   ray
     #   setuptools-scm
     #   transformers
     #   vcs-versioning
@@ -373,6 +414,10 @@ pillow==12.2.0
     #   -r requirements/common.txt
     #   mistral-common
     #   torchvision
+platformdirs==4.9.6
+    # via
+    #   python-discovery
+    #   virtualenv
 pluggy==1.6.0
     # via
     #   pytest
@@ -380,24 +425,37 @@ pluggy==1.6.0
 prometheus-client==0.25.0
     # via
     #   -r requirements/common.txt
+    #   opentelemetry-exporter-prometheus
     #   prometheus-fastapi-instrumentator
+    #   ray
 prometheus-fastapi-instrumentator==7.1.0
     # via -r requirements/common.txt
 propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
+proto-plus==1.27.2
+    # via google-api-core
 protobuf==6.33.6
     # via
     #   -r requirements/common.txt
+    #   google-api-core
     #   googleapis-common-protos
     #   opentelemetry-proto
+    #   proto-plus
+    #   ray
 psutil==7.2.2
     # via -r requirements/common.txt
 py==1.11.0
     # via pytest-forked
 py-cpuinfo==9.0.0
     # via -r requirements/common.txt
+py-spy==0.4.1
+    # via ray
+pyasn1==0.6.3
+    # via pyasn1-modules
+pyasn1-modules==0.4.2
+    # via google-auth
 pybase64==1.4.3
     # via -r requirements/common.txt
 pycountry==26.2.16
@@ -419,6 +477,7 @@ pydantic==2.13.1
     #   openai-harmony
     #   pydantic-extra-types
     #   pydantic-settings
+    #   ray
     #   xgrammar
 pydantic-core==2.46.1
     # via pydantic
@@ -457,6 +516,8 @@ pytest-shard==0.1.2
     # via -r extras.in
 pytest-timeout==2.4.0
     # via -r extras.in
+python-discovery==1.2.2
+    # via virtualenv
 python-dotenv==1.2.2
     # via
     #   pydantic-settings
@@ -473,10 +534,13 @@ pyyaml==6.0.3
     #   gguf
     #   huggingface-hub
     #   lm-format-enforcer
+    #   ray
     #   transformers
     #   uvicorn
 pyzmq==27.1.0
     # via -r requirements/common.txt
+ray==2.48.0
+    # via -r extras.in
 referencing==0.37.0
     # via
     #   jsonschema
@@ -491,8 +555,10 @@ requests==2.33.1
     # via
     #   -r requirements/common.txt
     #   gguf
+    #   google-api-core
     #   mistral-common
     #   opentelemetry-exporter-otlp-proto-http
+    #   ray
     #   tiktoken
 rich==15.0.0
     # via
@@ -529,7 +595,11 @@ setuptools-scm==10.0.5
 shellingham==1.5.4
     # via typer
 six==1.17.0
-    # via -r requirements/common.txt
+    # via
+    #   -r requirements/common.txt
+    #   opencensus
+smart-open==7.6.0
+    # via ray
 sniffio==1.3.1
     # via
     #   anthropic
@@ -635,6 +705,8 @@ uvloop==0.22.1
     # via uvicorn
 vcs-versioning==1.1.1
     # via setuptools-scm
+virtualenv==21.2.4
+    # via ray
 watchfiles==1.1.1
     # via
     #   -r requirements/common.txt
@@ -643,6 +715,8 @@ websockets==16.0
     # via uvicorn
 wheel==0.46.3
     # via -r requirements/build/cpu.txt
+wrapt==2.1.2
+    # via smart-open
 xgrammar==0.1.33
     # via -r requirements/common.txt
 yarl==1.23.0
