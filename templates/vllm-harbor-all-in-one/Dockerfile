@@ -1,16 +1,17 @@
 # syntax=docker/dockerfile:1
-# Template input: the base-SHA token below is replaced from task.toml by generate.py.
-# Generated task Dockerfiles are self-contained and differ only in this SHA.
+# Template inputs below are replaced from task.toml by generate.py. Generated
+# task Dockerfiles are self-contained and differ only in their frozen inputs.
 
 ARG VLLM_BASE_SHA=__VLLM_BASE_SHA__
+ARG VLLM_DEPENDENCY_CUTOFF=__VLLM_DEPENDENCY_CUTOFF__
+ARG VLLM_CACHE_NAMESPACE=__VLLM_CACHE_NAMESPACE__
 ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 ######################### PINNED SOURCE #########################
-FROM alpine:3.20 AS source
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS source
 ARG VLLM_BASE_SHA
 ARG VLLM_REPO
 RUN test -n "$VLLM_BASE_SHA" \
- && sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' /etc/apk/repositories \
  && apk add --no-cache ca-certificates git \
  && mkdir -p /src/vllm \
  && git -C /src/vllm init -q \
@@ -34,15 +35,12 @@ RUN test -n "$VLLM_BASE_SHA" \
  && test -z "$(git -C /src/vllm status --porcelain)"
 
 ######################### ALL-IN-ONE CPU ENVIRONMENT #########################
-FROM python:3.12-slim-trixie
-ARG VLLM_BASE_SHA
+FROM python:3.12-slim-trixie@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     UV_LINK_MODE=copy \
     UV_HTTP_TIMEOUT=500 \
-    UV_DEFAULT_INDEX=https://mirrors.aliyun.com/pypi/simple \
-    UV_INDEX_STRATEGY=unsafe-best-match \
     CARGO_HOME=/root/.cargo \
     RUSTUP_HOME=/root/.rustup \
     PATH=/root/.cargo/bin:$PATH \
@@ -54,19 +52,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CMAKE_CXX_COMPILER_LAUNCHER=ccache \
     MAX_JOBS=8
 
-RUN sed -i 's|http://deb.debian.org/debian|https://mirrors.aliyun.com/debian|g; s|http://deb.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources \
- && apt-get update \
+RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       bash build-essential ca-certificates ccache curl ffmpeg \
       git jq libgl1 libnuma-dev libsm6 libssl-dev libtcmalloc-minimal4 \
       libxext6 lsof make pkg-config sudo unzip wget xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir \
-      --index-url https://mirrors.aliyun.com/pypi/simple uv==0.11.28
-
-ENV RUSTUP_DIST_SERVER=https://rsproxy.cn \
-    RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
+RUN pip install --no-cache-dir uv==0.11.28
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
       | sh -s -- -y --profile minimal --default-toolchain none \
@@ -86,29 +79,27 @@ RUN case "$TARGETARCH" in \
  && rm -f /tmp/cargo-nextest.tar.gz \
  && cargo nextest --version
 
+ARG VLLM_DEPENDENCY_CUTOFF
+__VLLM_DEPENDENCY_INSTALL__
+
 COPY --from=source /src/vllm/ /workspace/vllm/
 WORKDIR /workspace/vllm
+ARG VLLM_BASE_SHA
+ARG VLLM_CACHE_NAMESPACE
 ENV SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0+g${VLLM_BASE_SHA} \
     SETUPTOOLS_SCM_PRETEND_VERSION_FOR_VLLM=0.0.0+g${VLLM_BASE_SHA}
 
-# All five task classes use the same environment: CPU-native vLLM, Python test
-# tooling, and the Rust toolchain. Repositories predating rust/Cargo.toml simply
-# skip the Rust workspace prebuild while retaining the installed toolchain.
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=cache,target=/root/.cache/ccache \
-    --mount=type=cache,target=/workspace/vllm/.deps,sharing=locked \
-    uv pip install --system -r requirements/cpu.txt --torch-backend cpu \
- && uv pip install --system \
-      'cmake>=3.26.1' ninja 'packaging>=24.2' \
-      'setuptools>=77.0.3,<81.0.0' 'setuptools-scm>=8' \
-      'setuptools-rust>=1.9.0' wheel 'jinja2>=3.1.6' regex \
- && VLLM_TARGET_DEVICE=cpu \
-      uv pip install --system --no-build-isolation -e . --torch-backend cpu \
- && uv pip install --system pytest pytest-asyncio pytest-forked \
-      pytest-rerunfailures pytest-shard pytest-timeout pytest-cov tblib \
+RUN --mount=type=cache,id=vllm-uv-downloads-v3,target=/root/.cache/uv,sharing=locked \
+    --mount=type=cache,id=vllm-ccache-${VLLM_CACHE_NAMESPACE},target=/root/.cache/ccache,sharing=locked \
+    --mount=type=cache,id=vllm-fetchcontent-${VLLM_CACHE_NAMESPACE},target=/workspace/vllm/.deps,sharing=locked \
+    python -c "import importlib.metadata as m; assert not any((d.metadata.get('Name') or '').lower() == 'vllm' for d in m.distributions())" \
+ && \
+    VLLM_TARGET_DEVICE=cpu \
+      uv pip install --system --no-build-isolation --no-deps -e . --torch-backend cpu \
  && if [ -f tests/vllm_test_utils/setup.py ]; then \
-      uv pip install --system -e tests/vllm_test_utils; \
-    fi
+      uv pip install --system --no-deps -e tests/vllm_test_utils; \
+    fi \
+ && python -c "from pathlib import Path; import vllm; assert Path(vllm.__file__).resolve().is_relative_to(Path('/workspace/vllm'))"
 
 RUN if [ -f rust/Cargo.toml ]; then \
       if [ -x tools/install_protoc.sh ]; then tools/install_protoc.sh; fi; \
@@ -131,6 +122,9 @@ RUN find . -type d -name __pycache__ -prune -exec rm -rf {} + \
  && test -z "$(git fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)" \
  && test -z "$(git status --porcelain)"
 
-LABEL ai.infra.bench.environment-template=vllm-harbor-all-in-one
+LABEL ai.infra.bench.environment-template=vllm-harbor-all-in-one \
+      ai.infra.bench.base-commit=$VLLM_BASE_SHA \
+      ai.infra.bench.dependency-cutoff=$VLLM_DEPENDENCY_CUTOFF \
+      ai.infra.bench.cache-namespace=$VLLM_CACHE_NAMESPACE
 ENTRYPOINT []
 CMD ["sleep", "infinity"]
