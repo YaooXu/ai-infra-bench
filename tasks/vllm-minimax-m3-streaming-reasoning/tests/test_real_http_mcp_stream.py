@@ -59,8 +59,47 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("content-length", "0"))
         request = ChatCompletionRequest.model_validate_json(self.rfile.read(length))
-        assert request.stream is True
         parser = combined_parser(request)
+        if not request.stream:
+            reasoning, content, tool_calls = parser.parse(
+                "<mm:think>" + REASONING + "</mm:think>" + TOOL_TEXT,
+                request,
+                enable_auto_tools=True,
+            )
+            item = {
+                "id": "chatcmpl-mcp-runbook-nonstream",
+                "object": "chat.completion",
+                "model": request.model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "reasoning": reasoning,
+                            "content": content,
+                            "tool_calls": [
+                                {
+                                    "id": call.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": call.name,
+                                        "arguments": call.arguments,
+                                    },
+                                }
+                                for call in tool_calls or []
+                            ],
+                        },
+                        "finish_reason": "tool_calls",
+                    }
+                ],
+            }
+            encoded = json.dumps(item).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+            return
         self.send_response(200)
         self.send_header("content-type", "text/event-stream")
         self.end_headers()
@@ -145,6 +184,24 @@ def main() -> int:
             for call in (delta.get("tool_calls") or [])
         ]
         print({"base_or_oracle_stream": received}, flush=True)
+        nonstream_response = httpx.post(
+            f"http://127.0.0.1:{server.server_port}/v1/chat/completions",
+            json=request_body | {"stream": False},
+            timeout=10,
+        )
+        assert nonstream_response.status_code == 200
+        nonstream_body = nonstream_response.json()
+        print({"base_or_oracle_nonstream": nonstream_body}, flush=True)
+        nonstream_message = nonstream_body["choices"][0]["message"]
+        assert nonstream_message["reasoning"] == REASONING
+        assert nonstream_message["content"] is None
+        assert len(nonstream_message["tool_calls"]) == 1
+        assert nonstream_message["tool_calls"][0]["function"] == {
+            "name": "search_incident_runbooks",
+            "arguments": (
+                '{"service":"checkout-api","symptom":"elevated 502s"}'
+            ),
+        }
         assert reasoning == REASONING
         assert "<mm:think>" not in content and "</mm:think>" not in content
         assert len(tool_calls) == 1
@@ -153,29 +210,16 @@ def main() -> int:
             '{"service":"checkout-api","symptom":"elevated 502s"}'
         )
 
-        nonstream_request = ChatCompletionRequest.model_validate(
-            request_body | {"stream": False}
-        )
-        nonstream_parser = combined_parser(nonstream_request)
-        nonstream_reasoning, nonstream_content, nonstream_tools = (
-            nonstream_parser.parse(
-                "<mm:think>" + REASONING + "</mm:think>" + TOOL_TEXT,
-                nonstream_request,
-                enable_auto_tools=True,
-            )
-        )
-        assert nonstream_reasoning == REASONING
-        assert nonstream_content is None
-        assert len(nonstream_tools or []) == 1
-        assert nonstream_tools[0].name == "search_incident_runbooks"
         print(
             {
                 "http_status": 200,
                 "stream_reasoning": reasoning,
                 "stream_content": content or None,
                 "stream_tool": tool_calls[0]["function"],
-                "nonstream_reasoning": nonstream_reasoning,
-                "nonstream_tool": nonstream_tools[0].name,
+                "nonstream_reasoning": nonstream_message["reasoning"],
+                "nonstream_tool": nonstream_message["tool_calls"][0]["function"][
+                    "name"
+                ],
             },
             flush=True,
         )

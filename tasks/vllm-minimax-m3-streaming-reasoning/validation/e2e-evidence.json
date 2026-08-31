@@ -1,6 +1,6 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-31T09:18:15+08:00",
+  "recorded_at": "2026-08-31T09:22:49+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-223",
     "instance_id": "vllm-project__vllm-45718",
@@ -29,7 +29,7 @@
     "regression_test_sha256": "83ff19282b20a012478ebea30152b3bf3b3096d143ac4578592bd182e06fd53b",
     "junit_checker_sha256": "d120f7e52512a0f7c9fcb4b60d584bef1420b131f36da4375359a7536509b533",
     "real_tokenizer_test_sha256": "a8f40f568b10a04affaa4bf638ec168d7f33481187e5032a31eef3329464e67a",
-    "real_http_mcp_test_sha256": "1baaf61f6e90b05c5c1141040d391668a6edb3cb1ee4fe958a3fa5ee0f3edfd4"
+    "real_http_mcp_test_sha256": "a6c195c84724c808fb158bb20ab28b4f77c386f278ba925cb00ea367c3f745ba"
   },
   "verifier_contract": {
     "asserts_private_implementation_structure": false,
@@ -68,9 +68,9 @@
   ],
   "harbor": {
     "version": "0.22.0",
-    "job_id": "9afb7999-4216-4482-8128-1c9dd75b3e63",
-    "trial_id": "b4b5de74-3076-4262-90af-fd9612f0d396",
-    "input_task_checksum": "39631e20488b080c804977d7dd7c853ba9d3ee5d3056182ebe0377c28e2459be",
+    "job_id": "f7ea6d28-744b-4447-b541-9ed717ffbe1c",
+    "trial_id": "e4253d58-1206-44de-965d-04f0c5830eb5",
+    "input_task_checksum": "6f5d752b14e74129bf84ef25f6b821d238b023384a04f054700f5e6a43bfcd86",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,
@@ -81,7 +81,7 @@
     "integrity_exit_code": 0,
     "e2e_exit_code": 0,
     "http_exit_code": 0,
-    "runtime_seconds": 30,
+    "runtime_seconds": 31,
     "canonical_image_retained_after_run": true
   },
   "provenance_gates": {
