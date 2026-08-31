@@ -1,0 +1,14 @@
+diff --git a/vllm/entrypoints/openai/parser/harmony_utils.py b/vllm/entrypoints/openai/parser/harmony_utils.py
+--- a/vllm/entrypoints/openai/parser/harmony_utils.py
++++ b/vllm/entrypoints/openai/parser/harmony_utils.py
+@@ -55,8 +55,8 @@ def is_function_recipient(
+     if first_segment in BUILTIN_TOOL_TO_MCP_SERVER_LABEL:
+         return False
+     if allowed_function_tool_names is not None:
+-        return recipient in allowed_function_tool_names
+-    return True
++        return recipient == "webSearch" and recipient in allowed_function_tool_names
++    return recipient == "webSearch"
+ 
+ 
+ def extract_function_from_recipient(recipient: str) -> str:

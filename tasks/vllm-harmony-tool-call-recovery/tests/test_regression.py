@@ -1,224 +1,343 @@
+import asyncio
 import json
-from dataclasses import dataclass, field
 
 import pytest
-from openai.types.responses import ResponseFunctionToolCall
-from openai.types.responses.response_output_item import McpCall
-from openai_harmony import (
-    Conversation,
-    HarmonyEncodingName,
-    Message,
-    Role,
-    load_harmony_encoding,
-)
 
-from vllm.entrypoints.openai.chat_completion.stream_harmony import (
-    TokenState,
-    extract_harmony_streaming_delta,
-)
-from vllm.entrypoints.openai.responses.harmony import harmony_to_response_output
-from vllm.tool_parsers.openai_tool_parser import OpenAIToolParser
+import harmony_api_probe as probe
+from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
+from vllm.entrypoints.openai.responses.protocol import ResponsesRequest
 
 
-@dataclass
-class _PreviousMessage:
-    channel: str | None = None
-    recipient: str | None = None
+MODEL = "openai/gpt-oss-120b"
+ARGUMENTS = {"service": "checkout-api", "symptom": "elevated 502s"}
+ARGUMENTS_JSON = json.dumps(ARGUMENTS, separators=(",", ":"))
 
 
-@dataclass
-class _StreamParser:
-    messages: list[_PreviousMessage] = field(default_factory=list)
+def _tool(name):
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": "Search approved operational data.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "service": {"type": "string"},
+                    "symptom": {"type": "string"},
+                },
+                "required": ["service", "symptom"],
+            },
+        },
+    }
 
 
-@pytest.fixture(scope="module")
-def harmony_encoding():
-    return load_harmony_encoding(HarmonyEncodingName.HARMONY_GPT_OSS)
+def _response_tool(name):
+    tool = _tool(name)["function"]
+    return {"type": "function", **tool}
 
 
-@pytest.fixture(scope="module")
-def chat_parser():
-    return OpenAIToolParser(object())
-
-
-def _chat_result(chat_parser, harmony_encoding, recipient, channel="commentary"):
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, '{"query":"weather"}')
-        .with_channel(channel)
-        .with_recipient(recipient)
-        .with_content_type("json")
+def _chat_request(stream, declared_names=("webSearch",)):
+    return ChatCompletionRequest.model_validate(
+        {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Find the checkout incident runbook.",
+                }
+            ],
+            "stream": stream,
+            "tool_choice": "auto",
+            "tools": [_tool(name) for name in declared_names],
+        }
     )
-    token_ids = harmony_encoding.render_conversation_for_completion(
-        Conversation.from_messages(
-            [Message.from_role_and_content(Role.USER, "Use the declared tool."), message]
-        ),
-        Role.ASSISTANT,
+
+
+def _responses_request(stream, declared_names=("webSearch",)):
+    return ResponsesRequest.model_validate(
+        {
+            "model": MODEL,
+            "input": "Find the checkout incident runbook.",
+            "stream": stream,
+            "store": False,
+            "tool_choice": "auto",
+            "tools": [_response_tool(name) for name in declared_names],
+        }
     )
-    return chat_parser.extract_tool_calls("", request=None, token_ids=token_ids)
+
+
+def _configure_output(monkeypatch, recipient, channel):
+    raw = (
+        "<|channel|>analysis<|message|>I should search the runbooks."
+        f"<|end|><|start|>assistant to={recipient}<|channel|>{channel}"
+        f"<|constrain|>json<|message|>{ARGUMENTS_JSON}<|call|>"
+    )
+    monkeypatch.setattr(probe, "ARGUMENTS", ARGUMENTS)
+    monkeypatch.setattr(probe, "ARGUMENTS_JSON", ARGUMENTS_JSON)
+    monkeypatch.setattr(probe, "RAW_HARMONY", raw)
+
+
+def _chat_stream_calls(chunks):
+    calls = {}
+    for chunk in chunks:
+        for call in chunk["choices"][0]["delta"].get("tool_calls") or []:
+            item = calls.setdefault(
+                call["index"], {"id": None, "name": None, "arguments": ""}
+            )
+            if call.get("id"):
+                item["id"] = call["id"]
+            function = call.get("function") or {}
+            if function.get("name"):
+                item["name"] = function["name"]
+            item["arguments"] += function.get("arguments") or ""
+    return [calls[index] for index in sorted(calls)]
+
+
+def _assert_chat_call(result, stream, expected_name):
+    if stream:
+        calls = _chat_stream_calls(result["chunks"])
+    else:
+        calls = result["choices"][0]["message"].get("tool_calls") or []
+        calls = [
+            {
+                "id": call["id"],
+                "name": call["function"]["name"],
+                "arguments": call["function"]["arguments"],
+            }
+            for call in calls
+        ]
+    assert len(calls) == 1
+    assert calls[0]["id"]
+    assert calls[0]["name"] == expected_name
+    assert json.loads(calls[0]["arguments"]) == ARGUMENTS
+
+
+def _responses_completed_output(events):
+    completed = next(event for event in events if event["type"] == "response.completed")
+    return completed["response"]["output"]
+
+
+def _assert_responses_call(result, stream, expected_name):
+    if stream:
+        events = result["events"]
+        added = [
+            event["item"]
+            for event in events
+            if event["type"] == "response.output_item.added"
+            and event["item"]["type"] == "function_call"
+        ]
+        assert len(added) == 1
+        assert added[0]["id"]
+        assert added[0]["call_id"]
+        assert added[0]["name"] == expected_name
+        arguments = "".join(
+            event["delta"]
+            for event in events
+            if event["type"] == "response.function_call_arguments.delta"
+        )
+        assert json.loads(arguments) == ARGUMENTS
+        done = [
+            event
+            for event in events
+            if event["type"] == "response.function_call_arguments.done"
+        ]
+        assert len(done) == 1
+        assert done[0]["name"] == expected_name
+        assert json.loads(done[0]["arguments"]) == ARGUMENTS
+        output = _responses_completed_output(events)
+    else:
+        output = result["output"]
+    calls = [item for item in output if item["type"] == "function_call"]
+    assert len(calls) == 1
+    assert calls[0]["name"] == expected_name
+    assert json.loads(calls[0]["arguments"]) == ARGUMENTS
+    assert not any(item["type"] == "mcp_call" for item in output)
 
 
 @pytest.mark.parametrize(
     "recipient,channel,expected_name",
     [
         ("webSearch", "commentary", "webSearch"),
-        ("webSearch", "analysis", "webSearch"),
-        ("webSearch", "comment", "webSearch"),
-        ("math.sum", "analysis", "math.sum"),
+        ("searchIncidentRunbooks", "analysis", "searchIncidentRunbooks"),
+        ("lookupTicket", "comment", "lookupTicket"),
+        ("ops.search", "analysis", "ops.search"),
         ("functions.webSearch", "commentary", "webSearch"),
+        ("functions.searchIncidentRunbooks", "comment", "searchIncidentRunbooks"),
     ],
-    ids=["bare-commentary", "bare-analysis", "bare-comment", "dotted", "prefixed"],
 )
-def test_chat_nonstream_exposes_function_call(
-    chat_parser,
-    harmony_encoding,
-    recipient,
-    channel,
-    expected_name,
+def test_chat_nonstream_declared_function(
+    monkeypatch, recipient, channel, expected_name
 ):
-    result = _chat_result(chat_parser, harmony_encoding, recipient, channel)
-
-    assert result.tools_called is True
-    assert len(result.tool_calls) == 1
-    assert result.tool_calls[0].function.name == expected_name
-    assert json.loads(result.tool_calls[0].function.arguments) == {"query": "weather"}
-
-
-@pytest.mark.parametrize(
-    "recipient",
-    ["assistant", "python", "container", "browser.search"],
-)
-def test_chat_nonstream_does_not_promote_builtin_or_assistant(
-    chat_parser,
-    harmony_encoding,
-    recipient,
-):
-    result = _chat_result(chat_parser, harmony_encoding, recipient)
-
-    assert result.tools_called is False
-    assert result.tool_calls == []
+    _configure_output(monkeypatch, recipient, channel)
+    declared = recipient.removeprefix("functions.")
+    result = asyncio.run(probe.run_chat(_chat_request(False, (declared,))))
+    _assert_chat_call(result, False, expected_name)
 
 
 @pytest.mark.parametrize(
     "recipient,channel,expected_name",
     [
         ("webSearch", "commentary", "webSearch"),
-        ("webSearch", "analysis", "webSearch"),
-        ("webSearch", "comment", "webSearch"),
+        ("searchIncidentRunbooks", "analysis", "searchIncidentRunbooks"),
+        ("lookupTicket", "comment", "lookupTicket"),
+        ("ops.search", "comment", "ops.search"),
         ("functions.webSearch", "comment", "webSearch"),
     ],
-    ids=["bare-commentary", "bare-analysis", "bare-comment", "prefixed-comment"],
 )
-def test_chat_streaming_exposes_function_call(recipient, channel, expected_name):
-    delta, streamed = extract_harmony_streaming_delta(
-        harmony_parser=_StreamParser(),
-        token_states=[TokenState(channel=channel, recipient=recipient, text="")],
-        prev_recipient=None,
-        include_reasoning=False,
-    )
-
-    assert streamed is True
-    assert delta is not None
-    assert len(delta.tool_calls) == 1
-    assert delta.tool_calls[0].function.name == expected_name
+def test_chat_stream_declared_function(monkeypatch, recipient, channel, expected_name):
+    _configure_output(monkeypatch, recipient, channel)
+    declared = recipient.removeprefix("functions.")
+    result = asyncio.run(probe.run_chat(_chat_request(True, (declared,))))
+    _assert_chat_call(result, True, expected_name)
 
 
-@pytest.mark.parametrize("recipient", ["assistant", "browser.search"])
-def test_chat_streaming_rejects_non_function_recipients(recipient):
-    delta, streamed = extract_harmony_streaming_delta(
-        harmony_parser=_StreamParser(),
-        token_states=[
-            TokenState(channel="commentary", recipient=recipient, text="ignored")
-        ],
-        prev_recipient=None,
-        include_reasoning=False,
-    )
+@pytest.mark.parametrize("recipient", ["assistant", "python", "container", "browser.search"])
+def test_chat_nonstream_preserves_nonfunction(monkeypatch, recipient):
+    _configure_output(monkeypatch, recipient, "commentary")
+    result = asyncio.run(probe.run_chat(_chat_request(False)))
+    calls = result["choices"][0]["message"].get("tool_calls") or []
+    assert calls == []
 
-    assert delta is None
-    assert streamed is False
+
+@pytest.mark.parametrize("recipient", ["assistant", "python", "container", "browser.search"])
+def test_chat_stream_preserves_nonfunction(monkeypatch, recipient):
+    _configure_output(monkeypatch, recipient, "commentary")
+    result = asyncio.run(probe.run_chat(_chat_request(True)))
+    assert _chat_stream_calls(result["chunks"]) == []
 
 
 @pytest.mark.parametrize(
     "recipient,channel",
     [
         ("webSearch", "commentary"),
-        ("webSearch", "analysis"),
-        ("webSearch", "comment"),
-        ("math.sum", "comment"),
+        ("searchIncidentRunbooks", "analysis"),
+        ("lookupTicket", "comment"),
+        ("ops.search", "comment"),
+        ("inventory.lookup", "analysis"),
     ],
-    ids=["commentary", "analysis", "comment", "dotted-comment"],
 )
-def test_responses_api_routes_declared_bare_function(recipient, channel):
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, '{"query":"weather"}')
-        .with_channel(channel)
-        .with_recipient(recipient)
-    )
+def test_responses_nonstream_declared_function(monkeypatch, recipient, channel):
+    _configure_output(monkeypatch, recipient, channel)
+    request = _responses_request(False, (recipient,))
+    result = asyncio.run(probe.run_responses(request))
+    _assert_responses_call(result, False, recipient)
 
-    items = harmony_to_response_output(message, frozenset({recipient}))
 
+@pytest.mark.parametrize(
+    "recipient,channel",
+    [
+        ("webSearch", "commentary"),
+        ("searchIncidentRunbooks", "analysis"),
+        ("lookupTicket", "comment"),
+        ("ops.search", "comment"),
+    ],
+)
+def test_responses_stream_declared_function(monkeypatch, recipient, channel):
+    _configure_output(monkeypatch, recipient, channel)
+    request = _responses_request(True, (recipient,))
+    result = asyncio.run(probe.run_responses(request))
+    _assert_responses_call(result, True, recipient)
+
+
+@pytest.mark.parametrize(
+    "recipient,server_label,name",
+    [
+        ("otherServer.search", "otherServer", "search"),
+        ("filesystem", "filesystem", "filesystem"),
+    ],
+)
+def test_responses_nonstream_preserves_mcp(
+    monkeypatch, recipient, server_label, name
+):
+    _configure_output(monkeypatch, recipient, "commentary")
+    result = asyncio.run(probe.run_responses(_responses_request(False)))
+    items = [item for item in result["output"] if item["type"] == "mcp_call"]
     assert len(items) == 1
-    assert isinstance(items[0], ResponseFunctionToolCall)
-    assert items[0].name == recipient
+    assert items[0]["server_label"] == server_label
+    assert items[0]["name"] == name
+    assert json.loads(items[0]["arguments"]) == ARGUMENTS
 
 
-def test_responses_api_keeps_unknown_bare_recipient_as_mcp():
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, "{}")
-        .with_channel("commentary")
-        .with_recipient("otherServer.search")
+@pytest.mark.parametrize(
+    "recipient,expected_name",
+    [("otherServer.search", "otherServer.search"), ("filesystem", "filesystem")],
+)
+def test_responses_stream_preserves_mcp(monkeypatch, recipient, expected_name):
+    _configure_output(monkeypatch, recipient, "commentary")
+    result = asyncio.run(probe.run_responses(_responses_request(True)))
+    events = result["events"]
+    added = [
+        event["item"]
+        for event in events
+        if event["type"] == "response.output_item.added"
+        and event["item"]["type"] == "mcp_call"
+    ]
+    assert len(added) == 1
+    assert added[0]["name"] == expected_name
+    arguments = "".join(
+        event["delta"]
+        for event in events
+        if event["type"] == "response.mcp_call_arguments.delta"
+    )
+    assert json.loads(arguments) == ARGUMENTS
+    assert not any(
+        event["type"] == "response.function_call_arguments.delta"
+        for event in events
     )
 
-    items = harmony_to_response_output(message, frozenset({"webSearch"}))
 
-    assert len(items) == 1
-    assert isinstance(items[0], McpCall)
-
-
-def test_responses_api_empty_tool_list_does_not_invent_function():
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, "{}")
-        .with_channel("commentary")
-        .with_recipient("webSearch")
+@pytest.mark.parametrize("stream", [False, True], ids=["nonstream", "stream"])
+def test_responses_empty_tools_does_not_invent_bare_function(monkeypatch, stream):
+    _configure_output(monkeypatch, "webSearch", "commentary")
+    result = asyncio.run(probe.run_responses(_responses_request(stream, ())))
+    output = (
+        _responses_completed_output(result["events"])
+        if stream
+        else result["output"]
     )
-
-    items = harmony_to_response_output(message, frozenset())
-
-    assert len(items) == 1
-    assert isinstance(items[0], McpCall)
+    assert not any(item["type"] == "function_call" for item in output)
+    assert any(item["type"] == "mcp_call" for item in output)
 
 
-def test_responses_api_prefixed_name_remains_function_with_empty_tool_list():
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, "{}")
-        .with_channel("analysis")
-        .with_recipient("functions.webSearch")
+@pytest.mark.parametrize("stream", [False, True], ids=["nonstream", "stream"])
+def test_responses_prefixed_function_preserves_legacy_behavior(monkeypatch, stream):
+    _configure_output(monkeypatch, "functions.webSearch", "analysis")
+    result = asyncio.run(probe.run_responses(_responses_request(stream, ())))
+    _assert_responses_call(result, stream, "webSearch")
+
+
+@pytest.mark.parametrize(
+    "recipient,expected_type",
+    [
+        ("python", "reasoning"),
+        ("container", "reasoning"),
+        ("browser.search", "web_search_call"),
+    ],
+)
+def test_responses_nonstream_preserves_builtin(
+    monkeypatch, recipient, expected_type
+):
+    _configure_output(monkeypatch, recipient, "commentary")
+    result = asyncio.run(
+        probe.run_responses(_responses_request(False, (recipient,)))
     )
-
-    items = harmony_to_response_output(message, frozenset())
-
-    assert len(items) == 1
-    assert isinstance(items[0], ResponseFunctionToolCall)
-    assert items[0].name == "webSearch"
+    assert any(item["type"] == expected_type for item in result["output"])
+    assert not any(item["type"] == "function_call" for item in result["output"])
 
 
-@pytest.mark.parametrize("recipient", ["python", "container", "browser.search"])
-def test_responses_api_never_promotes_builtin_recipients(recipient):
-    message = (
-        Message.from_role_and_content(Role.ASSISTANT, "{}")
-        .with_channel("comment")
-        .with_recipient(recipient)
+@pytest.mark.parametrize(
+    "recipient,expected_type",
+    [("python", "code_interpreter_call"), ("browser.search", "mcp_call")],
+)
+def test_responses_stream_preserves_builtin(monkeypatch, recipient, expected_type):
+    _configure_output(monkeypatch, recipient, "comment")
+    result = asyncio.run(
+        probe.run_responses(_responses_request(True, (recipient,)))
     )
-
-    items = harmony_to_response_output(message, frozenset({recipient}))
-
-    assert not any(isinstance(item, ResponseFunctionToolCall) for item in items)
-
-
-def test_responses_api_ignores_non_assistant_recipient():
-    message = (
-        Message.from_role_and_content(Role.USER, "{}")
-        .with_channel("commentary")
-        .with_recipient("functions.webSearch")
-    )
-
-    assert harmony_to_response_output(message, frozenset({"webSearch"})) == []
+    added_types = [
+        event["item"]["type"]
+        for event in result["events"]
+        if event["type"] == "response.output_item.added"
+    ]
+    assert expected_type in added_types
+    assert "function_call" not in added_types

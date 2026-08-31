@@ -1,6 +1,6 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-31T01:57:19+08:00",
+  "recorded_at": "2026-08-31T14:17:03+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-154",
     "instance_id": "vllm-project__vllm-42454",
@@ -22,50 +22,66 @@
     }
   },
   "artifacts": {
-    "instruction_sha256": "37af9a65c8d91d57b7d838c393b87fd3d887b76e7d05cd27e6ea6ad9c54361be",
+    "instruction_sha256": "51f6e0cd04c92970266aab0cdfc9634607257e3dd38cfbe72ed03df9a2e7b0ba",
     "oracle_patch_sha256": "da0f51dcde220f74417f03c167af172167ce01af17d1308d8a987383345e231c",
-    "test_script_sha256": "624e8e79ba5fafa928c7a9a90a25e4db6ba5423fecb618d10b3a53954ceca9ba",
-    "regression_test_sha256": "d03c2d95a59a3c2200e70b264f810aedbc87f74e42206658e45e5d6269aa20be",
-    "junit_checker_sha256": "3ebf5642bb725b68366b9e852ddeb7b4fdb7e2065be0d4413a429fefe64f641d",
-    "real_pipeline_test_sha256": "d1b76febdc988613107ad110864fab29bf34d25cb0026eb13ac003feeddcab6b"
+    "test_script_sha256": "9a0d7e35e4fee5462e3140d8b5daab791a6b7e7a6aea494130f14a091eac1ee0",
+    "regression_test_sha256": "4928a9f3fd8867ec79c85ab8f5edd083ebaad5878ffb845758c21c1978a77db6",
+    "junit_checker_sha256": "5d1f450bb48b6cd4d53eb33f57d7fe3c279c7f57ec642b7dc45313096a80e7aa",
+    "api_probe_sha256": "3c162299f22681af113b3da468063c0b51731bdd4e6ad7903ef2546fa7c1c614",
+    "real_pipeline_test_sha256": "4285696017cf34f087a8523b555e9b7fa964d8cd95cc3306aab08c28ac2bd82b",
+    "real_http_test_sha256": "00f13a4f12f732cc7bc24080ef05af3566c5752588fce2981794175416849892",
+    "base_service_log_sha256": "74edea5f8f183a608132bd75e14e193ebf584f4723b7a77855b800f05a65217d",
+    "reproduction_requests_sha256": "a0f7ffaf7f02f02584930ae4f2a5feb630daedc3265c7f03639770889ee1aecc"
   },
   "verifier_contract": {
     "asserts_private_implementation_structure": false,
-    "behavior_cases": 26,
+    "behavior_cases": 41,
     "behaviors": [
-      "bare, dotted, and prefixed declared functions survive Chat non-streaming parsing",
-      "bare and prefixed functions survive Chat streaming on standard and non-standard channels",
-      "Responses routes declared bare names as functions and unknown names as MCP",
-      "empty tool lists do not invent function calls",
-      "assistant, built-in, dotted built-in, and non-assistant recipients are not promoted"
+      "Chat non-streaming and streaming requests expose bare, dotted, and prefixed declared functions with intact names, arguments, and IDs",
+      "Responses non-streaming and streaming requests expose declared functions with intact output items and event sequences",
+      "unknown MCP recipients retain MCP names, arguments, and streaming events",
+      "empty Responses tool lists do not invent bare functions while existing prefixed calls remain compatible",
+      "python, container, and browser recipients preserve their existing Chat and Responses behavior"
     ],
-    "collection_integrity": "JUnit must contain exactly 26 unique, passing, non-skipped cases"
+    "collection_integrity": "JUnit must contain exactly 41 unique, passing, non-skipped cases",
+    "imports_oracle_helpers": false,
+    "calls_oracle_modified_helper_signatures": false,
+    "asserts_private_fields": false,
+    "authoritative_boundary": "OpenAI request models and serialized Chat/Responses outputs"
   },
   "real_lifecycle_boundary": {
-    "kind": "real encoded Harmony output through Chat and Responses parsers",
-    "entrypoint": "o200k Harmony token stream",
+    "kind": "deterministic encoded Harmony output through production Chat and Responses serving generators plus localhost HTTP serialization",
+    "entrypoint": "OpenAI-shaped Chat and Responses requests with an o200k Harmony model-output token stream",
     "channels": ["analysis", "comment"],
     "uses_real_openai_harmony_encoding": true,
-    "uses_real_chat_nonstream_parser": true,
-    "uses_real_chat_stream_parser": true,
-    "uses_real_responses_conversion": true,
+    "uses_real_chat_nonstream_serving_generator": true,
+    "uses_real_chat_stream_serving_generator": true,
+    "uses_real_responses_nonstream_serving_generator": true,
+    "uses_real_responses_stream_serving_generator": true,
+    "uses_localhost_http_protocol_boundary": true,
+    "uses_official_vllm_http_router": false,
+    "uses_deterministic_engine_output": true,
     "model_runner_executed": false,
-    "limitation": "The private gpt-oss prompt and model weights are unavailable; the verifier starts from deterministic raw Harmony output at the public parser boundary."
+    "hidden_from_agent": true,
+    "tests_mounted_only_during_verification": true,
+    "limitation": "The private gpt-oss prompt and model weights are unavailable. The verifier replaces only stochastic model generation with a deterministic raw Harmony token stream, then exercises the production serving generators and a local HTTP serialization boundary."
   },
   "repeated_runs": [
     {
       "case": "base",
       "rounds": 5,
       "rewards": [0, 0, 0, 0, 0],
-      "behavior_tests_each_round": {"passed": 7, "failed": 19},
-      "e2e_exit_codes": [1, 1, 1, 1, 1]
+      "behavior_tests_each_round": {"passed": 18, "failed": 23},
+      "pipeline_exit_codes": [1, 1, 1, 1, 1],
+      "http_exit_codes": [1, 1, 1, 1, 1]
     },
     {
       "case": "oracle",
       "rounds": 5,
       "rewards": [1, 1, 1, 1, 1],
-      "behavior_tests_each_round": {"passed": 26, "failed": 0},
-      "e2e_exit_codes": [0, 0, 0, 0, 0]
+      "behavior_tests_each_round": {"passed": 41, "failed": 0},
+      "pipeline_exit_codes": [0, 0, 0, 0, 0],
+      "http_exit_codes": [0, 0, 0, 0, 0]
     }
   ],
   "adversarial_runs": [
@@ -73,32 +89,52 @@
       "case": "chat_paths_only",
       "patch_sha256": "98d26ecaa11f417b6fd31b15e08b357e74cbb4c785c4a97888ab28ecccc4ab0b",
       "reward": 0,
-      "tests_passed": 15,
-      "tests_failed": 11,
-      "e2e_exit_code": 1
+      "tests_passed": 28,
+      "tests_failed": 13,
+      "pipeline_exit_code": 1,
+      "http_exit_code": 1
     },
     {
       "case": "responses_paths_only",
       "patch_sha256": "e50a5ec03b6bed4c8e86464892b4817d3902048290f789963f2366cd48d03577",
       "reward": 0,
-      "tests_passed": 18,
-      "tests_failed": 8,
-      "e2e_exit_code": 1
+      "tests_passed": 32,
+      "tests_failed": 9,
+      "pipeline_exit_code": 1,
+      "http_exit_code": 1
     },
     {
       "case": "empty_tool_list_uses_heuristic_fallback",
       "patch_sha256": "95a7ae09b6956c06dcee898f755bae8c162bdee8f340af2591495e23b604d61a",
       "reward": 0,
-      "tests_passed": 25,
-      "tests_failed": 1,
-      "e2e_exit_code": 0
+      "tests_passed": 39,
+      "tests_failed": 2,
+      "pipeline_exit_code": 0,
+      "http_exit_code": 0
+    },
+    {
+      "case": "hardcoded_websearch_only",
+      "patch_sha256": "48f253e3853cd3c28c02cc622f65a8b473434499b48271ba4b541fe00a78b102",
+      "reward": 0,
+      "tests_passed": 28,
+      "tests_failed": 13,
+      "pipeline_exit_code": 1,
+      "http_exit_code": 1
     }
   ],
+  "conforming_alternative_run": {
+    "change": "renamed every Oracle-added helper and internal variable before verification",
+    "reward": 1,
+    "tests_passed": 41,
+    "tests_failed": 0,
+    "pipeline_exit_code": 0,
+    "http_exit_code": 0
+  },
   "harbor": {
     "version": "0.22.0",
-    "job_id": "f8188ac5-39d3-422e-846e-797ed67f282e",
-    "trial_id": "5bedea23-8b57-4e06-b476-49dd8b9c1150",
-    "input_task_checksum": "9f6873f03c8020663989bac658282d37e3365b36a04aa1121597030ad4bb4ed2",
+    "job_id": "2a101b89-af7b-468b-8bf9-64becbd26895",
+    "trial_id": "1e331e9f-1d78-42dd-9088-53d453768909",
+    "input_task_checksum": "0b7af5d39ddd73d474669879db219f8402e0f0db2480528f9b71bcbac66081a2",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,
@@ -107,8 +143,9 @@
     "command_exit_code": 0,
     "pytest_exit_code": 0,
     "integrity_exit_code": 0,
-    "e2e_exit_code": 0,
-    "runtime_seconds": 26,
+    "pipeline_exit_code": 0,
+    "http_exit_code": 0,
+    "runtime_seconds": 32,
     "canonical_image_retained_after_run": true
   },
   "provenance_gates": {

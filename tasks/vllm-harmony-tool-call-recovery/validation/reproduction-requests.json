@@ -1,0 +1,149 @@
+{
+  "chat_completions_request": {
+    "model": "openai/gpt-oss-120b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are the incident-response assistant for a large online retailer. Use the webSearch function to inspect runbooks, deployment notes, and prior incident reports before recommending changes. Preserve the incident timeline, distinguish observations from hypotheses, and do not claim that a mitigation worked until the user confirms it."
+      },
+      {
+        "role": "user",
+        "content": "At 09:17 UTC checkout-api started returning intermittent 502s in eu-west. Error rate is 8%, p95 latency rose from 420 ms to 2.8 s, and the last application deploy completed at 08:55 UTC."
+      },
+      {
+        "role": "assistant",
+        "content": "I will check the checkout incident runbook and recent deployment notes before suggesting a rollback.",
+        "tool_calls": [
+          {
+            "id": "call_runbook",
+            "type": "function",
+            "function": {
+              "name": "webSearch",
+              "arguments": "{\"query\":\"checkout-api 502 incident runbook eu-west\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_runbook",
+        "content": "Runbook: confirm upstream payment and inventory health, compare failures by availability zone, inspect connection-pool saturation, and rollback only if the error increase correlates with the release."
+      },
+      {
+        "role": "assistant",
+        "content": "The runbook says to separate upstream failures from release regressions. Please share availability-zone and dependency breakdowns."
+      },
+      {
+        "role": "user",
+        "content": "eu-west-1a is at 1.2% errors, 1b is at 14.7%, and 1c is at 1.5%. payment-authorize is healthy. inventory-reserve latency in 1b is 4.1 s. Database CPU and checkout connection pools look normal."
+      },
+      {
+        "role": "assistant",
+        "content": "I will look for recent inventory-reserve incidents and zone-specific mitigations.",
+        "tool_calls": [
+          {
+            "id": "call_inventory",
+            "type": "function",
+            "function": {
+              "name": "webSearch",
+              "arguments": "{\"query\":\"inventory-reserve eu-west-1b latency incident mitigation\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inventory",
+        "content": "Incident INC-4821: a stale service-discovery endpoint in one zone caused inventory-reserve timeouts. Mitigation was to drain affected endpoints and refresh discovery; application rollback did not help."
+      },
+      {
+        "role": "assistant",
+        "content": "The symptoms resemble INC-4821. Check whether the affected checkout pods resolve inventory-reserve to endpoints that should have been drained."
+      },
+      {
+        "role": "user",
+        "content": "Three checkout pods in 1b still resolve two inventory endpoints removed from the registry at 08:40 UTC. Restarting one canary pod refreshed discovery and its errors stopped, but I have not touched the remaining pods."
+      },
+      {
+        "role": "assistant",
+        "content": "Before recommending a wider restart, I will check the current service-discovery recovery procedure and whether it has any checkout-specific cautions.",
+        "tool_calls": [
+          {
+            "id": "call_discovery",
+            "type": "function",
+            "function": {
+              "name": "webSearch",
+              "arguments": "{\"query\":\"service discovery stale endpoint recovery checkout canary restart procedure\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_discovery",
+        "content": "Procedure SD-17: refresh discovery on one canary, verify five minutes of dependency success, then roll one zone at a time. Do not restart multiple zones together. Watch cart conversion, inventory reservation success, and retry volume."
+      },
+      {
+        "role": "assistant",
+        "content": "The canary result and SD-17 both support a one-zone rolling refresh, but we still need the five-minute observation window."
+      },
+      {
+        "role": "user",
+        "content": "The canary has now been healthy for six minutes. Inventory reservation success is 99.96%, checkout errors on that pod are zero, and retry volume is back to baseline. Search once more for any newer checkout guidance before I approve the 1b rollout."
+      }
+    ],
+    "stream": false,
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "max_tokens": 512,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "webSearch",
+          "description": "Search approved internal runbooks, deployment notes, and incident reports.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "responses_request": {
+    "model": "openai/gpt-oss-120b",
+    "input": "Review the checkout-api incident context: zone 1b retained stale inventory-reserve endpoints, a canary discovery refresh has been healthy for six minutes, and the operator wants the newest approved guidance before rolling through the zone. Search current runbooks and incident reports before answering.",
+    "stream": false,
+    "store": false,
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "max_output_tokens": 512,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "type": "function",
+        "name": "webSearch",
+        "description": "Search approved internal runbooks, deployment notes, and incident reports.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    ]
+  }
+}
