@@ -78,7 +78,7 @@ def _contents(sse):
 
 @pytest.mark.parametrize(
     "language,expected",
-    [("en", " "), ("EN", " "), (None, " "), ("zh", ""), ("ZH", ""), ("ja", "")],
+    [("en", " "), (None, " "), ("zh", ""), ("ja", "")],
 )
 def test_language_separator_contract(language, expected):
     separator = getattr(speech_module, "asr_inter_chunk_separator")

@@ -1,6 +1,6 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-31T02:38:57+08:00",
+  "recorded_at": "2026-08-31T09:41:32+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-115",
     "instance_id": "vllm-project__vllm-39116",
@@ -18,15 +18,15 @@
     "cutoff_overrides": ["torch", "torchaudio", "torchvision"]
   },
   "artifacts": {
-    "instruction_sha256": "454453ace29f39071e2d6be42cc8a8b16196659725e0e1625d19391b2081b195",
+    "instruction_sha256": "ebdcdd226cac3dba03c0a7b3813db33b16e59db32c0935a716a1ff6c477f3359",
     "oracle_patch_sha256": "ce256d7f5a735ab639d0585f753abd895909696253177ca43fb375ab9666755e",
     "test_script_sha256": "827782fa2889143e098b2a676b53ab8208dc13e0b39b2051d4e0514ecd170df8",
-    "regression_test_sha256": "e7c916da2d47fb6f8bd1ea4d0c1b86d9613792349a2b3e047e34c31460d1c681",
-    "junit_checker_sha256": "3a5792af41b7759883fd9697702dc3d11a0d42133d7f7dc8528a4e3066f7eb63",
+    "regression_test_sha256": "8701023b9f6361f11566e077fc7eb4c8c101a940c41f3250289f65e87ed872bf",
+    "junit_checker_sha256": "f36d90ed09c6f061c85ec846cd61118b8d30a0f1b88f5f8023419d2ee60f1339",
     "real_pipeline_test_sha256": "3474966a6eca14e99d07ab85175cfe3db46b79d392f7702b820cb46092d7c2de"
   },
   "verifier_contract": {
-    "behavior_cases": 17,
+    "behavior_cases": 15,
     "behaviors": [
       "English and unspecified language chunks receive a separator",
       "Chinese and Japanese chunks remain unspaced",
@@ -35,7 +35,7 @@
       "non-streaming public transcription joins by language",
       "single-chunk streams have no leading separator"
     ],
-    "collection_integrity": "JUnit must contain exactly 17 unique, passing, non-skipped cases"
+    "collection_integrity": "JUnit must contain exactly 15 unique, passing, non-skipped cases"
   },
   "real_lifecycle_boundary": {
     "kind": "real public transcription and translation streaming generators",
@@ -45,19 +45,19 @@
     "limitation": "Model decoding is outside the merge defect; deterministic async RequestOutput streams drive the actual SSE response generators without model weights."
   },
   "repeated_runs": [
-    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 1, "failed": 16}, "e2e_exit_codes": [1, 1, 1, 1, 1]},
-    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 17, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
+    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 1, "failed": 14}, "e2e_exit_codes": [1, 1, 1, 1, 1]},
+    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 15, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
   ],
   "adversarial_runs": [
-    {"case": "always_insert_space", "patch_sha256": "0a9193ad50101381579214df50ee2dfe26779446f0d86be954df3fe5ab64fe52", "reward": 0, "tests_passed": 10, "tests_failed": 7, "e2e_exit_code": 1},
-    {"case": "nonstreaming_still_concatenates", "patch_sha256": "322ead3a307091c94bfb5d398ec181e0fe6e86b922db1b0cfb2f06a5c1983874", "reward": 0, "tests_passed": 16, "tests_failed": 1, "e2e_exit_code": 0},
-    {"case": "stream_adds_leading_separator", "patch_sha256": "638c233264192914b4fdf5bec1b4999d69e5d3796afde6406c3b341ad27cbe80", "reward": 0, "tests_passed": 11, "tests_failed": 6, "e2e_exit_code": 1}
+    {"case": "always_insert_space", "patch_sha256": "c97f2cdfba45560ae87980ccb332f503cf3bb815a5170819ac6cb7529aeef17d", "reward": 0, "tests_passed": 9, "tests_failed": 6, "e2e_exit_code": 1},
+    {"case": "nonstreaming_still_concatenates", "patch_sha256": "15d74e4a0f9f431538a1c9211b87d868b2b1ee843687b1001b7fa67db6f8f1df", "reward": 0, "tests_passed": 14, "tests_failed": 1, "e2e_exit_code": 0},
+    {"case": "stream_adds_leading_separator", "patch_sha256": "ad6435cff37a9d1824fc2dfba18f504b3b5570edaab1f31983adc67c28fae18a", "reward": 0, "tests_passed": 9, "tests_failed": 6, "e2e_exit_code": 1}
   ],
   "harbor": {
     "version": "0.22.0",
-    "job_id": "e8381cbf-b641-442b-82c9-f00c7c9ce090",
-    "trial_id": "6fabf189-06d7-47ae-8d58-7d80d9db7176",
-    "input_task_checksum": "8389035d07888570ebf8054c391f31cf37e566b5e054ca2486dd4060233f071a",
+    "job_id": "dfbebc5a-b80f-4d42-a6c4-258cc9671df0",
+    "trial_id": "4fa7e289-127c-4e2b-becd-b1bca0c35c35",
+    "input_task_checksum": "cf738bb1039cd52d3bd9f4b918d7029f97feffaaedddd9d47af59a8afb3fa520",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,
@@ -67,7 +67,7 @@
     "pytest_exit_code": 0,
     "integrity_exit_code": 0,
     "e2e_exit_code": 0,
-    "runtime_seconds": 28,
+    "runtime_seconds": 27,
     "canonical_image_retained_after_run": true
   },
   "provenance_gates": {
