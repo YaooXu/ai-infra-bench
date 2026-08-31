@@ -1,6 +1,6 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-31T09:14:08+08:00",
+  "recorded_at": "2026-08-31T09:18:15+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-223",
     "instance_id": "vllm-project__vllm-45718",
@@ -23,7 +23,7 @@
     }
   },
   "artifacts": {
-    "instruction_sha256": "81d4583cbf5fbaedede82432c10a3d0e7254285404a0e813618734b38aaa67a4",
+    "instruction_sha256": "c7555a03a7e152ea86945249c5471040702ea53e822a1b2e68e8a950130de1dc",
     "oracle_patch_sha256": "d292b3b7636132a78428c6c5c9e85b4004f4944e6a5d1f7eabdcb88ae9059033",
     "test_script_sha256": "36b2bd098caa09b25f1b1646a9a6941adab9d98752c473dbbe08347f165c4fc7",
     "regression_test_sha256": "83ff19282b20a012478ebea30152b3bf3b3096d143ac4578592bd182e06fd53b",
@@ -68,9 +68,9 @@
   ],
   "harbor": {
     "version": "0.22.0",
-    "job_id": "681ba98d-1776-4e60-acb9-97bf08d8b5e0",
-    "trial_id": "ccd1d368-ea37-40d3-9917-01900e086644",
-    "input_task_checksum": "a99f2dead4c397f58ccdc626232d234b659b30f9bf669ab9635554b56aa47c99",
+    "job_id": "9afb7999-4216-4482-8128-1c9dd75b3e63",
+    "trial_id": "b4b5de74-3076-4262-90af-fd9612f0d396",
+    "input_task_checksum": "39631e20488b080c804977d7dd7c853ba9d3ee5d3056182ebe0377c28e2459be",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,

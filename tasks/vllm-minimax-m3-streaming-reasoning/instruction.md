@@ -39,4 +39,4 @@ data: {"choices":[{"delta":{"reasoning":null,"content":"</mm:think>"}}]}
 data: {"choices":[{"delta":{"reasoning":null,"content":null,"tool_calls":[{"type":"function","function":{"name":"search_incident_runbooks","arguments":"{\"service\":\"checkout-api\",\"symptom\":\"elevated 502s\"}"}}]}}]}
 ```
 
-When I send the same request with `"stream":false`, the response is fine: the thinking text is in the reasoning field, the `<mm:think>` markers are hidden, and the same structured tool call is returned. Could you investigate why only the streaming response puts the thinking section in content and fix it without changing the non-streaming result or breaking tool calls?
+The thinking content is showing up in the content field. But when I send the same request with `"stream":false`, the thinking text is in the reasoning field, the `<mm:think>` markers are hidden, and the same structured tool call is returned. Why does only the streaming response put the thinking section in content? This is wrong. Fix it without changing the non-streaming result or breaking tool calls.
