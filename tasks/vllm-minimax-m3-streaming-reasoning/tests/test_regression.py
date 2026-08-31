@@ -4,13 +4,20 @@ from collections.abc import Sequence
 import pytest
 
 from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
+from vllm.entrypoints.openai.chat_completion.protocol import (
+    ChatCompletionToolsParam,
+    FunctionDefinition,
+)
+from vllm.parser.abstract_parser import DelegatingParser, StreamState
 from vllm.reasoning.minimax_m3_reasoning_parser import MiniMaxM3ReasoningParser
+from vllm.tool_parsers.minimax_m3_tool_parser import MinimaxM3ToolParser
 
 
 class MiniMaxTokenizer:
     special_tokens = ("<mm:think>", "</mm:think>")
 
     def __init__(self):
+        self.model_tokenizer = self
         self._token_to_id = {}
         self._id_to_token = {}
         for token in self.special_tokens:
@@ -214,3 +221,80 @@ def test_token_helpers_recognize_split_marker_sequences():
     assert tokenizer.decode(parser.extract_content_ids(ids)) == "def"
     assert parser.extract_content_ids(open_ids) == []
     assert parser.count_reasoning_tokens(ids) == len(tokenizer.encode("abc"))
+
+
+def test_streamed_mcp_runbook_request_preserves_structured_tool_call():
+    tokenizer = RuntimeSplitTokenizer()
+    tools = [
+        ChatCompletionToolsParam(
+            function=FunctionDefinition(
+                name="search_incident_runbooks",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "service": {"type": "string"},
+                        "symptom": {"type": "string"},
+                    },
+                    "required": ["service", "symptom"],
+                },
+            )
+        )
+    ]
+    request = ChatCompletionRequest(
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "Checkout API is returning elevated 502s. Search the current "
+                    "incident runbooks for mitigation steps before answering."
+                ),
+            }
+        ],
+        model="MiniMaxAI/MiniMax-M3-MXFP8",
+        stream=True,
+        tools=tools,
+        tool_choice="auto",
+    )
+    parser = DelegatingParser(tokenizer)
+    parser._reasoning_parser = MiniMaxM3ReasoningParser(tokenizer)
+    parser._tool_parser = MinimaxM3ToolParser(tokenizer, tools=tools)
+    parser._engine_based = False
+    parser._stream_state = StreamState(engine_based=False)
+    ns = "]<]minimax[>["
+    tool_text = (
+        f"{ns}<tool_call>\n"
+        f'{ns}<invoke name="search_incident_runbooks">'
+        f"{ns}<service>checkout-api{ns}</service>"
+        f"{ns}<symptom>elevated 502s{ns}</symptom>"
+        f"{ns}</invoke>\n"
+        f"{ns}</tool_call>"
+    )
+    chunks = [
+        "<mm:think>",
+        "I should search the current checkout incident runbook first.",
+        "</mm:think>",
+        tool_text,
+    ]
+    deltas = []
+    for index, chunk in enumerate(chunks):
+        delta = parser.parse_delta(
+            chunk,
+            tokenizer.encode_runtime(chunk),
+            request,
+            finished=index == len(chunks) - 1,
+        )
+        if delta is not None:
+            deltas.append(delta)
+
+    assert "".join(delta.reasoning or "" for delta in deltas) == (
+        "I should search the current checkout incident runbook first."
+    )
+    visible_content = "".join(delta.content or "" for delta in deltas)
+    assert "<mm:think>" not in visible_content
+    assert "</mm:think>" not in visible_content
+    tool_calls = [call for delta in deltas for call in delta.tool_calls or []]
+    assert len(tool_calls) == 1
+    assert tool_calls[0].function.name == "search_incident_runbooks"
+    assert tool_calls[0].function.arguments == (
+        '{"service":"checkout-api","symptom":"elevated 502s"}'
+    )

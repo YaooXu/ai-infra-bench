@@ -1,5 +1,42 @@
-We serve `MiniMaxAI/MiniMax-M3-MXFP8` through the OpenAI-compatible Chat Completions API with both `--reasoning-parser minimax_m3` and `--tool-call-parser minimax_m3`. Non-streaming responses separate reasoning and final content correctly, but streaming responses never populate `delta.reasoning`.
+I’m using `MiniMaxAI/MiniMax-M3-MXFP8` behind vLLM’s OpenAI chat completions API. Our incident-response agent exposes an internal MCP runbook search as a function tool, and I sent this request:
 
-The stream instead returns complete MiniMax markers and the thinking text through `delta.content`: first `<mm:think>`, then the reasoning text, then `</mm:think>`, followed by the final answer. Each marker arrives wholly inside one delta rather than being split across network chunks. The real tokenizer contains vocabulary entries for both markers, and changing the chat template or forcing a server-wide thinking mode only works around the problem.
+```json
+{
+  "model": "MiniMaxAI/MiniMax-M3-MXFP8",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Checkout API is returning elevated 502s. Search the current incident runbooks for mitigation steps before answering."
+    }
+  ],
+  "stream": true,
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "search_incident_runbooks",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "service": {"type": "string"},
+            "symptom": {"type": "string"}
+          },
+          "required": ["service", "symptom"]
+        }
+      }
+    }
+  ]
+}
+```
 
-Investigate and fix the streaming parser so marker text is consumed, reasoning is emitted only as reasoning, final text remains content, and tool parsing can begin after reasoning ends. Preserve correct non-streaming behavior and handle marker text whether the tokenizer emits it as one token or as a sequence of ordinary tokens.
+I notice that the beginning of the stream looks very strange:
+
+```text
+data: {"choices":[{"delta":{"reasoning":null,"content":"<mm:think>"}}]}
+data: {"choices":[{"delta":{"reasoning":null,"content":"I should search the current checkout incident runbook first."}}]}
+data: {"choices":[{"delta":{"reasoning":null,"content":"</mm:think>"}}]}
+data: {"choices":[{"delta":{"reasoning":null,"content":null,"tool_calls":[{"type":"function","function":{"name":"search_incident_runbooks","arguments":"{\"service\":\"checkout-api\",\"symptom\":\"elevated 502s\"}"}}]}}]}
+```
+
+When I send the same request with `"stream":false`, the response is fine: the thinking text is in the reasoning field, the `<mm:think>` markers are hidden, and the same structured tool call is returned. Could you investigate why only the streaming response puts the thinking section in content and fix it without changing the non-streaming result or breaking tool calls?

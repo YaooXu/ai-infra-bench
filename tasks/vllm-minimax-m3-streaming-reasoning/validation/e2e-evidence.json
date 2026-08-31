@@ -1,6 +1,6 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-08-31T02:14:31+08:00",
+  "recorded_at": "2026-08-31T09:14:08+08:00",
   "source": {
     "candidate_id": "vllm-cpu-300-223",
     "instance_id": "vllm-project__vllm-45718",
@@ -23,48 +23,54 @@
     }
   },
   "artifacts": {
-    "instruction_sha256": "1b3811e802d2a7f6249fd66d674a7b5cd48bcf4b8ba18ae231f363d90f5094d4",
+    "instruction_sha256": "81d4583cbf5fbaedede82432c10a3d0e7254285404a0e813618734b38aaa67a4",
     "oracle_patch_sha256": "d292b3b7636132a78428c6c5c9e85b4004f4944e6a5d1f7eabdcb88ae9059033",
-    "test_script_sha256": "1d0df16967214af8d8e114fca7d06ff529e67228c7facd43f1bcf3f60cfdb2d6",
-    "regression_test_sha256": "b5a72b2f87f31cf72667ee9bd3f593a3f59af0f3b42630059d322ba8b7a6ec9a",
-    "junit_checker_sha256": "e65e525b82c1e7932cc0d89c0fdf586b9e1a45b40aee7905926e1a330e7869ce",
-    "real_tokenizer_test_sha256": "a8f40f568b10a04affaa4bf638ec168d7f33481187e5032a31eef3329464e67a"
+    "test_script_sha256": "36b2bd098caa09b25f1b1646a9a6941adab9d98752c473dbbe08347f165c4fc7",
+    "regression_test_sha256": "83ff19282b20a012478ebea30152b3bf3b3096d143ac4578592bd182e06fd53b",
+    "junit_checker_sha256": "d120f7e52512a0f7c9fcb4b60d584bef1420b131f36da4375359a7536509b533",
+    "real_tokenizer_test_sha256": "a8f40f568b10a04affaa4bf638ec168d7f33481187e5032a31eef3329464e67a",
+    "real_http_mcp_test_sha256": "1baaf61f6e90b05c5c1141040d391668a6edb3cb1ee4fe958a3fa5ee0f3edfd4"
   },
   "verifier_contract": {
     "asserts_private_implementation_structure": false,
-    "behavior_cases": 16,
+    "behavior_cases": 17,
     "behaviors": [
       "complete visible markers encoded as ordinary runtime tokens are consumed",
       "markers split across multiple network deltas are buffered and consumed",
       "enabled and adaptive streaming modes route reasoning and content correctly",
       "existing atomic-marker, plain streaming, and non-streaming behavior remains unchanged",
-      "token helper methods recognize marker token sequences"
+      "token helper methods recognize marker token sequences",
+      "a streamed MCP-backed runbook request separates reasoning while preserving its already-correct structured tool call"
     ],
-    "collection_integrity": "JUnit must contain exactly 16 unique, passing, non-skipped cases"
+    "collection_integrity": "JUnit must contain exactly 17 unique, passing, non-skipped cases"
   },
   "real_lifecycle_boundary": {
-    "kind": "real MiniMax M3 tokenizer and reasoning parser streaming lifecycle",
-    "entrypoint": "MiniMaxM3ReasoningParser",
+    "kind": "real MiniMax M3 tokenizer plus vLLM Chat request, combined reasoning/tool parser, and local HTTP SSE lifecycle",
+    "entrypoint": "HTTP POST /v1/chat/completions -> ChatCompletionRequest -> DelegatingParser -> MiniMaxM3ReasoningParser and MinimaxM3ToolParser",
     "real_marker_vocab_ids": [200059, 200060],
     "exact_issue_chunks": 5,
     "cross_delta_chunks": 6,
+    "http_status": 200,
+    "mcp_backed_tool": "search_incident_runbooks",
+    "stream_tool_call_verified": true,
+    "nonstream_comparison_verified": true,
     "model_runner_executed": false,
-    "limitation": "The verifier uses the pinned real tokenizer and chat metadata without model weights, and supplies deterministic generated token IDs at the parser boundary."
+    "limitation": "The verifier uses the pinned real tokenizer and chat metadata without model weights. It sends a real local HTTP request through the production request schema and combined parser while supplying deterministic generated token IDs at the model-output boundary."
   },
   "repeated_runs": [
-    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 6, "failed": 10}, "e2e_exit_codes": [1, 1, 1, 1, 1]},
-    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 16, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0]}
+    {"case": "base", "rounds": 5, "rewards": [0, 0, 0, 0, 0], "behavior_tests_each_round": {"passed": 6, "failed": 11}, "e2e_exit_codes": [1, 1, 1, 1, 1], "http_exit_codes": [1, 1, 1, 1, 1]},
+    {"case": "oracle", "rounds": 5, "rewards": [1, 1, 1, 1, 1], "behavior_tests_each_round": {"passed": 17, "failed": 0}, "e2e_exit_codes": [0, 0, 0, 0, 0], "http_exit_codes": [0, 0, 0, 0, 0]}
   ],
   "adversarial_runs": [
-    {"case": "ignore_enabled_mode", "patch_sha256": "12f8425cb8719c8b270fb5ed0d75bef4ff5a2d65f444fb8ece111727b654224c", "reward": 0, "tests_passed": 15, "tests_failed": 1, "e2e_exit_code": 0},
-    {"case": "drop_cross_delta_marker_buffering", "patch_sha256": "8a5098e47a201b216f4da0ac8831200646a0b56a0c951294b76c3b6ecdec5ff3", "reward": 0, "tests_passed": 13, "tests_failed": 3, "e2e_exit_code": 1},
-    {"case": "force_atomic_marker_helpers", "patch_sha256": "834e69f1fadb753d59de25148ffeae4d8c33116fab4aa2a28240ed6f7b553a34", "reward": 0, "tests_passed": 15, "tests_failed": 1, "e2e_exit_code": 0}
+    {"case": "ignore_enabled_mode", "patch_sha256": "12f8425cb8719c8b270fb5ed0d75bef4ff5a2d65f444fb8ece111727b654224c", "reward": 0, "tests_passed": 16, "tests_failed": 1, "e2e_exit_code": 0, "http_exit_code": 0},
+    {"case": "drop_cross_delta_marker_buffering", "patch_sha256": "8a5098e47a201b216f4da0ac8831200646a0b56a0c951294b76c3b6ecdec5ff3", "reward": 0, "tests_passed": 14, "tests_failed": 3, "e2e_exit_code": 1, "http_exit_code": 0},
+    {"case": "force_atomic_marker_helpers", "patch_sha256": "171e092309d02e48c249047cc0ce225e7a6a9ddb95dcdc515cb1f6e59e726918", "reward": 0, "tests_passed": 16, "tests_failed": 1, "e2e_exit_code": 0, "http_exit_code": 0}
   ],
   "harbor": {
     "version": "0.22.0",
-    "job_id": "d3d5c3d2-946e-41d3-b830-cc00b5878825",
-    "trial_id": "2c6ef145-2a14-4f06-85cd-f01256c0a5a4",
-    "input_task_checksum": "4d59092cfd185f2e55a19901cd729a70b81c6e8658e748a7858387d9bc147198",
+    "job_id": "681ba98d-1776-4e60-acb9-97bf08d8b5e0",
+    "trial_id": "ccd1d368-ea37-40d3-9917-01900e086644",
+    "input_task_checksum": "a99f2dead4c397f58ccdc626232d234b659b30f9bf669ab9635554b56aa47c99",
     "agent": "oracle",
     "environment": "docker",
     "n_completed_trials": 1,
@@ -74,7 +80,8 @@
     "pytest_exit_code": 0,
     "integrity_exit_code": 0,
     "e2e_exit_code": 0,
-    "runtime_seconds": 28,
+    "http_exit_code": 0,
+    "runtime_seconds": 30,
     "canonical_image_retained_after_run": true
   },
   "provenance_gates": {
