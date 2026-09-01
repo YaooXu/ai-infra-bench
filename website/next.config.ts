@@ -10,10 +10,16 @@ const nextConfig: NextConfig = isGitHubPages
       trailingSlash: false,
       assetPrefix: pagesBasePath,
       images: { unoptimized: true },
-      env: { NEXT_PUBLIC_BASE_PATH: pagesBasePath },
+      env: {
+        NEXT_PUBLIC_BASE_PATH: pagesBasePath,
+        NEXT_PUBLIC_STATIC_EXPORT: 'true',
+      },
     }
   : {
-      env: { NEXT_PUBLIC_BASE_PATH: '' },
+      env: {
+        NEXT_PUBLIC_BASE_PATH: '',
+        NEXT_PUBLIC_STATIC_EXPORT: 'false',
+      },
     };
 
 export default nextConfig;

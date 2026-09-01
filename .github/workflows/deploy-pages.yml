@@ -1,4 +1,4 @@
-name: Deploy website to GitHub Pages
+name: Publish website to root GitHub Pages
 
 on:
   push:
@@ -11,46 +11,41 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: root-pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: website
     env:
       GITHUB_PAGES: 'true'
-      GITHUB_PAGES_BASE_PATH: /${{ github.event.repository.name }}
-      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      GITHUB_PAGES_BASE_PATH: ''
+      NEXT_PUBLIC_SITE_URL: https://ai-infra-bench.github.io
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: website/package-lock.json
       - run: npm ci
       - run: npm run build:pages
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: website/dist/client
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish generated site
+        env:
+          GH_TOKEN: ${{ secrets.ROOT_PAGES_TOKEN }}
+        run: |
+          test -n "$GH_TOKEN"
+          gh auth setup-git
+          cd dist/client
+          git init -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git remote add origin https://github.com/ai-infra-bench/ai-infra-bench.github.io.git
+          git push --force origin main
