@@ -1,0 +1,36 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-pr-39832"
+version = "1.0.0"
+description = "Remove legacy two-argument external KV connector construction without breaking current consumers."
+authors = [{ name = "AI Infra Bench Curators" }]
+keywords = ["vllm", "kv-connector", "api-compatibility", "error-boundary"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+source_ids = ["vllm__pr__39832"]
+repository = "vllm-project/vllm"
+base_commit = "f80aa53c9dc2273a19a6855092069db7e1306fff"
+oracle_commit = "825c3600113fae323da7a1520dcd9e276818904c"
+workload_type = "refactor"
+difficulty = "medium"
+grader_kind = "correctness"
+
+[agent]
+timeout_sec = 3600.0
+user = "agent"
+
+[verifier]
+timeout_sec = 900.0
+environment_mode = "shared"
+user = "root"
+
+[environment]
+network_mode = "no-network"
+build_timeout_sec = 3600.0
+os = "linux"
+cpus = 4
+memory_mb = 16384
+storage_mb = 49152
+gpus = 0
