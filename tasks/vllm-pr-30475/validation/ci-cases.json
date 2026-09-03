@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "expected_reward": 0,
+      "name": "partial-budget-omission",
+      "patch": "partial-budget-omission.patch",
+      "patch_sha256": "4cc3fb3c35d6a784155c45c288ab20da7bed5c1cd3486892d3cd0479dfa0e817"
+    },
+    {
+      "apply_after": "oracle",
+      "expected_reward": 1,
+      "name": "alternate-direct-mask-count",
+      "patch": "alternate-direct-mask-count.patch",
+      "patch_sha256": "d46330a3e3e39d471e7a7f543414a93cda07c8e6d759b4182c030b5c9d94cd61"
+    }
+  ],
+  "schema_version": "ai_infra_bench_validation_cases.v1"
+}
