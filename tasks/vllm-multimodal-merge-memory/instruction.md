@@ -12,6 +12,5 @@ operation. The case where the mask is already on CUDA must continue to work,
 and placeholder order, output dtype, in-place behavior, supported input forms,
 and useful cardinality errors must not regress.
 
-I do not have a small reproduction or an implementation in mind. Please measure
-the current behavior, choose a focused fix, and add correctness and resource
-regression coverage through the production path.
+Please fix the production path while preserving these correctness and resource
+properties for both CPU and CUDA placeholder masks.

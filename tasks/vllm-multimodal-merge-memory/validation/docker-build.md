@@ -1,5 +1,9 @@
 # Validation record
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 Validated on 2026-09-04 with the account-local Docker daemon at
 `/root/workspace/dxz-workspace/.docker-dxz/run/docker.sock` and an NVIDIA
 H20-3e. Runtime networking was disabled.
@@ -71,3 +75,6 @@ the CONNECT proxy and by attempted direct access.
 
 Trajectory and result files are stored at
 `ai-infra-bench-data/opus-5-gpu-v3-hard/vllm-pr-34246`.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

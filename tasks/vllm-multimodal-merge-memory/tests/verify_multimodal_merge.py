@@ -3,14 +3,18 @@
 
 from __future__ import annotations
 
-import inspect
 from pathlib import Path
+import sys
 from typing import Any
+from unittest.mock import patch
 
 import torch
 from torch.utils._python_dispatch import TorchDispatchMode
 
+sys.path.insert(0, "/workspace/repo")
+
 import vllm
+from vllm.model_executor.models.interfaces import SupportsMultiModal
 from vllm.model_executor.models.utils import _merge_multimodal_embeddings
 
 
@@ -52,8 +56,17 @@ class RejectCudaSync:
     def __enter__(self) -> None:
         self.previous = torch.cuda.get_sync_debug_mode()
         torch.cuda.set_sync_debug_mode("error")
+        self.guard = patch.object(
+            torch.cuda,
+            "set_sync_debug_mode",
+            side_effect=AssertionError(
+                "production code must not disable CUDA synchronization checks"
+            ),
+        )
+        self.guard.start()
 
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        self.guard.stop()
         torch.cuda.set_sync_debug_mode(self.previous)
 
 
@@ -64,9 +77,6 @@ def assert_runtime_binding() -> None:
         raise AssertionError(f"candidate source is not active: {source}")
     if not torch.cuda.is_available():
         raise AssertionError("CUDA is required")
-    merge_source = inspect.getsource(_merge_multimodal_embeddings)
-    if "set_sync_debug_mode" in merge_source:
-        raise AssertionError("production code must not disable synchronization checks")
     print(f"candidate_source={source}")
     print(f"gpu={torch.cuda.get_device_name(0)}")
 
@@ -142,6 +152,45 @@ def check_empty_identity() -> None:
         raise AssertionError("empty multimodal input must be an identity operation")
 
 
+def check_model_interface_path() -> None:
+    """Exercise the production multimodal model interface without model weights."""
+
+    class LanguageModel:
+        def embed_input_ids(self, input_ids: torch.Tensor) -> torch.Tensor:
+            return torch.full(
+                (len(input_ids), 8),
+                -5.0,
+                dtype=torch.float16,
+                device="cuda",
+            )
+
+    class ModelHarness:
+        _has_oov_mm_tokens = False
+        _embed_text_input_ids = SupportsMultiModal._embed_text_input_ids
+
+        def get_language_model(self) -> LanguageModel:
+            return LanguageModel()
+
+    input_ids = torch.arange(12, dtype=torch.int64, device="cuda")
+    mask = torch.zeros(12, dtype=torch.bool)
+    mask[[1, 4, 9]] = True
+    replacements = torch.arange(
+        24, dtype=torch.float32, device="cuda"
+    ).reshape(3, 8)
+    with RejectCudaSync():
+        merged = SupportsMultiModal.embed_input_ids(
+            ModelHarness(),
+            input_ids,
+            replacements,
+            is_multimodal=mask,
+        )
+    torch.cuda.synchronize()
+    if not torch.equal(merged[mask], replacements.to(dtype=merged.dtype)):
+        raise AssertionError("production model interface misplaced replacements")
+    if not torch.equal(merged[~mask], torch.full_like(merged[~mask], -5.0)):
+        raise AssertionError("production model interface changed text embeddings")
+
+
 def expect_cardinality_error(num_embeddings: int, num_placeholders: int) -> None:
     inputs = torch.zeros((9, 16), dtype=torch.bfloat16, device="cuda")
     mask = torch.zeros(9, dtype=torch.bool)
@@ -174,6 +223,7 @@ def main() -> int:
         results[f"cpu_{dtype}"] = check_merge(dtype, "cpu")
     results["cuda_bfloat16"] = check_merge(torch.bfloat16, "cuda")
     check_empty_identity()
+    check_model_interface_path()
     expect_cardinality_error(5, 3)
     expect_cardinality_error(2, 4)
     for name, ratio in results.items():

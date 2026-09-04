@@ -10,8 +10,7 @@ FROM vllm/vllm-openai:v0.19.0@sha256:d9a5c1c1614c959fde8d2a4d68449db184572528a60
 
 ARG VLLM_BASE_SHA=36d7f19897843c9cbdb701ba88d0f2c29954fe44
 ARG VLLM_BASE_TREE=647523aac911ae44a1dcaab79ef66d58290b478e
-ARG VLLM_SOURCE_SHA256=8e71d0480773b8532f7397e52257e5600b0ef0ff56654eba5e78afc48be0cbab
-ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/36d7f19897843c9cbdb701ba88d0f2c29954fe44
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 LABEL ai-infra-bench.source-commit="${VLLM_BASE_SHA}" \
       ai-infra-bench.native-scope="v0.19.0-donor; verifier exercises Python/PyTorch merge primitive only"
@@ -34,24 +33,32 @@ RUN set -eux; \
     ln -s libpcre2-8.so.0.14.0 /usr/lib/libpcre2-8.so.0; \
     ln -s libz.so.1.3.1 /usr/lib/libz.so.1; \
     git --version; \
-    curl -fL --retry 8 --retry-all-errors --retry-delay 3 \
-        --connect-timeout 30 --max-time 600 \
-        "${VLLM_SOURCE_URL}" \
-        -o /tmp/vllm-source.tar.gz; \
-    echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
     mkdir -p /workspace/repo; \
-    tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \
-    rm -f /tmp/vllm-source.tar.gz; \
-    git -C /workspace/repo init; \
-    git -C /workspace/repo config user.name "AI Infra Bench"; \
-    git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -f -A; \
-    test "$(git -C /workspace/repo write-tree)" = "${VLLM_BASE_TREE}"; \
-    git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
-    git -C /workspace/repo branch -M benchmark-base; \
+    git -C /workspace/repo init -q; \
+    git -C /workspace/repo config core.logAllRefUpdates false; \
+    git -C /workspace/repo config http.version HTTP/1.1; \
+    git -C /workspace/repo remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git -C /workspace/repo fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e /workspace/repo/.git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
+    git -C /workspace/repo remote remove origin; \
+    rm -rf /workspace/repo/.git/logs; \
+    rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
+    test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
+    test ! -e /workspace/repo/.git/shallow; \
+    test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"; \
     VLLM_SITE=/usr/local/lib/python3.12/dist-packages/vllm; \
     cd "${VLLM_SITE}"; \
     sha256sum -c /tmp/native.sha256; \
@@ -95,7 +102,7 @@ WORKDIR /workspace/repo
 RUN python3 -c "import pathlib,vllm; from vllm.model_executor.models.utils import _merge_multimodal_embeddings; p=pathlib.Path(vllm.__file__).resolve(); print(p); assert str(p).startswith('/workspace/repo/vllm/')" \
     && test "$(id -un)" = agent \
     && test -z "$(git remote)" \
-    && test "$(git rev-list --all --count)" = 1 \
+    && test "$(git rev-list --all --count)" -gt 1 \
     && test -z "$(git status --porcelain)"
 
 ENTRYPOINT []
