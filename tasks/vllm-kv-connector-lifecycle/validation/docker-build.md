@@ -1,5 +1,9 @@
 # Harbor build and validation
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 ## 2026-09-03 four-way review and build repair
 
 Fresh, network-disabled verifier containers against the locked source produced:
@@ -168,3 +172,6 @@ constructor errors behind compatibility handling.
   identity, and constructor-internal errors must not be caught or retried.
 - Grader GPU requirements must reflect target execution, not an unrelated
   package-integrity probe.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

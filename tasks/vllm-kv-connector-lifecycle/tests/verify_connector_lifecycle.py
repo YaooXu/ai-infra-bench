@@ -44,9 +44,11 @@ class MinimalConnector(KVConnectorBase_V1):
 
 class CurrentConnector(MinimalConnector):
     constructed = 0
+    received_configs = []
 
     def __init__(self, vllm_config, role, kv_cache_config):
         type(self).constructed += 1
+        type(self).received_configs.append(kv_cache_config)
         super().__init__(vllm_config, role, kv_cache_config)
 
 
@@ -102,8 +104,8 @@ def main():
         current = get_kv_transfer_group()
         assert isinstance(current, CurrentConnector)
         assert CurrentConnector.constructed == 1
+        assert CurrentConnector.received_configs == [kv_cache_config]
         assert current.role is KVConnectorRole.WORKER
-        assert current._kv_cache_config is kv_cache_config
         print("current_consumer_path=PASS")
     finally:
         ensure_kv_transfer_shutdown()

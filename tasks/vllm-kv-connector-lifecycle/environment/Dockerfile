@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 
 ARG VLLM_BASE_SHA=f80aa53c9dc2273a19a6855092069db7e1306fff
 ARG VLLM_BASE_TREE=2af517bd7880077a9fed9a39dc0e8b1e244a48b1
-ARG VLLM_SOURCE_SHA256=a2923ff0ff39b1c32b18ba6eb6255c646e2fc49280552d0637d522e9434baebe
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 USER root
 
@@ -14,8 +14,7 @@ WORKDIR /workspace
 
 COPY lock/native-paths.txt /tmp/native-paths.txt
 
-# Acquire a digest-checked archive of the exact survey base. It contains no
-# upstream Git metadata; create one synthetic benchmark commit after extraction.
+# Acquire the exact survey Base and retain its reachable history.
 # Docker's predefined proxy args are not redeclared, keeping values out of image
 # configuration and history.
 RUN set -eux; \
@@ -24,28 +23,32 @@ RUN set -eux; \
         ca-certificates \
         git; \
     rm -rf /var/lib/apt/lists/*; \
-    curl -fL \
-        --retry 8 \
-        --retry-all-errors \
-        --retry-delay 3 \
-        --connect-timeout 30 \
-        --max-time 600 \
-        "https://codeload.github.com/vllm-project/vllm/tar.gz/${VLLM_BASE_SHA}" \
-        -o /tmp/vllm-source.tar.gz; \
-    echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
     mkdir -p /workspace/repo; \
-    tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \
-    rm -f /tmp/vllm-source.tar.gz; \
-    git -C /workspace/repo init; \
-    git -C /workspace/repo config user.name "AI Infra Bench"; \
-    git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -f -A; \
-    test "$(git -C /workspace/repo write-tree)" = "${VLLM_BASE_TREE}"; \
-    git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
-    git -C /workspace/repo branch -M benchmark-base; \
+    git -C /workspace/repo init -q; \
+    git -C /workspace/repo config core.logAllRefUpdates false; \
+    git -C /workspace/repo config http.version HTTP/1.1; \
+    git -C /workspace/repo remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git -C /workspace/repo fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e /workspace/repo/.git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
+    git -C /workspace/repo remote remove origin; \
+    rm -rf /workspace/repo/.git/logs; \
+    rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
+    test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
+    test ! -e /workspace/repo/.git/shallow; \
+    test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
     while IFS= read -r rel; do \
         test -n "${rel}"; \
