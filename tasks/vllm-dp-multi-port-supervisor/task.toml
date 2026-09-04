@@ -1,7 +1,7 @@
 schema_version = "1.4"
 
 [task]
-name = "ai-infra-bench/vllm-pr-40841"
+name = "ai-infra-bench/vllm-dp-multi-port-supervisor"
 version = "1.0.0"
 description = "Implement a node-local supervisor for multi-port data-parallel API servers."
 authors = [{ name = "AI Infra Bench Curators" }]
