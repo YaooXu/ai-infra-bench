@@ -9,11 +9,9 @@ state has not changed.
 
 Please investigate and remove this idle overhead. A tick with no new remote
 event should not do work proportional to the number of unchanged blocked
-requests. When the connector reports completion or failure, the affected
-requests must still resume or recover in the expected order. Request accounting,
-abort handling, structured output, streaming input, and prefix caching must
-continue to work.
+requests. When the connector reports completion, the affected requests must
+still resume in their expected order. Request accounting and abort handling
+must continue to work for the blocked population.
 
-I do not have a reduced script. Please construct a deterministic regression
-test for the idle behavior and its lifecycle boundaries, then keep the
-production change as focused as possible.
+Please keep the change focused on this idle behavior and preserve the existing
+request lifecycle when remote state does change.

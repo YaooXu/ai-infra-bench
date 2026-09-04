@@ -1,5 +1,9 @@
 # Docker build and baseline validation
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 ## 2026-09-03 verifier false-positive repair
 
 The first revised verifier counted connector readiness callbacks. An Opus-5
@@ -175,3 +179,6 @@ verifier risk.
 
 Raw logs and evidence remain under
 `/data/ai-infra-bench/survey-builds/vllm-pr-35781/` on the validation host.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

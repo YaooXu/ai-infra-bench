@@ -5,8 +5,8 @@ FROM ${BASE_IMAGE}
 
 ARG BASE_IMAGE
 ARG VLLM_BASE_SHA=d88f28da05b12bc7d63ebe3dcedf445ecb274343
-ARG VLLM_SOURCE_SHA256=7808db147610c4413d1d813d559eeb22dcbf37e39285746092c508c680cf3fee
-ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/d88f28da05b12bc7d63ebe3dcedf445ecb274343
+ARG VLLM_BASE_TREE=037cc4e534167733500093aa225de6ab64a1028e
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 USER 0:0
 ENV PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
@@ -37,29 +37,36 @@ RUN set -eu; \
       | tar -C /opt/vllm-native-overlay -xf -; \
     test -n "$(find /opt/vllm-native-overlay -type f -name '*.so' -print -quit)"
 
-# Archive bytes and the reconstructed canonical Git tree are both locked.
-# Force-add recovers upstream-tracked files that also match upstream ignores.
+# Fetch the exact Base with its reachable history, then remove every remote,
+# reflog and fetch artifact that could reveal post-cutoff source.
 RUN set -eu; \
-    curl --fail --location --retry 5 --connect-timeout 30 \
-      "${VLLM_SOURCE_URL}" -o /tmp/vllm-source.tar.gz; \
-    printf '%s  %s\n' "${VLLM_SOURCE_SHA256}" /tmp/vllm-source.tar.gz \
-      | sha256sum --check --strict; \
     mkdir -p /app; \
-    tar -xzf /tmp/vllm-source.tar.gz -C /app --strip-components=1; \
-    rm /tmp/vllm-source.tar.gz; \
     cd /app; \
     git init -q; \
-    git config user.name 'AI Infra Benchmark'; \
-    git config user.email 'benchmark@invalid.example'; \
-    git add -f -A; \
-    GIT_AUTHOR_DATE='2000-01-01T00:00:00Z' \
-    GIT_COMMITTER_DATE='2000-01-01T00:00:00Z' \
-      git commit -q -m 'sanitized benchmark base'; \
-    git reflog expire --expire=now --all; \
-    test "$(git rev-list --count HEAD)" = 1; \
-    test "$(git rev-parse 'HEAD^{tree}')" = 037cc4e534167733500093aa225de6ab64a1028e; \
+    git config core.logAllRefUpdates false; \
+    git config http.version HTTP/1.1; \
+    git remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e .git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
+    test "$(git rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
+    git remote remove origin; \
+    rm -rf .git/logs; \
+    rm -f .git/FETCH_HEAD .git/ORIG_HEAD; \
     test -z "$(git remote)"; \
-    test -z "$(git tag)"
+    test -z "$(git for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git rev-list --all --count)" -gt 1; \
+    test ! -e .git/shallow; \
+    test -z "$(git fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"
 
 RUN set -eu; \
     cp -a /opt/vllm-native-overlay/. /app/vllm/; \
@@ -74,12 +81,10 @@ RUN set -eu; \
     cd /app; \
     test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-COPY model-fixture/ /opt/bench/model-fixture/
-
 RUN groupadd --gid 10001 agent \
     && useradd --uid 10001 --gid 10001 --create-home --home-dir /home/agent agent \
     && chown -R agent:agent /app /home/agent \
-    && chmod -R a-w /opt/bench /opt/vllm-native-overlay
+    && chmod -R a-w /opt/vllm-native-overlay
 
 WORKDIR /app
 USER 10001:10001

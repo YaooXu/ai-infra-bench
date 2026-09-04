@@ -1,9 +1,4 @@
 *
 !Dockerfile
-!runtime_smoke.py
-!hardware_smoke.py
-!reproduce_baseline.py
-!model-fixture/
-!model-fixture/**
 !lock/
 !lock/**

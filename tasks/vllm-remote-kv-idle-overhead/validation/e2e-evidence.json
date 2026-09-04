@@ -1,0 +1,109 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-09-05T00:35:00+08:00",
+  "status": "final-validated",
+  "source": {
+    "repository": "vllm-project/vllm",
+    "base_commit": "d88f28da05b12bc7d63ebe3dcedf445ecb274343"
+  },
+  "artifacts": {
+    "files": {
+      "README.md": "62d41f4f93fdcae602721cabb439bda50d128237e156f4170bf3851c7139a766",
+      "environment/.dockerignore": "1db9778aedf9bb81403b0928c2de361791ac7a8a8d34dcdf17c86663b362c0c7",
+      "environment/Dockerfile": "8d2382b5167dc5ca0d9c5499f73bcb3a008ed158783387df7a34fdb16b3b3d38",
+      "environment/image-manifest.json": "7444b06430eb4add877aace5e0ebf5e0f9a93f3755318de2e374e9a5751c73cc",
+      "environment/lock/README.md": "b1ee96763b47fb783e3282c8b2694dec28a9f993db2ed5c3a86e51d7d693193e",
+      "environment/lock/environment.json": "138e7b417685672ca9e4d322f8c6df5ffb68c09498f7a20f0728b155adb0771a",
+      "environment/lock/manifest.json": "7b12888ec9970b2d66734a5a6a8bb38dd77e5d602cc7cf4fb59261648c0d8ff8",
+      "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+      "instruction.md": "3efd26165e8a576e906689b2f3409304fd09c248304305b9c2a99986a4abc5a3",
+      "solution/oracle.patch": "1eae238c5965218c735fbe77fe73f5cdbaab8d9a71165481b1643c8e45986961",
+      "solution/solve.sh": "84f061d3c31ff07766ae3885f64c58537deac84c825224495019cc074d2551d1",
+      "task.toml": "6400bc60b842d55f8a5c6db2ba28f09e10ef7f8516ac5db8ee8479d994d81caa",
+      "tests/docker-compose.yaml": "0d09303b1c19f8c49715144dd45709027cc46a6ad42be95907fb59724342d30f",
+      "tests/test.sh": "74c9ff469ab98b488e74e4a94320eff10cf10e79617818181b6990f65012d562",
+      "tests/verify_blocked_waiting.py": "eee5e2e9c0c2296bfff8c4f7510b152d08722b2436a8577882ac08087ef4da49",
+      "validation/alternative-agent-implementation.patch": "aa1d93e67237c99ade5cdc2de46535098e774f3535af939d5402787958898df3",
+      "validation/ci-cases.json": "0df9283a85cf33c94e3b42b659ee5e48ec6da282504fca1a1b16dfbe517e60fa",
+      "validation/docker-build.md": "619d755a14e67616362376d4a283db058aeb71c89f27f41f7b6db8050a981b67",
+      "validation/incomplete-agent-implementation.patch": "df2aa5d8c37baa7e23bcfae3c2a034027b2fe67c24fb535accef5e92325e0fe8",
+      "validation/remediation-matrix.md": "ccc1bc1ecf823452ce6bf090629580e85e80d01e31baaace808d842f3cd59d17"
+    }
+  },
+  "e2e_boundary": {
+    "path": "production Scheduler -> asynchronous remote-KV waiting -> idle ticks, completion promotion, accounting, and abort",
+    "substitution": "A verifier-owned contract-valid KV connector and local model config replace an external KV service and model download; production scheduler state transitions remain real.",
+    "preserved_semantics": "A verifier-owned contract-valid KV connector and local model config replace an external KV service and model download; production scheduler state transitions remain real."
+  },
+  "validation": {
+    "executable_snapshot_frozen": true,
+    "static_review": "task_ci.py validate and ai-infra-bench-task-review strict artifact audit passed",
+    "base": {
+      "reward": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:b5b75e8dbcfe12c96c29e0ab0e8005ca22b67565c67654bce30dc9aba5cf03ef"
+    },
+    "oracle": {
+      "reward": 1,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:b5b75e8dbcfe12c96c29e0ab0e8005ca22b67565c67654bce30dc9aba5cf03ef"
+    },
+    "controls": [
+      {
+        "name": "incomplete-agent-implementation",
+        "expected_reward": 0,
+        "reward": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "correct_alternatives": [
+      {
+        "name": "alternative-agent-implementation",
+        "expected_reward": 1,
+        "reward": 1,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "repeated_runs": [],
+    "harbor": {
+      "version": "0.22.0",
+      "job_id": "48576cf0-c24d-4f93-aa85-d0152eb0c1a2",
+      "trial_id": "e9243695-5079-45ef-8598-d56bee64b426",
+      "trial_name": "vllm-remote-kv-idle-overhead__6gowawV",
+      "job_directory": "/root/workspace/dxz-workspace/ai-infra-bench-data/final-harbor-oracle/final-oracle-35781",
+      "input_task_checksum": "ee85d1d75a570f48f0bcc4e17959736f6d88026556f975d00e5cafa8976b1dbf",
+      "agent": "oracle",
+      "environment": "docker",
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "reward": 1.0,
+      "command_exit_code": 0,
+      "started_at": "2026-09-04T16:20:07.488732Z",
+      "finished_at": "2026-09-04T16:21:21.080624Z",
+      "canonical_image_tag": "ai-infra-bench/vllm-remote-kv-idle-overhead:base-d88f28da05b1",
+      "canonical_image_id_at_run": "sha256:b5b75e8dbcfe12c96c29e0ab0e8005ca22b67565c67654bce30dc9aba5cf03ef"
+    },
+    "note": "All four direct cases were rerun after the final task configuration freeze. Harbor Oracle used the task-declared prebuilt image tag; the local tag resolved to the recorded image ID."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-remote-kv-idle-overhead:base-d88f28da05b1",
+    "image_id": "sha256:b5b75e8dbcfe12c96c29e0ab0e8005ca22b67565c67654bce30dc9aba5cf03ef",
+    "size_bytes": 5820463456,
+    "created": "2026-09-04T15:07:11.883463849Z",
+    "repo_digests": [],
+    "dockerfile_sha256": "8d2382b5167dc5ca0d9c5499f73bcb3a008ed158783387df7a34fdb16b3b3d38",
+    "dependency_lock_sha256": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+    "dependency_lock_manifest_sha256": "7b12888ec9970b2d66734a5a6a8bb38dd77e5d602cc7cf4fb59261648c0d8ff8"
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_tests_validation_absent_from_image": true,
+    "worktree_clean_at_container_start": true,
+    "runtime_network_disabled": true,
+    "verifier_mount_read_only": true,
+    "local_image_has_no_repo_digest_until_registry_push": true
+  }
+}

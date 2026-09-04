@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd /app
-git apply /solution/fix.patch
+git apply /solution/oracle.patch
