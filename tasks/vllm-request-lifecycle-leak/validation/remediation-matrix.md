@@ -1,0 +1,13 @@
+# Review remediation matrix
+
+| Review finding | Remediation | Current state |
+| --- | --- | --- |
+| Meaningful task identity | Uses the descriptive task directory and task name. | Complete |
+| Human task statement | First-person operational request contains no test, file, helper, or Oracle hints. | Complete |
+| Environment isolation | Agent-visible reproduction scripts were removed; a rebuild is required. | Pending final dynamic audit |
+| Behavioral / E2E boundary | production request completion and object reclamation. | Implemented; execution pending |
+| Implementation independence | behavioral lifetime and hash checks remain hidden and separate. | Static review complete |
+| Harbor alignment | 10-hour Agent budget, offline phases, separate verifier, explicit artifacts, accelerator/workdir metadata, and verifier mount. | Static validator passes |
+| Controls | One production-only alternative patch and one incomplete patch are declared. | Execution pending |
+| Calibration | Base, Oracle, controls, repeated trials, and final Harbor Oracle are not claimed for this snapshot. | Pending |
+

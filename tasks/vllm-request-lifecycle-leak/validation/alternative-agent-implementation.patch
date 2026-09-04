@@ -1,0 +1,75 @@
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 90ca584..ffc3e53 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -984,8 +984,9 @@ class Scheduler(SchedulerInterface):
+         session.prompt_token_ids.extend(update.prompt_token_ids or ())
+         # Update block hashes for the new tokens
+         # (mirrors Request.append_output_token_ids)
+-        if session.get_hash_new_full_blocks is not None:
+-            session.block_hashes.extend(session.get_hash_new_full_blocks())
++        new_block_hashes = session.get_hash_new_full_blocks()
++        if new_block_hashes is not None:
++            session.block_hashes.extend(new_block_hashes)
+         session.num_prompt_tokens = len(session.prompt_token_ids)
+         session.arrival_time = update.arrival_time
+         session.sampling_params = update.sampling_params
+diff --git a/vllm/v1/request.py b/vllm/v1/request.py
+index 3b82987..efcbbd8 100644
+--- a/vllm/v1/request.py
++++ b/vllm/v1/request.py
+@@ -6,7 +6,6 @@ import time
+ from collections import deque
+ from collections.abc import Callable, Mapping
+ from dataclasses import dataclass
+-from functools import partial
+ from typing import TYPE_CHECKING, Any
+ 
+ import torch
+@@ -164,10 +163,19 @@ class Request:
+         self.num_external_computed_tokens = 0
+ 
+         self.block_hashes: list[BlockHash] = []
+-        self.get_hash_new_full_blocks: Callable[[], list[BlockHash]] | None = None
++        # NOTE: We intentionally store the (request-agnostic) ``block_hasher``
++        # closure rather than binding ``self`` into it (e.g. via
++        # ``partial(block_hasher, self)``). Binding ``self`` would create a
++        # reference cycle (Request -> callable -> Request) that keeps a
++        # completed request and its (potentially large) multimodal payload
++        # alive until Python's cyclic garbage collector runs, instead of being
++        # reclaimed promptly by reference counting once the scheduler releases
++        # it. See ``get_hash_new_full_blocks``.
++        self.block_hasher: Callable[["Request"], list[BlockHash]] | None = (
++            block_hasher
++        )
+         if block_hasher is not None:
+-            self.get_hash_new_full_blocks = partial(block_hasher, self)
+-            self.block_hashes = self.get_hash_new_full_blocks()
++            self.block_hashes = block_hasher(self)
+ 
+         self.skip_reading_prefix_cache = self.get_skip_reading_prefix_cache()
+ 
+@@ -212,8 +220,21 @@ class Request:
+             self._output_token_ids.extend(token_ids)
+             self._all_token_ids.extend(token_ids)
+ 
+-        if self.get_hash_new_full_blocks is not None:
+-            self.block_hashes.extend(self.get_hash_new_full_blocks())
++        new_block_hashes = self.get_hash_new_full_blocks()
++        if new_block_hashes is not None:
++            self.block_hashes.extend(new_block_hashes)
++
++    def get_hash_new_full_blocks(self) -> list["BlockHash"] | None:
++        """Compute block hashes for newly-completed full blocks.
++
++        Returns ``None`` when prefix caching (and hence a block hasher) is
++        not configured for this request. ``self`` is passed to the hasher at
++        call time so that no request-bound callable is retained on the
++        request, avoiding a reference cycle (see ``__init__``).
++        """
++        if self.block_hasher is None:
++            return None
++        return self.block_hasher(self)
+ 
+     @property
+     def use_structured_output(self) -> bool:

@@ -5,9 +5,8 @@ ARG BASE_IMAGE=vllm/vllm-openai-cpu:v0.17.1-x86_64@sha256:d19978a2d4bb2289c740a6
 FROM ${BASE_IMAGE}
 
 ARG VLLM_BASE_SHA=e94ec597334d9a3e9b0d04bc17152e2747c83d51
-ARG VLLM_SOURCE_TREE=9207a921243a2aa82fdf29f5019af966b70d1b50
-ARG VLLM_SOURCE_SHA256=9a429cb976d5ca39550795573fa6caf92d995eec611391c70f1c026fd52d2e2e
-ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/e94ec597334d9a3e9b0d04bc17152e2747c83d51
+ARG VLLM_SOURCE_TREE=bfdf97989c2997f550a44ebc42ad8aa5582d67a7
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 USER root
 
@@ -16,27 +15,36 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /workspace
 
-# Build networking is used only to download the immutable source archive. The
-# archive has no upstream Git metadata and is replaced by one synthetic commit.
+# Fetch the exact Base and retain its reachable history for normal code
+# archaeology. Remove all network metadata and reject hidden future objects.
 RUN set -eux; \
-    command -v curl; \
     command -v git; \
-    curl -fL --retry 8 --retry-all-errors --retry-delay 3 \
-        --connect-timeout 30 --max-time 600 \
-        "${VLLM_SOURCE_URL}" -o /tmp/vllm-source.tar.gz; \
-    echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
     mkdir -p /workspace/repo; \
-    tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \
-    rm -f /tmp/vllm-source.tar.gz; \
-    git -C /workspace/repo init; \
-    git -C /workspace/repo config user.name "AI Infra Bench"; \
-    git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -A; \
-    test "$(git -C /workspace/repo write-tree)" = "${VLLM_SOURCE_TREE}"; \
-    git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
-    git -C /workspace/repo branch -M benchmark-base; \
+    git -C /workspace/repo init -q; \
+    git -C /workspace/repo config core.logAllRefUpdates false; \
+    git -C /workspace/repo config http.version HTTP/1.1; \
+    git -C /workspace/repo remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git -C /workspace/repo fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e /workspace/repo/.git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_SOURCE_TREE}"; \
+    git -C /workspace/repo remote remove origin; \
+    rm -rf /workspace/repo/.git/logs; \
+    rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
+    test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
+    test ! -e /workspace/repo/.git/shallow; \
+    test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
     find "${VLLM_SITE}" -type f \( -name '*.so' -o -name '_version.py' \) \
         -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/workspace/repo/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' "${VLLM_SITE}" {} +; \
@@ -47,15 +55,8 @@ RUN set -eux; \
     if ! id -u agent >/dev/null 2>&1; then \
         useradd --create-home --shell /bin/bash agent; \
     fi; \
-    if ! command -v python >/dev/null 2>&1; then \
-        ln -s "$(command -v python3)" /usr/local/bin/python; \
-    fi; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
-
-COPY --chown=agent:agent public_dev/reproduce_retention.py /opt/ai-infra-bench/dev/reproduce_retention.py
-COPY public_dev/run.sh /usr/local/bin/agent-test
-RUN chmod 0555 /usr/local/bin/agent-test
 
 ENV PYTHONPATH=/workspace/repo \
     LD_LIBRARY_PATH=/lib/x86_64-linux-gnu

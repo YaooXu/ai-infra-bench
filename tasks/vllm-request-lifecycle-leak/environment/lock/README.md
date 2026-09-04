@@ -55,9 +55,8 @@ exact Git commit fetch. On the validation host, apt uses its directly reachable
 official repositories while GitHub uses the supplied build proxy. Runtime
 reproduction has no external data, model, tokenizer, or package dependency.
 
-## Reproduction assets
+## Verification boundary
 
-`environment/public_dev/reproduce_retention.py` uses only Python's standard
-library and the vLLM runtime already present in the image. It creates a small,
-deterministic set of completed requests with request-associated multimodal
-payloads and reports whether normal owner release promptly reclaims them.
+No task-specific reproducer or verifier is included in the Agent image. The
+hidden verifier supplies deterministic request payloads only after the Agent
+phase and exercises the production request-completion lifecycle.

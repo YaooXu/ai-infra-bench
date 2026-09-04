@@ -12,6 +12,5 @@ Prefix-cache results must also stay correct for the initial request and for
 later token updates, including continued or streaming requests.
 
 Please do not work around the problem by forcing garbage collection or by
-disabling prefix caching or multimodal input. I do not have a reduced test case
-or a suspected source file, so please reproduce the lifecycle problem yourself
-and add regression coverage for the behavior you fix.
+disabling prefix caching or multimodal input. The service should release
+completed request state promptly as part of its normal lifecycle.

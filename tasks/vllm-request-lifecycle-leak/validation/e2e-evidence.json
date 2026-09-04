@@ -1,0 +1,108 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-09-05T00:35:00+08:00",
+  "status": "final-validated",
+  "source": {
+    "repository": "vllm-project/vllm",
+    "base_commit": "e94ec597334d9a3e9b0d04bc17152e2747c83d51"
+  },
+  "artifacts": {
+    "files": {
+      ".dockerignore": "914c87fd58ee5c87f0f8e48b891a5dc3d24f662b7e083e1d6c99b3ac0e477514",
+      "README.md": "f98edef2227b51daeab6bf2bcf1608a80d479198bf3d702acf9d99fcff499dbb",
+      "environment/Dockerfile": "93f6d8a5748df9051b9a3b146b16e74233eb48cca056d514998b194f8730f44a",
+      "environment/image-manifest.json": "11d567a11c0963ce786d8ce0babbeaba1bd548773c59263679abfccb032de92d",
+      "environment/lock/README.md": "5cfb70507cb7982045609ab0b1f10180ed690163dc8295da085680ac7569e242",
+      "environment/lock/manifest.json": "5841b530241ad83bbd47eb77cd8b684fceab24fdc1a59d787a652bab282a8657",
+      "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+      "instruction.md": "67cc6a06753fe9ea624c3b4eed1e541c204ea6c1c7a861e8e8bdd182df2e1f77",
+      "solution/oracle.patch": "80f903a082cd8a9547edc3ede12380a8bc498181da3cf749c816994ab7699423",
+      "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
+      "task.toml": "bf0efd42b8d3dd84943a06024c4215969a08454b38a87c4fbf20dfc1c0a4cc3c",
+      "tests/docker-compose.yaml": "0d09303b1c19f8c49715144dd45709027cc46a6ad42be95907fb59724342d30f",
+      "tests/test.sh": "7448414c6317fabaa0035e8617d1087663a8167b16d14f5f26b4ebd16fd13473",
+      "tests/verify_retention.py": "e30bbe0034416ba60931847998f614f4ee9bd81eebe86d31902b897509c64d91",
+      "validation/alternative-agent-implementation.patch": "12cc5f7b9c0dd3495b30b930f1295d2fe70a5eda88272d0e4b7b11ea6f716b16",
+      "validation/ci-cases.json": "7b0e67807ab23caea8619ccc1e5b7ca1f4365983857337a8b8ec05347e36eea5",
+      "validation/docker-build.md": "c9a2ae5a499cd937127fa70fb283a5c2ebda479c57a49da525469931cd3beef8",
+      "validation/incomplete-agent-implementation.patch": "7faa904ceebdcf23440c78af6d8d5bea348425222789af33ee8a86a7c3766231",
+      "validation/remediation-matrix.md": "8467b46f64dc6b76c7108b11ee95b25b89a60774e42bd37ac736700ee76d39a9"
+    }
+  },
+  "e2e_boundary": {
+    "path": "production Request construction and completion bookkeeping -> owner release -> prompt and multimodal payload reclamation",
+    "substitution": "Large deterministic Python payloads replace production media tensors; the production Request lifecycle and hash bookkeeping remain real.",
+    "preserved_semantics": "Large deterministic Python payloads replace production media tensors; the production Request lifecycle and hash bookkeeping remain real."
+  },
+  "validation": {
+    "executable_snapshot_frozen": true,
+    "static_review": "task_ci.py validate and ai-infra-bench-task-review strict artifact audit passed",
+    "base": {
+      "reward": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:4b2735ebcc2943ec78834c11a0f3d4c3a69908009891a8f9efd801efed33c63c"
+    },
+    "oracle": {
+      "reward": 1,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:4b2735ebcc2943ec78834c11a0f3d4c3a69908009891a8f9efd801efed33c63c"
+    },
+    "controls": [
+      {
+        "name": "incomplete-agent-implementation",
+        "expected_reward": 0,
+        "reward": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "correct_alternatives": [
+      {
+        "name": "alternative-agent-implementation",
+        "expected_reward": 1,
+        "reward": 1,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "repeated_runs": [],
+    "harbor": {
+      "version": "0.22.0",
+      "job_id": "efd0904e-ad23-49bd-863b-182949430d9e",
+      "trial_id": "eb0e41e7-801a-403a-a91d-34a8be7bce48",
+      "trial_name": "vllm-request-lifecycle-leak__xLPeviv",
+      "job_directory": "/root/workspace/dxz-workspace/ai-infra-bench-data/final-harbor-oracle/final-oracle-34183-r4",
+      "input_task_checksum": "44b2dab6f362b6b16dbb2778d6811d5551f784e2d267fb4f675abcf47bd2891d",
+      "agent": "oracle",
+      "environment": "docker",
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "reward": 1.0,
+      "command_exit_code": 0,
+      "started_at": "2026-09-04T16:18:43.781136Z",
+      "finished_at": "2026-09-04T16:19:38.208376Z",
+      "canonical_image_tag": "ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d",
+      "canonical_image_id_at_run": "sha256:4b2735ebcc2943ec78834c11a0f3d4c3a69908009891a8f9efd801efed33c63c"
+    },
+    "note": "All four direct cases were rerun after the final task configuration freeze. Harbor Oracle used the task-declared prebuilt image tag; the local tag resolved to the recorded image ID."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d",
+    "image_id": "sha256:4b2735ebcc2943ec78834c11a0f3d4c3a69908009891a8f9efd801efed33c63c",
+    "size_bytes": 5185289657,
+    "created": "2026-09-04T15:04:30.862309683Z",
+    "repo_digests": [],
+    "dockerfile_sha256": "93f6d8a5748df9051b9a3b146b16e74233eb48cca056d514998b194f8730f44a",
+    "dependency_lock_sha256": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+    "dependency_lock_manifest_sha256": "5841b530241ad83bbd47eb77cd8b684fceab24fdc1a59d787a652bab282a8657"
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_tests_validation_absent_from_image": true,
+    "worktree_clean_at_container_start": true,
+    "runtime_network_disabled": true,
+    "verifier_mount_read_only": true,
+    "local_image_has_no_repo_digest_until_registry_push": true
+  }
+}

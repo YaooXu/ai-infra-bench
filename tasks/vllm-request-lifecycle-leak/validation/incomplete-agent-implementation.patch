@@ -1,0 +1,19 @@
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 90ca584..e06c5a7 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -1730,6 +1730,14 @@ class Scheduler(SchedulerInterface):
+         delay_free_blocks |= connector_delay_free_blocks
+         if not delay_free_blocks:
+             self._free_blocks(request)
++        else:
++            # When delaying block freeing (e.g., for async KV transfer),
++            # immediately clear the multimodal features to free their large
++            # payloads from CPU memory. The request object itself stays in
++            # self.requests until _free_blocks() is called later, but the
++            # multimodal data (images, videos) is no longer needed and would
++            # otherwise cause unbounded memory growth during sustained serving.
++            request.mm_features.clear()
+ 
+         return kv_xfer_params
+ 

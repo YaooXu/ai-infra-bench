@@ -1,5 +1,9 @@
 # Docker build and baseline validation
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 ## 2026-09-03 behavior-only review controls
 
 The current verifier removes the earlier source/AST rejection for
@@ -201,3 +205,6 @@ FAIL: completed request state was not released promptly
 The workload is local and deterministic. It does not fetch a model or dataset,
 does not force global collection before measurement, and does not inspect or
 print the retaining reference chain.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

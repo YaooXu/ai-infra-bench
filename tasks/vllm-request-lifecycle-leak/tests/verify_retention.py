@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import gc
+import sys
 import weakref
 from pathlib import Path
 from types import SimpleNamespace
+
+sys.path.insert(0, "/workspace/repo")
 
 import vllm
 from vllm.sampling_params import SamplingParams
