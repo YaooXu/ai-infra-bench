@@ -51,3 +51,23 @@ The hidden verifier calls the Base-existing production
 Observed Oracle CPU-mask peak ratios were 1.003, 1.003, and 0.500. The
 independent accepted patch observed 1.000, 1.000, and 0.500. This reduced test
 does not claim full Qwen3-VL model accuracy or 8xH100 serving coverage.
+
+## Fresh hardest-mode Agent run
+
+Opus-5 was run after removing every public reproduction from the image. The
+Agent traced the multimodal mask through Model Runner V2, inspected all merge
+call sites and `CpuGpuBuffer`, checked the real CUDA environment, and built its
+own `masked_scatter_` memory/device experiment. That experiment reproduced the
+CPU-mask/CUDA failure without seeing the hidden verifier.
+
+The model gateway then timed out after ten retries, before the Agent edited the
+worktree. The run lasted 1,275 seconds and 30 Agent turns, cost `$1.303`, and
+froze an empty patch. It is classified as infrastructure failure, not Agent
+failure. With the hardened runner, the empty patch is scored as unchanged Base:
+verifier exit `0`, reward `0`, and the expected production device-mismatch
+trace. Network isolation was also probed from the live Agent container: the
+authorized model API returned HTTP 200, while GitHub was unreachable both via
+the CONNECT proxy and by attempted direct access.
+
+Trajectory and result files are stored at
+`ai-infra-bench-data/opus-5-gpu-v3-hard/vllm-pr-34246`.
