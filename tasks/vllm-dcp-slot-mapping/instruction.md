@@ -11,6 +11,5 @@ It needs to remain correct across supported paged-KV-cache layouts and across
 successive decode steps, in both eager and CUDA-graph execution. Deployments
 that do not use DCP must continue to behave as before.
 
-I do not have a reduced test case or a diagnosis. Please follow the production
-path, reproduce the relevant cases yourself, and add suitable regression tests
-for the fix.
+Please investigate the production behavior and make the fix robust across
+these execution modes without changing non-DCP deployments.

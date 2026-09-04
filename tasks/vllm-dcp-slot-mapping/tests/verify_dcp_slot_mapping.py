@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """Behavioral verifier for production DCP slot mapping.
 
-The verifier deliberately calls only APIs that already existed on the Base
-(`BlockTables`, `append_block_ids`, and `compute_slot_mappings`). It discovers
-the newly added interleave configuration semantically instead of requiring the
-Oracle's parameter or helper names.
+The verifier enters through production Model Runner initialization, then uses
+the existing block-table update and slot-mapping boundaries. It does not name
+or call an Oracle-added helper or inspect candidate source.
 """
 
 from __future__ import annotations
 
-import inspect
 from math import ceil
 from pathlib import Path
+import sys
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import torch
+
+sys.path.insert(0, "/workspace/repo")
 
 
 PAD_SLOT_ID = -1
@@ -53,37 +55,49 @@ def configure_group(module, dcp_size: int, dcp_rank: int) -> None:
 
 
 def construct_tables(module, *, dcp_size: int, dcp_rank: int, interleave: int):
+    import vllm.v1.worker.gpu.model_runner as model_runner_module
+
     configure_group(module, dcp_size, dcp_rank)
-    kwargs = {
-        "block_sizes": [4, 8],
-        "max_num_reqs": 2,
-        "max_num_batched_tokens": 48,
-        "max_model_len": 64,
-        "device": torch.device("cuda"),
-    }
-    # Accept semantically equivalent constructor APIs. The Oracle passes the
-    # scalar directly, while an independent implementation may pass a DCP/CP
-    # configuration object instead; the verifier does not prescribe its name.
-    parameters = inspect.signature(module.BlockTables).parameters
-    scalar = [name for name in parameters if "interleave" in name]
-    configs = [
-        name for name in parameters
-        if name not in kwargs and ("dcp" in name or "parallel_config" in name)
+    configure_group(model_runner_module, dcp_size, dcp_rank)
+
+    runner = model_runner_module.GPUModelRunner.__new__(
+        model_runner_module.GPUModelRunner
+    )
+    runner.max_num_reqs = 2
+    runner.max_num_tokens = 48
+    runner.max_model_len = 64
+    runner.device = torch.device("cuda")
+    runner.parallel_config = SimpleNamespace(
+        prefill_context_parallel_size=1,
+        decode_context_parallel_size=dcp_size,
+        cp_kv_cache_interleave_size=interleave,
+    )
+    runner.compilation_config = SimpleNamespace(static_forward_context={})
+    runner.vllm_config = SimpleNamespace(
+        parallel_config=runner.parallel_config,
+        compilation_config=runner.compilation_config,
+        speculative_config=None,
+    )
+    runner.do_spec_decode = False
+    cache_groups = [
+        SimpleNamespace(kv_cache_spec=SimpleNamespace(block_size=size))
+        for size in (4, 8)
     ]
-    if scalar:
-        kwargs[scalar[0]] = interleave
-    elif configs:
-        kwargs[configs[0]] = SimpleNamespace(
-            decode_context_parallel_size=dcp_size,
-            dcp_world_size=dcp_size,
-            dcp_rank=dcp_rank,
-            cp_kv_cache_interleave_size=interleave,
-        )
-    else:
-        raise AssertionError("BlockTables has no path for the configured DCP layout")
-    tables = module.BlockTables(**kwargs)
-    for group_index, block_size in enumerate(kwargs["block_sizes"]):
-        expected_width = ceil(kwargs["max_model_len"] / (block_size * dcp_size))
+    cache_config = SimpleNamespace(kv_cache_groups=cache_groups)
+
+    # Exercise the production model-runner initialization boundary. The
+    # verifier stubs only unrelated backend/cache allocation work; it neither
+    # names nor calls a candidate-added helper or constructor parameter.
+    with (
+        patch.object(model_runner_module, "init_attn_backend", return_value=([], [])),
+        patch.object(model_runner_module, "init_kv_cache", return_value={}),
+        patch.object(model_runner_module, "get_kv_connector", return_value=None),
+    ):
+        runner.initialize_kv_cache(cache_config)
+
+    tables = runner.block_tables
+    for group_index, block_size in enumerate((4, 8)):
+        expected_width = ceil(runner.max_model_len / (block_size * dcp_size))
         actual_width = tables.block_tables[group_index].gpu.shape[1]
         if actual_width != expected_width:
             raise AssertionError(

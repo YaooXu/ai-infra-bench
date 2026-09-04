@@ -39,7 +39,7 @@ post-cutoff donor risk is intentional, explicit, and machine-checkable.
 
 ## Runtime scope
 
-The public Dev is a focused, single-GPU execution of the real production
+The hidden verifier is a focused, single-GPU execution of the real production
 Triton slot-mapping kernel with DCP world/rank metadata. It prepares local
 sequence metadata outside graph capture, then captures and replays the
 production slot-mapping kernel over persistent buffers using a real CUDA
