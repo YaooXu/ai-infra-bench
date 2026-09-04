@@ -86,6 +86,7 @@ RUN set -eux; \
     if ! id -u agent >/dev/null 2>&1; then \
         useradd --create-home --shell /bin/bash agent; \
     fi; \
+    PYTHONPATH=/workspace/repo python3 -c 'import importlib.util,pathlib,subprocess,vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; assert not subprocess.check_output(["git", "-C", str(root), "remote"]).strip(); assert not subprocess.check_output(["git", "-C", str(root), "tag"]).strip(); assert subprocess.check_output(["git", "-C", str(root), "rev-list", "--all", "--count"]).strip() == b"1"; print("candidate_source", src)'; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 

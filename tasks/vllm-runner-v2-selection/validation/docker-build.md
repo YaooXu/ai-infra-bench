@@ -72,7 +72,7 @@ PASS: tri-state selection and real GPUWorker consumption agree in both direction
 gpu=NVIDIA A100-SXM4-40GB capability=8.0 uuid=3815a178-ad22-4b81-5669-0533760a7e6b
 ```
 
-The canonical Docker build context is exactly `tasks/vllm-pr-39337/environment`;
+The canonical Docker build context is exactly `tasks/vllm-runner-v2-selection/environment`;
 its only local `COPY` source is `lock/native.sha256`. Solution, hidden tests,
 reproduction code, instruction, task metadata, and validation evidence are
 outside that context. The task-root `.dockerignore` excludes them as defense
