@@ -1,7 +1,7 @@
 schema_version = "1.4"
 
 [task]
-name = "ai-infra-bench/vllm-pr-34246"
+name = "ai-infra-bench/vllm-multimodal-merge-memory"
 version = "1.2.0"
 description = "Keep multimodal position masks on CPU while merging CUDA embeddings without synchronization or excess allocation."
 authors = [{ name = "AI Infra Bench Curators" }]
