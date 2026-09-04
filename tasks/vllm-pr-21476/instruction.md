@@ -1,0 +1,25 @@
+I am profiling INT8 per-token-group quantization in vLLM on an A100. The CUDA
+calls still use the Triton implementation, and that path has become a
+bottleneck for the shapes below. Please add a native CUDA implementation and
+route CUDA calls to `per_token_group_quant_int8` through vLLM's existing `_C`
+operator namespace. Platforms that cannot use the native operator must keep the
+current Triton fallback.
+
+The operator must support contiguous FP16, BF16, and FP32 inputs along with
+configurable group size, epsilon, and INT8 bounds. Its quantized values
+may differ from the deterministic Triton/reference result by at most one
+integer step, and its scales must remain numerically equivalent.
+
+Work in `/workspace/repo`. After changing native sources, rebuild the focused
+candidate `_C` extension with `/opt/bench/rebuild_native.sh`. The script reports
+the candidate source digest, build command, resulting `_C` SHA-256, and the
+path loaded by a cold Python process, so use that rebuilt extension for
+validation. Keep the public native operator name
+`per_token_group_quant_int8`.
+
+For the performance check, use one NVIDIA A100-SXM4-40GB and first confirm
+correctness. The BF16 cases are `(32, 128)/group=64`,
+`(64, 256)/group=128`, `(16, 512)/group=64`, and
+`(256, 4096)/group=128`. Give each path 40 warmups, then collect five medians
+of 400 calls. The native path must be at least `1.5x` faster than the Triton
+path in every case.
