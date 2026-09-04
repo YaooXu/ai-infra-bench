@@ -1,16 +1,16 @@
 Work in `/workspace/repo`.
 
-We are trying to move a deployment that uses Decode Context Parallelism to GPU
-Model Runner V2. The same model works without DCP, but with both options enabled
-some requests fail or produce different results. We can also reproduce the
-problem when CUDA graphs are enabled, so we cannot roll V2 out to this serving
-configuration.
+I am trying to move one of my deployments from the original GPU model runner
+to Model Runner V2. It already uses Decode Context Parallelism and works as
+expected with the original runner, but enabling V2 makes some requests fail or
+produce different output. I see the same problem when CUDA graphs are enabled,
+so I cannot roll V2 out for this deployment yet.
 
-Implement complete Model Runner V2 support for the existing DCP configuration.
-The result must remain correct across supported paged-KV-cache layouts and
-successive decode steps, in eager and CUDA-graph execution. Serving without DCP
-must remain backward compatible.
+Please make the existing DCP configuration work correctly with Model Runner V2.
+It needs to remain correct across supported paged-KV-cache layouts and across
+successive decode steps, in both eager and CUDA-graph execution. Deployments
+that do not use DCP must continue to behave as before.
 
-I do not have a reduced reproduction or an internal diagnosis. Please inspect
-the production path, construct focused tests for the configuration, and make
-the change suitable for production.
+I do not have a reduced test case or a diagnosis. Please follow the production
+path, reproduce the relevant cases yourself, and add suitable regression tests
+for the fix.
