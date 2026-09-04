@@ -21,20 +21,23 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
-  title: 'AI Infra Bench | Task Registry',
-  description: 'How much real AI infrastructure engineering work can frontier models solve?',
+  title: 'AI Infra Bench | AI Infrastructure Benchmark',
+  description:
+    'AI Infra Bench evaluates frontier models on real-world AI infrastructure engineering workloads, beginning with vLLM.',
   icons: {
     icon: [{ url: withBasePath('/favicon.svg'), type: 'image/svg+xml' }],
   },
   openGraph: {
-    title: 'AI Infra Bench',
-    description: 'How much real AI infrastructure engineering work can frontier models solve?',
+    title: 'AI Infra Bench | AI Infrastructure Benchmark',
+    description:
+      'AI Infra Bench evaluates frontier models on real-world AI infrastructure engineering workloads, beginning with vLLM.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Infra Bench',
-    description: 'How much real AI infrastructure engineering work can frontier models solve?',
+    title: 'AI Infra Bench | AI Infrastructure Benchmark',
+    description:
+      'AI Infra Bench evaluates frontier models on real-world AI infrastructure engineering workloads, beginning with vLLM.',
   },
 };
 

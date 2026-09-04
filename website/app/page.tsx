@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import { SiteHeader } from '@/app/components/site-header';
 import { TaskExplorer } from '@/app/components/task-explorer';
 import { withBasePath } from '@/app/lib/base-path';
 import { getRepositoryBrand } from '@/app/lib/repository-brand';
 import { tasks } from '@/app/lib/tasks';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 export default function Home() {
   const taskSummaries = tasks.map((task) => {
@@ -20,7 +25,6 @@ export default function Home() {
       accelerator: task.accelerator,
     };
   });
-
   return (
     <main>
       <SiteHeader />
