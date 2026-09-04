@@ -1,4 +1,4 @@
-# vLLM PR 39337 · Model Runner V2 selection contract
+# vLLM Model Runner V2 selection
 
 ## What the task asks
 
@@ -9,11 +9,12 @@ Implement tri-state behavior for `VLLM_USE_V2_MODEL_RUNNER` and propagate the re
 - Base image: pinned digest in `environment/Dockerfile`
 - Workdir: `/workspace/repo`
 - Runtime policy: offline (`network_mode = "no-network"`)
-- GPU: 1×GPU (A100 in metadata)
+- GPU: one A100-class accelerator
+- Agent budget: 10 hours
 
 ## Verifier
 
-- `tests/test.sh` runs `/tests/verify_runner_consumers.py`
+- A separate hidden verifier runs `/tests/verify_runner_consumers.py`
 - Checks defaults, explicit overrides, incompatibility reporting, and real GPU worker consumption path
 - Reward is written to `/logs/verifier/reward.txt`
 
@@ -24,7 +25,7 @@ Implement tri-state behavior for `VLLM_USE_V2_MODEL_RUNNER` and propagate the re
 - `environment/`: deterministic base and native runtime checks
 - `solution/`: Oracle patch + solve script
 - `tests/`: behavioral + hidden-mode checks
-- `validation/`: build/run artifacts
+- `validation/`: control manifest and evidence for the frozen snapshot
 
 ## Run
 

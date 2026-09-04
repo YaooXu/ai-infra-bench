@@ -1,5 +1,34 @@
 # Docker build and baseline validation
 
+## 2026-09-05 public-startup verifier repair
+
+The verifier no longer calls `_validate_v2_model_runner` or any other candidate
+private helper. A tiny local Qwen3 Hugging Face configuration now drives the
+real `ModelConfig` and `VllmConfig` construction path; the selected value is
+then observed through the production `GPUWorker` constructor. Unsupported
+forced V2 is checked at this public startup boundary using
+`kv_sharing_fast_prefill`, not by naming the implementation that detects it.
+
+Direct execution on the final image and NVIDIA H20-3e produced:
+
+```text
+Base:                              0
+Oracle:                            1
+Independent alternative:           1
+Tri-state-only incomplete control:  0
+Previous Opus-5 candidate artifact: 1
+```
+
+The previous incomplete control was replaced because it only failed through
+the old synthetic subclass/private-helper coupling and passed once exercised
+through a valid production configuration. The replacement is a genuine
+behavioral near miss: it preserves unset/explicit tri-state parsing and forced
+V2 rejection, but never implements configuration-driven default selection.
+
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 ## 2026-09-03 verifier-independence repair
 
 The rebuilt hidden verifier no longer requires the Oracle's private selector
@@ -336,3 +365,6 @@ user 1000
   from a supposedly atomic oracle.
 - Feature-addition tasks need an isolated Oracle positive pass; Base failing on
   a missing property is insufficient by itself.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

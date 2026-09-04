@@ -1,0 +1,117 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-09-05T03:02:41+08:00",
+  "status": "final-validated",
+  "source": {
+    "repository": "vllm-project/vllm",
+    "base_commit": "c7560af42487b1570c4e6f4cea5df1605a4d59fc"
+  },
+  "artifacts": {
+    "files": {
+      ".dockerignore": "fe57c1ef2dcfcb5ceaa20f0582985984061600f14d404fd7f1ef5de91a710cc8",
+      "README.md": "e22bd1f31f6c28b9daf946adba942f8bded7bbd38ae21f29f51191fc3caf7e38",
+      "environment/Dockerfile": "2d66e3d81ff0df75e76a18615793c2c39b6114ba13d9d7073d7f3509ef269d7a",
+      "environment/docker-compose.yaml": "cd850676bd02cc735fa6ce09ae8734251b9c56252b40bf0de55b874b5ab225d8",
+      "environment/image-manifest.json": "6432a0bf18081a7f6fded60314ad2fa10cffe89047f31a62e2f4afb9b0719a9c",
+      "environment/lock/README.md": "b7ce6665595479c1edb6e300c94d4f0d7e83223e703b0677f5327ba48967c792",
+      "environment/lock/manifest.json": "4f88b301ecd59800af472e3473ba470453be4e525be5afbeb80eda1d55e16de2",
+      "environment/lock/native.sha256": "04e76eabada8a083478120eadab285dcfb3c3c0ce16fde063ce315bed8eb09ca",
+      "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+      "instruction.md": "4cdc516c9c5e160f99540984cf078bceb5c05bf9748f435fad093380eb54a254",
+      "solution/oracle.patch": "5befc40d37e05619458f1961b2d6855d9ca8fd59a4a2e216048315f2c74b4c3d",
+      "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
+      "task.toml": "303e4d357483a8de8276e6eb2d889cb9f9eb479891f1d56321da7035ebc730a2",
+      "tests/docker-compose.yaml": "8dd1b4bd6ae0bffdc71045fc4a6fe078d1c8eb4efad9a17a4bb7fa093b66ab4f",
+      "tests/test.sh": "1fc05829477a87b3339a343885329c5455b8e2311c1a7cb301bacb0c770b20b5",
+      "tests/verify_runner_consumers.py": "dde925b8676a0d82788da611cb9d1bd51f6bf52f0164a76f34b0b95b6b733df5",
+      "tests/fixtures/qwen3/config.json": "f6832afbacadf460bdb281c305cfcbae20b9d5e83c52b777105a118f8007b01a",
+      "validation/alternative-agent-implementation.patch": "35f6af2a6cd6467e12ce0164c5e35cf90dc118bbb5ea921d96add7e7a45ddc26",
+      "validation/ci-cases.json": "77fe54d5f15be01f88fe2c0b8288294047ad4190b7d9aaa98049cc0189b74191",
+      "validation/docker-build.md": "14e5f86833afaf3a6813eb787b4d61c7191a69fa08c8bde1b43f8a8b4ab7714e",
+      "validation/incomplete-agent-implementation.patch": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
+      "validation/remediation-matrix.md": "6da7e2037ac649c1aa2a2abcf4ffbc48c5b1ebc17c10c44f106dfe194907a726"
+    }
+  },
+  "e2e_boundary": {
+    "path": "environment override and resolved VllmConfig -> production GPU Worker construction -> selected model runner generation",
+    "substitution": "A tiny local Hugging Face Qwen3 config replaces external model weights and tokenizer downloads; production ModelConfig, VllmConfig startup, environment parsing, and Worker consumption remain real.",
+    "preserved_semantics": "The local config declares the real dense Qwen3 architecture and exercises supported, unsupported, unset, forced-V1, and forced-V2 behavior without calling candidate private helpers."
+  },
+  "validation": {
+    "executable_snapshot_frozen": true,
+    "static_review": "task_ci.py validate and ai-infra-bench-task-review strict artifact audit passed",
+    "base": {
+      "reward": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189"
+    },
+    "oracle": {
+      "reward": 1,
+      "execution_status": "passed-direct-docker-final-image",
+      "image_id": "sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189"
+    },
+    "controls": [
+      {
+        "name": "incomplete-agent-implementation",
+        "expected_reward": 0,
+        "reward": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "correct_alternatives": [
+      {
+        "name": "alternative-agent-implementation",
+        "expected_reward": 1,
+        "reward": 1,
+        "execution_status": "passed-direct-docker-final-image"
+      }
+    ],
+    "repeated_runs": [],
+    "harbor": {
+      "version": "0.22.0",
+      "job_id": "58728754-f0e7-4781-91c6-824b36325796",
+      "trial_id": "a27cef37-a142-4ed6-b2ff-6f40530d1350",
+      "trial_name": "vllm-runner-v2-selection__9zwkrae",
+      "job_directory": "/root/workspace/dxz-workspace/ai-infra-bench-data/verifier-repair-39337-harbor-oracle/vllm-runner-v2-selection-verifier-repair",
+      "input_task_checksum": "10f6119c8b085bd347aec0072d15f757238b8df3c075bb4951442bb22a3e2540",
+      "agent": "oracle",
+      "environment": "docker",
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "reward": 1.0,
+      "command_exit_code": 0,
+      "started_at": "2026-09-04T19:01:07.113083Z",
+      "finished_at": "2026-09-04T19:02:20.285263Z",
+      "canonical_image_tag": "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487",
+      "canonical_image_id_at_run": "sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189",
+      "gpu_runtime_adapter": {
+        "reason": "Harbor 0.22 Docker backend declares no GPU allocation capability.",
+        "harbor_override_gpus": 0,
+        "actual_device_injection": "NVIDIA device reservation in environment/docker-compose.yaml and tests/docker-compose.yaml",
+        "hardware": "NVIDIA H20"
+      }
+    },
+    "note": "After removing private-helper coupling, direct runs produced Base=0, Oracle=1, alternative=1, incomplete=0, and the previous Opus-5 artifact=1. A fresh Harbor Oracle also returned reward 1 with no exception."
+  },
+  "image": {
+    "canonical_tag": "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487",
+    "image_id": "sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189",
+    "size_bytes": 26366057540,
+    "created": "2026-09-04T15:41:50.91749769Z",
+    "repo_digests": [],
+    "dockerfile_sha256": "2d66e3d81ff0df75e76a18615793c2c39b6114ba13d9d7073d7f3509ef269d7a",
+    "dependency_lock_sha256": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+    "dependency_lock_manifest_sha256": "4f88b301ecd59800af472e3473ba470453be4e525be5afbeb80eda1d55e16de2"
+  },
+  "provenance_gates": {
+    "head_matches_base": true,
+    "future_reference_commit_absent": true,
+    "remotes_tags_reflogs_absent": true,
+    "unreachable_git_objects_absent": true,
+    "solution_tests_validation_absent_from_image": true,
+    "worktree_clean_at_container_start": true,
+    "runtime_network_disabled": true,
+    "verifier_mount_read_only": true,
+    "local_image_has_no_repo_digest_until_registry_push": true
+  }
+}

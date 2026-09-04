@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 
 ARG VLLM_BASE_SHA=c7560af42487b1570c4e6f4cea5df1605a4d59fc
 ARG VLLM_BASE_TREE=00dedbf38a187d7be24007ab92ce0158c646d024
-ARG VLLM_SOURCE_SHA256=b88f58e5acd39d0b0c98e008635d48fcde8ed1b0d4d6c698a9b4fa59aa44352f
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 USER root
 
@@ -14,44 +14,42 @@ WORKDIR /workspace
 
 COPY lock/native.sha256 /tmp/native.sha256
 
-# Acquire the exact survey base and construct one canonical synthetic commit.
+# Acquire the exact survey Base and retain its reachable history.
 # Docker's predefined proxy args are deliberately not redeclared, so proxy
 # values are not persisted in image configuration or history.
 RUN set -eux; \
-    apt-get \
-        -o Acquire::http::Proxy=false \
-        -o Acquire::https::Proxy=false \
-        update; \
-    DEBIAN_FRONTEND=noninteractive apt-get \
-        -o Acquire::http::Proxy=false \
-        -o Acquire::https::Proxy=false \
-        install -y --no-install-recommends \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         git=1:2.34.1-1ubuntu1.17 \
         git-man=1:2.34.1-1ubuntu1.17 \
         liberror-perl=0.17029-1; \
     rm -rf /var/lib/apt/lists/*; \
-    curl -fL \
-        --retry 8 \
-        --retry-all-errors \
-        --retry-delay 3 \
-        --connect-timeout 30 \
-        --max-time 600 \
-        "https://codeload.github.com/vllm-project/vllm/tar.gz/${VLLM_BASE_SHA}" \
-        -o /tmp/vllm-source.tar.gz; \
-    echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
     mkdir -p /workspace/repo; \
-    tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \
-    rm -f /tmp/vllm-source.tar.gz; \
-    git -C /workspace/repo init; \
-    git -C /workspace/repo config user.name "AI Infra Bench"; \
-    git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -f -A; \
-    test "$(git -C /workspace/repo write-tree)" = "${VLLM_BASE_TREE}"; \
-    git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
-    git -C /workspace/repo branch -M benchmark-base; \
+    git -C /workspace/repo init -q; \
+    git -C /workspace/repo config core.logAllRefUpdates false; \
+    git -C /workspace/repo config http.version HTTP/1.1; \
+    git -C /workspace/repo remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git -C /workspace/repo fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e /workspace/repo/.git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
+    git -C /workspace/repo remote remove origin; \
+    rm -rf /workspace/repo/.git/logs; \
+    rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1
+    test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
+    test ! -e /workspace/repo/.git/shallow; \
+    test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"
 
 # Bind the exact Python source to an explicit, hash-locked whitelist of native
 # and generated artifacts from the closest pre-cutoff official release. The
@@ -86,7 +84,7 @@ RUN set -eux; \
     if ! id -u agent >/dev/null 2>&1; then \
         useradd --create-home --shell /bin/bash agent; \
     fi; \
-    PYTHONPATH=/workspace/repo python3 -c 'import importlib.util,pathlib,subprocess,vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; assert not subprocess.check_output(["git", "-C", str(root), "remote"]).strip(); assert not subprocess.check_output(["git", "-C", str(root), "tag"]).strip(); assert subprocess.check_output(["git", "-C", str(root), "rev-list", "--all", "--count"]).strip() == b"1"; print("candidate_source", src)'; \
+    PYTHONPATH=/workspace/repo python3 -c 'import importlib.util,pathlib,subprocess,vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; assert not subprocess.check_output(["git", "-C", str(root), "remote"]).strip(); assert not subprocess.check_output(["git", "-C", str(root), "tag"]).strip(); assert int(subprocess.check_output(["git", "-C", str(root), "rev-list", "--all", "--count"])) > 1; print("candidate_source", src)'; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 

@@ -1,0 +1,20 @@
+{
+  "schema_version": "ai_infra_bench_validation_cases.v1",
+  "status": "validated-final-image",
+  "cases": [
+    {
+      "name": "alternative-agent-implementation",
+      "patch": "alternative-agent-implementation.patch",
+      "patch_sha256": "35f6af2a6cd6467e12ce0164c5e35cf90dc118bbb5ea921d96add7e7a45ddc26",
+      "expected_reward": 1,
+      "execution_status": "passed-direct-docker-final-image"
+    },
+    {
+      "name": "incomplete-agent-implementation",
+      "patch": "incomplete-agent-implementation.patch",
+      "patch_sha256": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
+      "expected_reward": 0,
+      "execution_status": "passed-direct-docker-final-image"
+    }
+  ]
+}

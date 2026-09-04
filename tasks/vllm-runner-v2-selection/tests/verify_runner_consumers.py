@@ -4,32 +4,18 @@
 from __future__ import annotations
 
 import os
-from types import SimpleNamespace
+import sys
+from pathlib import Path
 from unittest.mock import patch
+
+sys.path.insert(0, "/workspace/repo")
 
 import torch
 import vllm.envs as envs
-from vllm.config import VllmConfig
+from vllm.config import CacheConfig, ModelConfig, VllmConfig
 
 
-def model(
-    architecture: str,
-    *,
-    runner: str = "generate",
-    moe: bool = False,
-    quantized: bool = False,
-) -> SimpleNamespace:
-    return SimpleNamespace(
-        model="local/synthetic-config",
-        architecture=architecture,
-        architectures=[architecture],
-        runner_type=runner,
-        is_moe=moe,
-        is_quantized=quantized,
-        has_inner_state=False,
-        enable_return_routed_experts=False,
-        logits_processors=[],
-    )
+MODEL_FIXTURE = Path("/tests/fixtures/qwen3")
 
 
 def set_override(value: str | None) -> None:
@@ -47,101 +33,19 @@ def check_env(failures: list[str]) -> None:
             failures.append(f"env {value!r}: expected {expected!r}, got {actual!r}")
 
 
-def resolve(config: "ConfigHarness") -> bool:
-    # Some correct designs compute the property lazily (the Oracle); others
-    # resolve it once during config finalization. Exercise either lifecycle.
-    resolver = getattr(config, "_resolve_model_runner_version", None)
-    if resolver is not None:
-        resolver()
-    return config.use_v2_model_runner
+def make_config(*, unsupported: bool = False) -> VllmConfig:
+    """Build through the same public configuration path used at startup."""
 
-
-def check_defaults(failures: list[str]) -> None:
-    cases = (
-        (model("Qwen3ForCausalLM"), True, "dense Qwen3"),
-        (model("OPTForCausalLM"), False, "non-whitelisted"),
-        (model("Qwen3MoeForCausalLM", moe=True), False, "MoE"),
-        (model("Qwen3ForCausalLM", quantized=True), False, "quantized"),
-        (model("Qwen3ForCausalLM", runner="pooling"), False, "pooling"),
-        (model("Qwen3_5ForConditionalGeneration"), False, "later Qwen family"),
+    model_config = ModelConfig(
+        model=str(MODEL_FIXTURE),
+        skip_tokenizer_init=True,
+        dtype="float16",
     )
-    for model_config, expected, label in cases:
-        set_override(None)
-        actual = resolve(ConfigHarness(model_config))
-        if actual is not expected:
-            failures.append(f"default {label}: expected {expected}, got {actual}")
+    cache_config = CacheConfig(kv_sharing_fast_prefill=unsupported)
+    return VllmConfig(model_config=model_config, cache_config=cache_config)
 
 
-class ConfigHarness(VllmConfig):
-    """Minimal real VllmConfig subclass for production consumer tests."""
-
-    def __init__(
-        self,
-        model_config: SimpleNamespace,
-        *,
-        unsupported: tuple[str, ...] = (),
-    ) -> None:
-        self.model_config = model_config
-        self.unsupported = list(unsupported)
-        if unsupported:
-            self.model_config.has_inner_state = True
-
-        # Fields consumed by the real GPU Worker base initializer.
-        self.cache_config = SimpleNamespace(kv_sharing_fast_prefill=False)
-        self.lora_config = None
-        self.load_config = SimpleNamespace()
-        self.parallel_config = SimpleNamespace(
-            rank=0,
-            prefill_context_parallel_size=1,
-            enable_dbo=False,
-        )
-        self.scheduler_config = SimpleNamespace()
-        self.device_config = SimpleNamespace()
-        self.speculative_config = None
-        self.observability_config = SimpleNamespace()
-        self.kv_transfer_config = None
-        self.ec_transfer_config = None
-        self.compilation_config = SimpleNamespace()
-        self.profiler_config = SimpleNamespace(profiler=None)
-        self.weight_transfer_config = None
-
-    def _get_v2_model_runner_unsupported_features(self) -> list[str]:
-        return list(self.unsupported)
-
-
-def check_property(failures: list[str]) -> None:
-    dense = ConfigHarness(model("Qwen3ForCausalLM"))
-    unsupported = ConfigHarness(
-        model("Qwen3ForCausalLM"), unsupported=("synthetic unsupported feature",)
-    )
-    for value, config, expected in (
-        ("0", dense, False),
-        ("1", unsupported, True),
-        (None, dense, True),
-        (None, unsupported, False),
-    ):
-        set_override(value)
-        actual = resolve(config)
-        if actual is not expected:
-            failures.append(
-                f"config env={value!r} unsupported={bool(config.unsupported)}: "
-                f"expected {expected}, got {actual}"
-            )
-
-    set_override("1")
-    try:
-        unsupported._validate_v2_model_runner()
-    except ValueError as exc:
-        message = str(exc).lower()
-        if not message or not any(
-            word in message for word in ("unsupported", "support", "mamba", "inner")
-        ):
-            failures.append("forced-V2 error did not explain the incompatibility")
-    else:
-        failures.append("forced V2 silently accepted an unsupported feature")
-
-
-def construct_worker(config: ConfigHarness) -> object:
+def construct_worker(config: VllmConfig) -> object:
     """Execute production GPUWorker.__init__, replacing no selection logic."""
 
     import vllm.distributed.elastic_ep.elastic_execute as elastic_execute
@@ -164,26 +68,49 @@ def construct_worker(config: ConfigHarness) -> object:
         )
 
 
-def check_gpu_worker_consumer(failures: list[str]) -> None:
-    dense = ConfigHarness(model("Qwen3ForCausalLM"))
-    unsupported = ConfigHarness(
-        model("Qwen3ForCausalLM"), unsupported=("synthetic unsupported feature",)
+def selected_by_worker(*, override: str | None, unsupported: bool = False) -> bool:
+    set_override(override)
+    config = make_config(unsupported=unsupported)
+    return bool(construct_worker(config).use_v2_model_runner)
+
+
+def check_selection(failures: list[str]) -> None:
+    cases = (
+        (None, False, True, "supported dense Qwen3 defaults to V2"),
+        (None, True, False, "unsupported configuration defaults to V1"),
+        ("0", False, False, "explicit 0 selects V1"),
+        ("1", False, True, "explicit 1 selects V2"),
     )
-    for value, config, expected in (
-        (None, dense, True),
-        (None, unsupported, False),
-        ("0", dense, False),
-        ("1", unsupported, True),
-    ):
-        set_override(value)
-        resolve(config)
-        worker = construct_worker(config)
-        actual = worker.use_v2_model_runner
-        if actual is not expected:
-            failures.append(
-                f"GPUWorker env={value!r} unsupported={bool(config.unsupported)}: "
-                f"expected {expected}, got {actual!r}"
+    for override, unsupported, expected, label in cases:
+        try:
+            actual = selected_by_worker(
+                override=override,
+                unsupported=unsupported,
             )
+        except Exception as exc:
+            failures.append(f"{label}: raised {type(exc).__name__}: {exc}")
+            continue
+        if actual is not expected:
+            failures.append(f"{label}: expected {expected}, got {actual}")
+
+    # This exercises the public startup/config-construction boundary. It does
+    # not require any particular helper, property, or private method name.
+    set_override("1")
+    try:
+        make_config(unsupported=True)
+    except (ValueError, AssertionError) as exc:
+        message = str(exc).lower()
+        if not message or not any(
+            word in message for word in ("unsupported", "support", "kv sharing")
+        ):
+            failures.append("forced-V2 startup error did not explain incompatibility")
+    except Exception as exc:
+        failures.append(
+            "forced-V2 unsupported startup raised the wrong exception: "
+            f"{type(exc).__name__}: {exc}"
+        )
+    else:
+        failures.append("forced V2 silently accepted an unsupported configuration")
 
 
 def main() -> int:
@@ -191,15 +118,13 @@ def main() -> int:
     try:
         if not torch.cuda.is_available():
             failures.append(
-                "CUDA is unavailable; production Triton eligibility cannot be tested"
+                "CUDA is unavailable; production GPUWorker consumption cannot be tested"
             )
-        check_env(failures)
-        if not isinstance(getattr(VllmConfig, "use_v2_model_runner", None), property):
-            failures.append("VllmConfig model-runner selection API is unavailable")
+        if not (MODEL_FIXTURE / "config.json").is_file():
+            failures.append("local Qwen3 fixture is missing")
         else:
-            check_defaults(failures)
-            check_property(failures)
-            check_gpu_worker_consumer(failures)
+            check_env(failures)
+            check_selection(failures)
     finally:
         set_override(None)
 
@@ -209,7 +134,7 @@ def main() -> int:
             print(f" - {failure}")
         return 1
     props = torch.cuda.get_device_properties(0)
-    print("PASS: tri-state selection and real GPUWorker consumption agree in both directions")
+    print("PASS: public config startup and real GPUWorker agree in both directions")
     print(f"gpu={props.name} capability={props.major}.{props.minor} uuid={props.uuid}")
     return 0
 

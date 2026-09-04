@@ -12,6 +12,5 @@ must select V1 and `1` must select V2. If I explicitly request V2 for an
 unsupported configuration, startup should explain the incompatibility instead
 of silently changing my choice.
 
-Please make sure every production consumer in one engine startup uses the same
-resolved selection. I do not have a target module or a ready-made test matrix;
-please implement the behavior and build configuration and consumer tests for it.
+Please make sure the worker created for an engine startup uses the resolved
+selection rather than reading a conflicting default.
