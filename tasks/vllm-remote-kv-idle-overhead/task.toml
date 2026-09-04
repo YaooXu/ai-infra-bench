@@ -1,7 +1,7 @@
 schema_version = "1.4"
 
 [task]
-name = "ai-infra-bench/vllm-pr-35781"
+name = "ai-infra-bench/vllm-remote-kv-idle-overhead"
 version = "1.0.0"
 description = "Avoid repeatedly scanning blocked remote-KV requests in the vLLM scheduler."
 authors = [{ name = "AI Infra Bench Curators" }]
