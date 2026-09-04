@@ -1,13 +1,13 @@
 Work in `/workspace/repo`.
 
-We are seeing an accuracy regression for Mamba-family models in NIXL-style
-disaggregated prefill/decode serving with FULL CUDA graphs. Requests finish and
-there is no exception, but decode-side tokens can differ from eager serving
-after recurrent state has already been produced or transferred.
+I am seeing an accuracy regression with Mamba-family models in NIXL-style
+disaggregated prefill/decode serving when FULL CUDA graphs are enabled. Requests
+finish without an exception, but after recurrent state has been produced or
+transferred, some decode-side tokens differ from eager serving.
 
-Please restore FULL-CG accuracy without changing genuine first-token prompts,
+Please restore the FULL-CG result without changing genuine first-token prompts,
 ordinary decode, or supported speculative-serving paths.
 
-I do not have a reduced reproduction or a metadata-level diagnosis. Build
-focused tests that distinguish this topology from neighboring working cases,
-then implement the fix.
+I do not have a reduced reproduction or a metadata-level diagnosis. Please
+build focused tests that distinguish this deployment from the neighboring
+working cases, then implement and validate the fix.
