@@ -1,7 +1,7 @@
 schema_version = "1.4"
 
 [task]
-name = "ai-infra-bench/vllm-pr-34183"
+name = "ai-infra-bench/vllm-request-lifecycle-leak"
 version = "1.1.0"
 description = "Fix completed vLLM requests retaining multimodal payloads until cyclic garbage collection."
 authors = [{ name = "AI Infra Bench Curators" }]
