@@ -1,5 +1,9 @@
 # Validation record
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 Validated on 2026-09-04 using the account-local Docker daemon at
 `/root/workspace/dxz-workspace/.docker-dxz/run/docker.sock`. Runtime checks used
 `--network none`; only loopback HTTP sockets were exercised.
@@ -53,3 +57,6 @@ The accepted path checks:
 
 This is intentionally a frontend orchestration test. It does not claim to test
 model loading, Kubernetes objects, multi-node routing, or inference throughput.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

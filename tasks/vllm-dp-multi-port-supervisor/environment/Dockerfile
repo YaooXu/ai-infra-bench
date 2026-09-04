@@ -2,9 +2,8 @@ ARG BASE_IMAGE=vllm/vllm-openai:v0.21.0@sha256:4ac9b7c6dabc3ec762c0edef4e9245abe
 FROM ${BASE_IMAGE}
 
 ARG VLLM_BASE_SHA=9b9d5dbaab852a1c615fe83a7f92881d353503db
-ARG VLLM_SOURCE_SHA256=cc81853110ee854c6c64cbfc9bca8d75887d48ea6bc27c38f63131ce0a71f1f7
-ARG VLLM_SOURCE_TREE=94c86336cf2ea962766d00bb389d43a4d6aaf697
-ARG VLLM_SOURCE_URL=https://codeload.github.com/vllm-project/vllm/tar.gz/9b9d5dbaab852a1c615fe83a7f92881d353503db
+ARG VLLM_SOURCE_TREE=48b639edab89a4d62d26e7355f0226609d3a035b
+ARG VLLM_REPO=https://github.com/vllm-project/vllm.git
 
 USER root
 
@@ -13,7 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /workspace
 
-# The archive is the exact survey base and contains no upstream Git metadata.
+# The checkout is the exact survey Base with its reachable Git history.
 # Native artifacts come from the closest official pre-cutoff release image;
 # this PR changes only Python frontend orchestration code.
 RUN set -eux; \
@@ -23,29 +22,33 @@ RUN set -eux; \
         git-man=1:2.34.1-1ubuntu1.17 \
         liberror-perl=0.17029-1; \
     rm -rf /var/lib/apt/lists/*; \
-    command -v curl; \
     command -v git; \
-    curl -fL \
-        --retry 8 \
-        --retry-all-errors \
-        --retry-delay 3 \
-        --connect-timeout 30 \
-        --max-time 600 \
-        "${VLLM_SOURCE_URL}" \
-        -o /tmp/vllm-source.tar.gz; \
-    echo "${VLLM_SOURCE_SHA256}  /tmp/vllm-source.tar.gz" | sha256sum -c -; \
     mkdir -p /workspace/repo; \
-    tar -xzf /tmp/vllm-source.tar.gz --strip-components=1 -C /workspace/repo; \
-    rm -f /tmp/vllm-source.tar.gz; \
-    git -C /workspace/repo init; \
-    git -C /workspace/repo config user.name "AI Infra Bench"; \
-    git -C /workspace/repo config user.email "noreply@ai-infra-bench.local"; \
-    git -C /workspace/repo add -f -A; \
-    test "$(git -C /workspace/repo write-tree)" = "${VLLM_SOURCE_TREE}"; \
-    git -C /workspace/repo commit --quiet -m "Synthetic benchmark base"; \
-    git -C /workspace/repo branch -M benchmark-base; \
+    git -C /workspace/repo init -q; \
+    git -C /workspace/repo config core.logAllRefUpdates false; \
+    git -C /workspace/repo config http.version HTTP/1.1; \
+    git -C /workspace/repo remote add origin "${VLLM_REPO}"; \
+    fetch_step() { \
+      for attempt in 1 2 3; do \
+        git -C /workspace/repo fetch "$@" && return 0; \
+      done; \
+      return 1; \
+    }; \
+    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    while test -e /workspace/repo/.git/shallow; do \
+      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
+    done; \
+    git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
+    test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_SOURCE_TREE}"; \
+    git -C /workspace/repo remote remove origin; \
+    rm -rf /workspace/repo/.git/logs; \
+    rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" = 1; \
+    test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
+    test ! -e /workspace/repo/.git/shallow; \
+    test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"; \
     VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
     find "${VLLM_SITE}" -type f \( -name '*.so' -o -name '_version.py' \) \
         -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/workspace/repo/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' "${VLLM_SITE}" {} +; \

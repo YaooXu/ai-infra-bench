@@ -22,6 +22,8 @@ from urllib.request import urlopen
 
 import psutil
 
+sys.path.insert(0, "/workspace/repo")
+
 
 FAKE_SERVER = r'''\
 import asyncio
