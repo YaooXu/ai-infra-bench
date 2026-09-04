@@ -36,7 +36,7 @@ production file is Python and has no native intersection.
 
 ## Validation scope
 
-The public Dev constructs real `CommonAttentionMetadata` on CUDA, uses the
+The hidden verifier constructs real `CommonAttentionMetadata` on CUDA, uses the
 real Mamba metadata builder in `CUDAGraphMode.FULL`, and invokes the production
 `build_for_cudagraph_capture` path. It checks the silent classification bug:
 a one-token row with prior Mamba state must be decode metadata, while a true

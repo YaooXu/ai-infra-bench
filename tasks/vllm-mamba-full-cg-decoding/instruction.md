@@ -8,6 +8,5 @@ transferred, some decode-side tokens differ from eager serving.
 Please restore the FULL-CG result without changing genuine first-token prompts,
 ordinary decode, or supported speculative-serving paths.
 
-I do not have a reduced reproduction or a metadata-level diagnosis. Please
-build focused tests that distinguish this deployment from the neighboring
-working cases, then implement and validate the fix.
+Please fix this without weakening the neighboring eager, first-token, ordinary
+decode, or speculative-serving behavior.

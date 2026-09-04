@@ -1,5 +1,9 @@
 # Validation record
 
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.
+
 Status: focused CUDA behavior is calibrated. The task does not claim to run a
 Mamba model, NIXL transport, or an end-to-end accuracy suite.
 
@@ -77,3 +81,6 @@ A prior frozen Opus-4.8 candidate did produce the plausible broad fix described
 above and is rejected by the strengthened first-token guard. Together these
 runs show that the prompt does not hand the implementation to the Agent while
 the verifier distinguishes an attractive but incorrect solution.
+> **Historical evidence only.** The instruction, verifier, task configuration,
+> or environment changed during the current hardening pass. These results do
+> not validate the current executable snapshot and must be regenerated.

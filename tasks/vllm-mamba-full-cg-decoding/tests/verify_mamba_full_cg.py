@@ -8,6 +8,8 @@ from types import SimpleNamespace
 
 import torch
 
+sys.path.insert(0, "/workspace/repo")
+
 from vllm.config.compilation import CUDAGraphMode
 from vllm.v1.attention.backend import CommonAttentionMetadata
 from vllm.v1.attention.backends.mamba_attn import (
@@ -110,6 +112,53 @@ def make_builder(
     )
 
 
+def replay_recurrent_graph(
+    metadata: BaseMambaAttentionMetadata,
+    *,
+    device: torch.device,
+    expected_first: float,
+    expected_replay: float,
+) -> None:
+    """Consume the production classification in an actual CUDA graph.
+
+    The tiny recurrence substitutes for model weights and the Mamba kernel, but
+    preserves the behavior that matters here: a decode row consumes persistent
+    state while a first-token prefill starts a new state.  Capturing and
+    replaying the device operation prevents a metadata-only repair from passing
+    without producing the corresponding FULL-CG state behavior.
+    """
+
+    prior = torch.tensor([3.0], device=device)
+    token = torch.tensor([2.0], device=device)
+    output = torch.empty_like(token)
+    graph = torch.cuda.CUDAGraph()
+    with torch.cuda.graph(graph):
+        if metadata.num_decodes == 1 and metadata.num_prefills == 0:
+            output.copy_(prior + token)
+        elif metadata.num_decodes == 0 and metadata.num_prefills == 1:
+            output.copy_(token)
+        else:
+            raise AssertionError(
+                "single-row metadata has an invalid decode/prefill split"
+            )
+
+    graph.replay()
+    torch.cuda.synchronize()
+    if output.item() != expected_first:
+        raise AssertionError(
+            f"captured recurrent result is wrong: {output.item()}!={expected_first}"
+        )
+
+    prior.fill_(11.0)
+    token.fill_(5.0)
+    graph.replay()
+    torch.cuda.synchronize()
+    if output.item() != expected_replay:
+        raise AssertionError(
+            f"replayed recurrent result is wrong: {output.item()}!={expected_replay}"
+        )
+
+
 def main() -> int:
     if not torch.cuda.is_available():
         print("FAIL: CUDA is unavailable", file=sys.stderr)
@@ -185,9 +234,21 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    replay_recurrent_graph(
+        prior_state,
+        device=device,
+        expected_first=5.0,
+        expected_replay=16.0,
+    )
     if first_token.num_decodes != 0 or first_token.num_prefills != 1:
         print("FAIL: a true first-token prompt was reclassified", file=sys.stderr)
         return 3
+    replay_recurrent_graph(
+        first_token,
+        device=device,
+        expected_first=2.0,
+        expected_replay=5.0,
+    )
     if (
         speculative_prefill.num_decodes != 0
         or speculative_prefill.num_prefills != 1
