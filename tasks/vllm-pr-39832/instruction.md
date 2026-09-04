@@ -1,9 +1,14 @@
-Complete the announced removal of the pre-v0.12 constructor API for external KV
-connector plugins. A connector written for the current API receives the
-engine's KV-cache configuration when it is created. A plugin that still uses
-the retired constructor must fail before its initialization code runs, with a
-migration-oriented error, rather than being invoked through a compatibility
-fallback.
+We maintain an external KV connector and are updating it for vLLM v0.12. During
+that work I found that the engine can still fall back to the retired connector
+constructor, even though its removal was already announced. That makes an old
+plugin appear to load and then fail later in initialization, which hides the
+actual migration mistake.
+
+Please complete the removal of the pre-v0.12 constructor API. A connector using
+the current API should receive the engine's KV-cache configuration when it is
+created. A plugin that still uses the retired constructor should fail before
+its initialization code runs and tell its author how to migrate, instead of
+being invoked through a compatibility fallback.
 
 The engine must create a current connector once per initialization and pass the
 same configuration object it resolved. Normal Python argument errors and
