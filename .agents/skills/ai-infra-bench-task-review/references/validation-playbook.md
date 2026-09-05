@@ -98,9 +98,34 @@ construct at least one small contract-valid case that was not copied from the
 Oracle or existing test inventory. Run it against the Oracle and a correct
 alternative when practical.
 
+For the fairness checks in rubric sections 5.1–5.4, record the public contract,
+actual entrypoint and lifecycle transitions, exercised parameter combinations,
+and expected versus observed behavior for the Oracle and each alternative.
+Where an assertion rejects a contract-valid representation, repair location,
+or failure exit status, replace it with an observable contract check. Retain
+counterexamples for lifecycle gaps, implicit broadcasting, and interacting
+configuration dimensions as applicable verifier-side regressions or controls.
+Keep these artifacts out of the agent image. Distinguish function-level probes
+from final grading runs and re-run affected cases and controls after fixes;
+an earlier reward of 1 does not certify a control's correctness.
+
 Base must receive 0 because of the target behavior. Oracle and correct
 alternatives must receive 1 with no skips or errors. Incorrect controls must
 receive 0 through behavior alone.
+
+For the early-exit controls required by rubric section 5.5, keep the control
+patches in curator-only validation artifacts. Run each through the actual
+grading entrypoint, including artifact transfer, verifier isolation, and
+reward collection, on the final task image. Confirm that the control reaches
+the intended candidate-code boundary and exits before required checks
+complete, with final reward 0. An unrelated import failure is not evidence
+that early termination is handled correctly.
+
+Record the control patch hash, image identity, command, process exit status,
+completed checks or completion evidence, and final reward. If the full
+grading path is unavailable, report the narrower probe and leave this
+validation pending. Re-run affected controls after changes to the grading
+wrapper, process isolation, or completion checks.
 
 ## 3. Validate and freeze
 
