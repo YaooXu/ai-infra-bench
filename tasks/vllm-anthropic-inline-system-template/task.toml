@@ -1,0 +1,41 @@
+schema_version = "1.4"
+
+[task]
+name = "ai-infra-bench/vllm-anthropic-inline-system-template"
+version = "0.0.1"
+description = "Adapt Anthropic inline system messages to chat-template ordering constraints."
+authors = [{name = "Qunhong Zeng"}]
+keywords = ["vllm", "cpu", "anthropic", "serving-api", "chat-template", "jinja"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+track = "representative"
+workload_type = "bug_fix"
+subsystems = ["serving_api"]
+repository = "vllm-project/vllm"
+base_commit = "16908e132e10f75af93049e865130f8987573f5d"
+dependency_cutoff = "2026-06-18T19:42:09Z"
+runtime_asset_repository = "Qwen/Qwen3.6-27B"
+runtime_asset_revision = "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9"
+runtime_asset_path = "/opt/models/qwen-template"
+runtime_asset_files = "config.json,tokenizer.json,tokenizer_config.json,chat_template.jinja"
+image_digest = "sha256:55238ec6540513e7823ab1574281a7c078b9a0db7535633705ee9cff5f1860aa"
+environment_template = "vllm-harbor-all-in-one"
+publication_state = "staged-smoke-only"
+
+[agent]
+timeout_sec = 36000
+user = "root"
+network_mode = "no-network"
+
+[environment]
+accelerator = "CPU"
+build_timeout_sec = 14400
+cpus = 8
+memory_mb = 49152
+storage_mb = 20480
+workdir = "/workspace/vllm"
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 900

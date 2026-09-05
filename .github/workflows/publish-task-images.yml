@@ -1,0 +1,192 @@
+name: Publish task images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: Comma-separated task directory names, or all
+        required: true
+        default: all
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  require-main:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require the protected main branch
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$REF" != "refs/heads/main" ]]; then
+            echo "Task images can only be published from main." >&2
+            exit 1
+          fi
+
+  discover:
+    needs: require-main
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+      website_changed: ${{ steps.discover.outputs.website_changed }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select tasks and trusted runners
+        id: discover
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          REQUESTED_TASKS: ${{ inputs.tasks }}
+        run: |
+          set -euo pipefail
+          website_changed=false
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            if git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- |
+              grep -Eq '^(tasks/|website/|\.github/workflows/(deploy-pages|publish-task-images)\.yml$)'; then
+              website_changed=true
+            fi
+            if git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- |
+              grep -Fxq '.github/task-image-bootstrap'; then
+              matrix="$(
+                python3 .github/scripts/task_ci.py discover \
+                  --mode manual \
+                  --tasks all
+              )"
+            else
+              matrix="$(
+                python3 .github/scripts/task_ci.py discover \
+                  --mode pr \
+                  --base "$BASE_SHA" \
+                  --head "$HEAD_SHA"
+              )"
+            fi
+          else
+            matrix="$(
+              python3 .github/scripts/task_ci.py discover \
+                --mode manual \
+                --tasks "$REQUESTED_TASKS"
+            )"
+          fi
+          printf 'Selected matrix: %s\n' "$matrix"
+          printf 'Website changed: %s\n' "$website_changed"
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+          printf 'website_changed=%s\n' "$website_changed" >> "$GITHUB_OUTPUT"
+
+  validate-and-publish:
+    needs: discover
+    if: needs.discover.outputs.matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    name: Publish ${{ matrix.task }}
+    runs-on: ${{ matrix.runs_on }}
+    environment:
+      name: image-publication
+    timeout-minutes: 240
+    env:
+      TASK_NAME: ${{ matrix.task }}
+      TARGET_PLATFORM: ${{ matrix.platform }}
+      HARBOR_VERSION: 0.22.0
+      PUBLISH_IMAGE: "true"
+      GHCR_REPOSITORY: ghcr.io/${{ github.repository_owner }}/ai-infra-bench-task-envs
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Harbor
+        run: |
+          set -euxo pipefail
+          python -m pip install "harbor==${HARBOR_VERSION}"
+          harbor --version
+
+      - name: Validate every case and publish cache miss
+        run: bash .github/scripts/run_task_validation.sh
+
+      - name: Upload Harbor logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: task-publication-${{ matrix.task }}
+          path: harbor-jobs/${{ matrix.task }}/
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish-website:
+    needs:
+      - require-main
+      - discover
+      - validate-and-publish
+    if: >-
+      ${{
+        always() &&
+        needs.require-main.result == 'success' &&
+        needs.discover.result == 'success' &&
+        needs.discover.outputs.website_changed == 'true' &&
+        (needs.validate-and-publish.result == 'success' ||
+          needs.validate-and-publish.result == 'skipped')
+      }}
+    concurrency:
+      group: root-pages
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: website
+    env:
+      GITHUB_PAGES: 'true'
+      GITHUB_PAGES_BASE_PATH: ''
+      NEXT_PUBLIC_SITE_URL: https://ai-infra-bench.github.io
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        run: npm ci
+
+      - name: Build static website
+        run: npm run build:pages
+
+      - name: Publish generated site
+        env:
+          GH_TOKEN: ${{ secrets.ROOT_PAGES_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN"
+          gh auth setup-git
+          cd dist/client
+          git init -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git remote add origin https://github.com/ai-infra-bench/ai-infra-bench.github.io.git
+          git push --force origin main

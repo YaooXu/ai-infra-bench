@@ -1,9 +1,6 @@
 ---
 name: create-task
-description: Create a new Harbor task for evaluating agents. Use when the user wants to
-  scaffold, build, or design a new task, benchmark problem, or eval. Guides through
-  instruction writing, environment setup, verifier design (pytest vs Reward Kit vs
-  custom), and solution scripting.
+description: Create a new Harbor task for evaluating agents. Use when the user wants to scaffold, build, or design a new task, benchmark problem, or eval. Guides through instruction writing, environment setup, verifier design (pytest vs Reward Kit vs custom), and solution scripting.
 ---
 
 Guide the user through creating a new Harbor task end-to-end. Don't just dump commands —
@@ -37,6 +34,31 @@ If the user wants a **multi-step task** (ordered steps with per-step
 instructions, tests, and early stopping against a shared container), scaffold
 the single-step layout first, then convert to the `steps/` layout described in
 the *Multi-step tasks* section below.
+
+### ai-infra-bench vLLM and GPU tasks
+
+For every ai-infra-bench task, apply the cutoff and agent-visibility definitions in the independent review
+[`review rubric`](../ai-infra-bench-task-review/references/review-rubric.md).
+If the task involves vLLM, CUDA, Triton, native extensions, CUDA Graphs, or collectives, also read
+[`references/ai-infra-vllm-gpu.md`](references/ai-infra-vllm-gpu.md). Read the
+applicable references before writing the instruction, Dockerfile, solution, or verifier. Construction checks do not replace independent review.
+
+In particular:
+
+- define the observable task contract, scope, exact Base, and Oracle provenance; upstream PRs/issues may inform the task without defining its contract;
+- keep task-specific reproduction artifacts optional and curator-only;
+- classify hardware needs as CPU-sufficient, GPU-required without a fixed model, or dependent on specific device features, and record actual validation scope;
+- apply the project's 10-hour agent budget, cutoff rules, and agent-visibility requirements during construction;
+- express the instruction and verifier through observable behavior rather than Oracle-specific implementation structure;
+- require Base to fail for the target behavior and Oracle to pass at the same semantic boundary;
+- record dependency and artifact provenance, rebuilding native targets affected by candidate changes and verifying which artifacts are actually loaded.
+
+For ai-infra-bench tasks, set `[agent].timeout_sec = 36000`; this overrides the
+generic timeout example below.
+
+Stop after the task and its Base/Oracle construction checks are complete. Hand
+the frozen candidate to the `ai-infra-bench-task-review` skill. Its workflow is
+outside the scope of this skill.
 
 ## Step 2: Write instruction.md
 
@@ -78,34 +100,6 @@ harbor task start-env -p "<task-path>" -e docker -a -i
 ```
 
 This is usually where task authors realize something is missing from the Dockerfile.
-
-### ai-infra-bench vLLM and GPU tasks
-
-When the task is derived from an ai-infra-bench infrastructure PR, or needs
-vLLM, CUDA, Triton, native extensions, CUDA Graphs, or collectives, read
-[`references/ai-infra-vllm-gpu.md`](references/ai-infra-vllm-gpu.md) before
-writing the instruction, Dockerfile, solution, or verifier. Its creation gates
-are mandatory for these tasks.
-
-In particular:
-
-- freeze the public PR/issue source, exact base commit, Oracle source, and task
-  scope before construction;
-- label a reduced PR slice as a slice instead of presenting it as the complete
-  feature;
-- select a declared environment profile (`cpu`, `cuda-triton`,
-  `cuda-native-extension`, or `cuda-multigpu-nccl`) and keep the base image,
-  CUDA/PyTorch/vLLM pairing, offline fixtures, and hardware contract explicit;
-- express the instruction and verifier in terms of observable behavior rather
-  than Golden-only implementation structure;
-- require Base to fail at the target behavior and Oracle to pass at the same
-  production boundary as the task-construction acceptance check;
-- record the source, image, dependency, build, native-artifact, and hardware
-  identities needed to reproduce those checks.
-
-Stop after the task and its Base/Oracle construction checks are complete. Hand
-the frozen candidate to the `ai-infra-bench-task-review` skill. Its workflow is
-outside the scope of this skill.
 
 ## Step 4: Decide how to verify
 
@@ -235,7 +229,7 @@ category = "programming" | "machine-learning" | "gpu" | ...
 tags = ["..."]
 
 [agent]
-timeout_sec = 120.0       # How long the agent has
+timeout_sec = 120.0       # Generic example; ai-infra-bench requires 36000
 
 [verifier]
 timeout_sec = 600.0       # How long tests have

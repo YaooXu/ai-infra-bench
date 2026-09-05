@@ -1,0 +1,41 @@
+schema_version = "1.4"
+artifacts = ["/workspace/vllm/vllm"]
+
+[task]
+name = "ai-infra-bench/vllm-kv-admission-thrashing"
+version = "0.0.1"
+description = "Keep mixed decoding and long-prompt workloads making progress without over-serializing KV-cache admission."
+authors = [{name = "Qunhong Zeng"}]
+keywords = ["vllm", "cpu", "scheduler", "kv-cache", "performance"]
+
+[metadata]
+benchmark_schema_version = "0.1"
+track = "representative"
+workload_type = "bug_fix"
+subsystems = ["scheduler", "memory_kv"]
+repository = "vllm-project/vllm"
+base_commit = "4731884796d43bd8493769dbfb0e199a2a542092"
+dependency_cutoff = "2026-03-24T16:53:07Z"
+image_digest = "sha256:a3079f12717a09f311a769b4fc07e68f8abb29ba34b60ce33d04d47935b51574"
+environment_template = "vllm-cutoff-pinned"
+publication_state = "staged-smoke-only"
+
+[agent]
+timeout_sec = 36000
+user = "agent"
+network_mode = "no-network"
+
+[environment]
+accelerator = "CPU"
+build_timeout_sec = 14400
+cpus = 8
+memory_mb = 49152
+storage_mb = 20480
+workdir = "/workspace/vllm"
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 3600
+user = "root"
+network_mode = "no-network"
+environment_mode = "separate"

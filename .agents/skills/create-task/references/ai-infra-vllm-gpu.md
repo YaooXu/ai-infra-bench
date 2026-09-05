@@ -1,26 +1,28 @@
 # Constructing vLLM and GPU benchmark tasks
 
-Use this playbook for ai-infra-bench tasks derived from vLLM or other GPU
-infrastructure changes. It supplements the generic task-creation workflow. The
-post-construction independent review remains governed by the
+Use this playbook for ai-infra-bench tasks involving vLLM or other GPU
+infrastructure mechanisms. It supplements the generic task-creation workflow.
+The post-construction independent review remains governed by the
 `ai-infra-bench-task-review` skill.
 
-## 1. Freeze provenance before task design
+## 1. Record provenance and define an independent contract
 
-Record before looking at evaluated-agent outcomes:
+Before using evaluated-agent outcomes to make design decisions, record the
+target repository, exact Base commit and tree, task scope, and Oracle source.
+Derive the behavioral contract from a realistic user or developer scenario.
 
-- repository, PR and linked issues;
-- complete PR discussion and review timeline;
-- exact base SHA and tree SHA;
-- every PR commit and the final candidate/Oracle source;
-- later fixes, regressions, reverts, or replacement PRs that change whether the
-  proposed Oracle is still defensible;
-- the earliest reproducible public symptom in the A/B/C/D discovery timeline;
-- whether the task represents the complete PR or an explicitly named slice.
+For tasks inspired by upstream PRs or issues, record the relevant sources and
+inspect subsequent fixes, regressions, reverts, or replacements that materially
+affect the proposed Oracle. A merged patch is not automatically a correct
+reference implementation. Resolve relevant contradictory evidence before using
+it as the Oracle.
 
-A merged PR is not automatically a valid Oracle. If later public evidence shows
-that the patch regressed or was reverted, stop and establish a stable behavior
-contract and reference implementation before constructing the task.
+The task may adapt, combine, or extend upstream mechanisms into a realistic
+independent scenario. It need not reproduce an entire PR or a named slice.
+Require historical timeline and coverage fidelity only when the task explicitly
+claims to reproduce a particular historical event or PR. Keep curation
+provenance outside the agent-facing instruction unless needed for the public
+task contract.
 
 ## 2. Freeze the task contract and difficulty
 
@@ -29,11 +31,10 @@ Write a contract matrix with at least:
 | Field | Required decision |
 | --- | --- |
 | Surface behavior | What an operator or developer can observe |
-| Starting point | Earliest reasonable A/B/C/D stage and why |
 | Desired behavior | Public result that must change |
 | Preserved behavior | Existing modes that must not regress |
 | Negative behavior | Invalid or persistent failures that must remain visible |
-| Scope | Full PR or a named slice |
+| Scope | Included and excluded observable behavior |
 | Real E2E | Production entrypoint and deepest exercised boundary |
 | Substitutions | Missing model/service boundaries replaced deterministically |
 | Resources | CPU/GPU type, count, memory, disk, and network |
@@ -44,16 +45,15 @@ not make a task difficult by omitting a necessary public contract, dependency,
 model, command, or performance protocol. Do not make it easy by stating the
 root cause, Golden helper, field, file list, or algorithm.
 
-If a narrow slice is useful, keep it and label it honestly. Creating a harder
-full-feature task is a new task or a material new version, not a silent rewrite
-of the slice after observing a model pass.
+State scope honestly in terms of observable behavior. Do not silently expand
+the frozen contract after seeing an evaluated agent pass. A material scope
+change requires an explicitly recorded new task or version.
 
 ## 3. Instruction rules
 
 The instruction may disclose:
 
 - the authentic observable symptom or developer trace;
-- a runnable public reproduction;
 - required public API names;
 - hardware, shapes, dtypes, warmup, statistics, and frozen performance gates;
 - categories of state or behavior that must be preserved.
@@ -70,22 +70,52 @@ Hidden tests may vary values, ordering, shape, lifecycle repetitions, topology,
 and error cases. They may not introduce a behavior category that the
 instruction did not disclose.
 
-## 4. Environment profiles
+Task-specific reproduction artifacts are optional. Authors may create and
+retain them when useful for construction checks or independent review. Even a
+bug-fix task need not have a standalone reproducer if existing tests or
+execution evidence establish the target behavior. Other task types should use
+behavioral or performance checks appropriate to their goals.
 
-Choose one declared profile:
+If present, keep these artifacts and diagnostic materials curator-only or
+verifier-only. Do not expose them through the instruction, agent filesystem,
+mounts, recoverable Git objects, caches, or image layers. A `validation/`
+directory name alone does not establish isolation. Normal public interfaces,
+operating instructions, observable symptoms, and necessary input conditions
+may still be described without supplying a task-specific diagnostic script.
 
-### `cpu`
+A reproducer validates a particular case; it does not replace regression
+coverage or validation through the actual scoring path.
 
-For tasks whose scored production boundary is CPU-only. A GPU-specific problem
-must not be converted to this profile merely because mocks make it convenient.
+## 4. Hardware requirements and applicable technical guidance
 
-### `cuda-triton`
+Choose hardware from the behavior being evaluated:
 
-For Python/Triton work that executes a real GPU kernel but does not modify a
-compiled vLLM extension. Pin the CUDA/PyTorch/vLLM runtime combination and prove
-that the tested tensors and kernel run on the requested GPU architecture.
+| Category | Requirement |
+| --- | --- |
+| CPU-sufficient | The target behavior does not require GPU execution. Preserve real process, service, or lifecycle behavior when it determines the result. |
+| GPU-required, model-independent | Run on a GPU satisfying the required capabilities and resources; do not require an exact model without a behavioral reason. |
+| Device-feature-dependent | Record the relevant architecture, capability, topology, or other device property and the devices on which the target behavior has been validated. |
 
-### `cuda-native-extension`
+The original reproduction device is evidence, not an automatic exclusivity
+rule. Another device may be used when validation establishes the same target
+mechanism and required behavior. Record its hardware identity and results.
+Treat untested devices as unverified, not automatically supported or
+unsupported. Do not reuse device-specific performance thresholds on different
+hardware without validating their applicability.
+
+CPU-only results cannot establish GPU behavior. Mentioning GPU configuration,
+TP, or PP does not by itself require a real collective; executing or measuring
+collective behavior does require the relevant real multi-GPU path.
+
+Apply the following technical guidance only when the task involves that work.
+
+### Triton and CUDA Python kernels
+
+For Python/Triton work that executes a real GPU kernel, pin the
+CUDA/PyTorch/vLLM runtime combination and prove that the tested tensors and
+kernel run on the declared GPU capabilities.
+
+### Native extensions
 
 For `_C`, `_moe_C`, or other compiled extensions. Declare:
 
@@ -96,11 +126,12 @@ For `_C`, `_moe_C`, or other compiled extensions. Declare:
 - the rule excluding generated `.so`, build directories, and caches from the
   agent source patch.
 
-The verifier must rebuild the affected target or prove that the imported
-library was built from the candidate source. A source patch paired with a stale
-library is not valid evidence.
+When candidate changes affect the native target or its build inputs, the
+verifier must rebuild that target or establish equivalent provenance for the
+candidate build. A source patch paired with a stale affected library is not
+valid evidence.
 
-### `cuda-multigpu-nccl`
+### Multi-GPU and NCCL
 
 For PP/TP/collective behavior. In addition to the GPU rules, declare:
 
@@ -116,6 +147,11 @@ Do not flag initialization, logging, or final test assertions when the contract
 only forbids synchronization on the hot data path.
 
 ## 5. Version and offline-fixture compatibility
+
+Apply the project's cutoff and agent-visibility rules in
+[the review rubric](../../ai-infra-bench-task-review/references/review-rubric.md).
+Compatibility records and hashes do not establish cutoff compliance or
+isolation.
 
 Before building, construct a compatibility record for:
 
@@ -137,7 +173,30 @@ Build from an empty context or an allow-listed context that cannot contain
 tests, solution, validation patches, trajectories, credentials, or future
 source. Pin all images and downloads by digest.
 
-Record at minimum:
+When borrowing native artifacts from a donor image or package, inspect retained
+Python source, secondary installations, Git objects, caches, and inherited
+image layers for future target-repository source or answer-revealing material.
+Import precedence such as `PYTHONPATH` does not prevent the agent from reading
+another copy. Build an agent environment where such material is not recoverable
+and verify visibility under the actual agent settings.
+
+General benchmark infrastructure is not required to predate cutoff unless its
+behavior is part of the task; follow the rubric's semantic-dependency
+distinction. For native artifacts, determine whether candidate changes affect
+their sources or build inputs, including relevant headers, generated inputs,
+and build settings.
+
+- If native artifacts are unaffected, compatible donor binaries may be reused.
+  Record their origin, identity, compatibility, and actual import path.
+- If candidate changes affect a native target, rebuild that target from the
+  candidate inputs, or establish equivalent provenance for that candidate
+  build. In a fresh process, verify that the tested library is the resulting
+  artifact.
+- Do not require rebuilding unrelated extensions. Do not accept tests that run
+  a stale library instead of the candidate's affected native implementation.
+
+Collect the following records when applicable; do not require nonexistent build
+artifacts for tasks that perform no native build:
 
 - task/input SHA and candidate patch SHA;
 - base and source tree SHA;
@@ -167,8 +226,9 @@ Complete these checks while constructing the task:
    and collective requirements are available before the target behavior runs.
 4. **Production-boundary smoke:** Base and Oracle exercise the production entry
    point named in the task contract rather than only a mock or private helper.
-5. **Artifact provenance:** native builds and imports match the candidate source
-   and recorded hashes in a fresh process.
+5. **Artifact provenance:** affected native targets correspond to candidate
+   build inputs and are actually loaded in a fresh process; reused unaffected
+   artifacts have recorded identity and verified compatibility.
 
 For performance tasks, publish hardware, shape, dtype, warmup, repetition,
 statistic, and threshold. Confirm that the Oracle has adequate margin over the
@@ -185,7 +245,8 @@ After the construction checks pass, freeze and hand off:
 - base source and image identities;
 - environment and dependency locks;
 - Oracle patch and applicability record;
-- verifier and public reproduction;
+- verifier;
+- curator-only reproduction artifacts and diagnostic evidence, if any;
 - Base/Oracle logs and artifact provenance;
 - hardware requirements and time limits.
 
