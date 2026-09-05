@@ -35,3 +35,11 @@ Implement tri-state behavior for `VLLM_USE_V2_MODEL_RUNNER` and propagate the re
 
 - Oracle: `harbor run -p tasks/vllm-runner-v2-selection -a oracle`
 - Agent: `harbor run -p tasks/vllm-runner-v2-selection -a agent -m claude-opus-4-8`
+
+## Permission and interpreter follow-up
+
+Trusted harness scripts are staged into a protected container-local directory,
+outputs remain root-writable but readable by Harbor, and worker execution
+preserves the selected virtual-environment Python path. GPU/Harbor/control runs
+were not repeated at the maintainer's request. Prior runtime results are archived
+under `validation/history` and do not certify this modified verifier.

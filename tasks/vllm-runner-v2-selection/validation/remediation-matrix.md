@@ -1,3 +1,7 @@
+> Runtime results below apply to the original PR #3 snapshot `fba6a6c`.
+> The permission/interpreter follow-up has only static validation. Final
+> Base/Oracle/control and non-root Harbor collection validation remain pending.
+
 # Review remediation matrix
 
 | ID | Severity | Finding and evidence | Contract impact | Approved | Remediation | Validation | Status |

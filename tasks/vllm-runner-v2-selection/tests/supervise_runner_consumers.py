@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 REWARD = Path("/logs/verifier/reward.txt")
-WORKER = Path("/tests/verify_runner_consumers.py")
+WORKER = Path(__file__).resolve().with_name("verify_runner_consumers.py")
 RESULT_PREFIX = "AI_INFRA_OBSERVATION="
 
 EXPECTED_VALUES: dict[str, object] = {
@@ -46,10 +46,10 @@ CASES = tuple(EXPECTED_VALUES) + ("unset_accessor_readable",) + tuple(REJECTION_
 def write_reward(value: int, *, exclusive: bool = False) -> None:
     flags = os.O_WRONLY | os.O_NOFOLLOW | os.O_CREAT
     flags |= os.O_EXCL if exclusive else os.O_TRUNC
-    descriptor = os.open(REWARD, flags, 0o600)
+    descriptor = os.open(REWARD, flags, 0o644)
     try:
         os.fchown(descriptor, 0, 0)
-        os.fchmod(descriptor, 0o600)
+        os.fchmod(descriptor, 0o644)
         os.write(descriptor, f"{value}\n".encode())
         os.fsync(descriptor)
     finally:
@@ -61,13 +61,14 @@ def prepare_reward() -> None:
     try:
         current = verifier_dir.lstat()
     except FileNotFoundError:
-        verifier_dir.mkdir(parents=True, mode=0o700)
+        verifier_dir.mkdir(parents=True, mode=0o755)
     else:
         if stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode):
             verifier_dir.unlink()
-            verifier_dir.mkdir(parents=True, mode=0o700)
+            verifier_dir.mkdir(parents=True, mode=0o755)
     os.chown(verifier_dir, 0, 0)
-    verifier_dir.chmod(0o700)
+    # Harbor on the host may read/traverse outputs; only root can write.
+    verifier_dir.chmod(0o755)
     try:
         REWARD.unlink()
     except FileNotFoundError:
@@ -162,11 +163,19 @@ def main() -> int:
     if len(sys.argv) != 2:
         print("FAIL: trusted Python path was not supplied")
         return 0
-    python_bin = Path(sys.argv[1]).resolve()
+    # Preserve the selected venv path for execution; validate its target too.
+    python_bin = Path(sys.argv[1])
+    python_target = python_bin.resolve()
     supervisor = Path(__file__).resolve()
-    if not all(trusted_file(path) for path in (python_bin, supervisor, WORKER)):
-        print("FAIL: verifier executable or scripts are not root-owned/read-only")
-        return 0
+    for path in (python_bin, python_target, supervisor, WORKER):
+        if not trusted_file(path):
+            info = path.stat()
+            print(
+                f"FAIL: untrusted verifier file {path}: "
+                f"uid={info.st_uid}, gid={info.st_gid}, "
+                f"mode={stat.S_IMODE(info.st_mode):04o}"
+            )
+            return 0
 
     agent = pwd.getpwnam("agent")
     completed: list[str] = []

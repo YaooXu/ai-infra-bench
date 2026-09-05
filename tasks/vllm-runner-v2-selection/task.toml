@@ -20,7 +20,7 @@ workload_type = "feature_fix"
 subsystems = ["configuration", "worker", "model_runner"]
 dependency_cutoff = "2026-05-14T14:12:30Z"
 environment_template = "vllm-cutoff-pinned"
-publication_state = "reviewed"
+publication_state = "hardening-pending-validation"
 difficulty = "hard"
 grader_kind = "correctness"
 
