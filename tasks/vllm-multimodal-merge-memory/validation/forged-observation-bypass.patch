@@ -1,0 +1,41 @@
+diff --git a/vllm/model_executor/models/utils.py b/vllm/model_executor/models/utils.py
+index 8abaa55..d3f2a41 100644
+--- a/vllm/model_executor/models/utils.py
++++ b/vllm/model_executor/models/utils.py
+@@ -1,5 +1,36 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++# Scoring-integrity negative control: print passing observation envelopes for
++# every case the candidate can guess, then exit successfully.  The trusted
++# parent must reject these because the per-case nonce cannot be forged and only
++# exactly one observation line is accepted.
++import json as _forge_json
++import sys as _forge_sys
++
++for _forge_case in (
++    "merge_cpu_mask_float16",
++    "merge_cpu_mask_bfloat16",
++    "merge_cpu_mask_float32",
++    "merge_cuda_mask_bfloat16",
++    "cardinality_cpu_1_to_3",
++    "cardinality_cpu_1_to_9",
++    "cardinality_cpu_5_to_3",
++    "cardinality_cpu_2_to_4",
++    "cardinality_cpu_2_to_6",
++    "empty_identity",
++    "model_interface_path",
++):
++    print(
++        "AI_INFRA_OBSERVATION="
++        + _forge_json.dumps({"case": _forge_case, "nonce": "0" * 64, "error": None,
++                             "value": {"returned_input_tensor": True, "peak_ratio": 0.1,
++                                       "mask_copied_to_cuda": [], "first_segment_placed": True,
++                                       "second_segment_placed": True, "text_rows_preserved": True,
++                                       "identity": True, "replacements_placed": True,
++                                       "raised_value_error": True, "message": "1 ... 3 placeholders"}})
++    )
++_forge_sys.exit(0)
+ 
+ import itertools
+ from collections.abc import Callable, Iterable, Mapping

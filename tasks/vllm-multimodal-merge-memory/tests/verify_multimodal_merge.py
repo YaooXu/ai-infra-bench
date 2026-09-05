@@ -1,25 +1,42 @@
 #!/usr/bin/env python3
-"""Hidden behavioral verifier for the production multimodal merge primitive."""
+"""Unprivileged observation worker for the trusted verifier supervisor.
+
+The worker imports candidate-controlled vLLM and executes exactly one case.
+It never decides the reward and never reports aggregate success.  The trusted
+parent owns the case list, the expectations, and the reward file.
+"""
 
 from __future__ import annotations
 
-from pathlib import Path
+import json
 import sys
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+# ``-I`` prevents candidate-controlled environment variables from selecting a
+# different package, so bind the one intended candidate repository explicitly.
+sys.path.insert(0, "/workspace/repo")
+
 import torch
 from torch.utils._python_dispatch import TorchDispatchMode
-
-sys.path.insert(0, "/workspace/repo")
 
 import vllm
 from vllm.model_executor.models.interfaces import SupportsMultiModal
 from vllm.model_executor.models.utils import _merge_multimodal_embeddings
 
 
+RESULT_PREFIX = "AI_INFRA_OBSERVATION="
+
+DTYPES = {
+    "float16": torch.float16,
+    "bfloat16": torch.bfloat16,
+    "float32": torch.float32,
+}
+
+
 class RejectExplicitMaskTransfer(TorchDispatchMode):
-    """Reject explicit transfer of the original boolean mask to CUDA."""
+    """Record explicit transfer of the original boolean mask to CUDA."""
 
     def __init__(self, mask: torch.Tensor) -> None:
         self.mask = mask
@@ -36,12 +53,8 @@ class RejectExplicitMaskTransfer(TorchDispatchMode):
         result = func(*args, **kwargs)
         if "_to_copy" in str(func):
             inputs = [x for x in args if isinstance(x, torch.Tensor)]
-            outputs = (
-                list(result)
-                if isinstance(result, (tuple, list))
-                else [result]
-            )
-            # Reject moving the boolean mask itself. A solution may legally
+            outputs = list(result) if isinstance(result, (tuple, list)) else [result]
+            # Record moving the boolean mask itself.  A solution may legally
             # derive a smaller CPU index tensor and copy that asynchronously;
             # correctness, sync-debug, and allocator checks judge that design.
             if any(x is self.mask for x in inputs) and any(
@@ -77,8 +90,6 @@ def assert_runtime_binding() -> None:
         raise AssertionError(f"candidate source is not active: {source}")
     if not torch.cuda.is_available():
         raise AssertionError("CUDA is required")
-    print(f"candidate_source={source}")
-    print(f"gpu={torch.cuda.get_device_name(0)}")
 
 
 def make_case(dtype: torch.dtype, mask_device: str):
@@ -88,9 +99,7 @@ def make_case(dtype: torch.dtype, mask_device: str):
     selected = int(mask.sum())
     if mask_device == "cuda":
         mask = mask.cuda()
-    inputs = torch.full(
-        (num_tokens, hidden), -3.0, dtype=dtype, device="cuda"
-    )
+    inputs = torch.full((num_tokens, hidden), -3.0, dtype=dtype, device="cuda")
     first = torch.full(
         (selected // 2, hidden), 7.0, dtype=torch.float32, device="cuda"
     )
@@ -100,7 +109,8 @@ def make_case(dtype: torch.dtype, mask_device: str):
     return inputs, [first, [second]], mask, selected
 
 
-def check_merge(dtype: torch.dtype, mask_device: str) -> float:
+def observe_merge(dtype_name: str, mask_device: str) -> dict[str, Any]:
+    dtype = DTYPES[dtype_name]
     inputs, multimodal, mask, selected = make_case(dtype, mask_device)
     torch.cuda.synchronize()
     torch.cuda.reset_peak_memory_stats()
@@ -115,53 +125,88 @@ def check_merge(dtype: torch.dtype, mask_device: str) -> float:
         # compatibility/correctness control, not the asynchronous hard gate.
         with transfer_guard:
             returned = _merge_multimodal_embeddings(inputs, multimodal, mask)
-    if returned is not inputs:
-        raise AssertionError("merge must return the mutated input tensor")
     torch.cuda.synchronize()
     peak_delta = torch.cuda.max_memory_allocated() - before
     target_bytes = inputs.numel() * inputs.element_size()
-    ratio = peak_delta / target_bytes
-    if transfer_guard.cpu_to_cuda_copies:
-        raise AssertionError(
-            f"mask was explicitly materialized on CUDA: "
-            f"{transfer_guard.cpu_to_cuda_copies}"
-        )
+
     mask_cpu = mask.cpu()
     chosen = inputs[mask_cpu]
     split = selected // 2
-    if not torch.equal(chosen[:split], torch.full_like(chosen[:split], 7.0)):
-        raise AssertionError("first nested embedding segment is misplaced")
-    if not torch.equal(chosen[split:], torch.full_like(chosen[split:], 11.0)):
-        raise AssertionError("second nested embedding segment is misplaced")
-    if not torch.equal(inputs[~mask_cpu], torch.full_like(inputs[~mask_cpu], -3.0)):
-        raise AssertionError("non-placeholder embeddings were modified")
-    # Keep a broad regression guard without prescribing PyTorch's internal
-    # indexing implementation or the Oracle's exact temporary-allocation curve.
-    if mask_device == "cpu" and ratio >= 4.0:
-        raise AssertionError(f"temporary CUDA allocation is excessive: {ratio:.3f}")
-    return ratio
+    return {
+        "returned_input_tensor": returned is inputs,
+        "peak_ratio": peak_delta / target_bytes,
+        "mask_copied_to_cuda": transfer_guard.cpu_to_cuda_copies,
+        "first_segment_placed": bool(
+            torch.equal(chosen[:split], torch.full_like(chosen[:split], 7.0))
+        ),
+        "second_segment_placed": bool(
+            torch.equal(chosen[split:], torch.full_like(chosen[split:], 11.0))
+        ),
+        "text_rows_preserved": bool(
+            torch.equal(inputs[~mask_cpu], torch.full_like(inputs[~mask_cpu], -3.0))
+        ),
+    }
 
 
-def check_empty_identity() -> None:
+def observe_cardinality(
+    mask_device: str, num_embeddings: int, num_placeholders: int
+) -> dict[str, Any]:
+    num_tokens = max(9, num_placeholders)
+    inputs = torch.zeros((num_tokens, 16), dtype=torch.bfloat16, device="cuda")
+    mask = torch.zeros(num_tokens, dtype=torch.bool)
+    mask[:num_placeholders] = True
+    if mask_device == "cuda":
+        mask = mask.cuda()
+    embeddings = [
+        torch.ones((num_embeddings, 16), dtype=torch.float32, device="cuda")
+    ]
+    try:
+        _merge_multimodal_embeddings(inputs, embeddings, mask)
+        torch.cuda.synchronize()
+    except ValueError as exc:
+        return {
+            "raised_value_error": True,
+            "outcome": "ValueError",
+            "message": str(exc),
+        }
+    except Exception as exc:  # noqa: BLE001 - reported verbatim to the parent
+        # Any other failure mode (for example an asynchronous device-side
+        # assert) is reported as-is; the parent decides whether the declared
+        # contract accepts it.
+        return {
+            "raised_value_error": False,
+            "outcome": type(exc).__name__,
+            "message": str(exc).splitlines()[0] if str(exc) else "",
+        }
+    # A silently broadcast assignment lands here: record how many placeholder
+    # rows were actually overwritten so the parent can see the duplication.
+    mask_cpu = mask.cpu()
+    overwritten = int(inputs[mask_cpu].eq(1.0).all(dim=1).sum())
+    return {
+        "raised_value_error": False,
+        "outcome": "accepted",
+        "rows_overwritten": overwritten,
+        "num_placeholders": num_placeholders,
+    }
+
+
+def observe_empty_identity() -> dict[str, Any]:
     inputs = torch.randn((7, 13), dtype=torch.float16, device="cuda")
     before = inputs.clone()
     returned = _merge_multimodal_embeddings(
         inputs, [], torch.zeros(7, dtype=torch.bool)
     )
-    if returned is not inputs or not torch.equal(inputs, before):
-        raise AssertionError("empty multimodal input must be an identity operation")
+    torch.cuda.synchronize()
+    return {"identity": returned is inputs and bool(torch.equal(inputs, before))}
 
 
-def check_model_interface_path() -> None:
+def observe_model_interface_path() -> dict[str, Any]:
     """Exercise the production multimodal model interface without model weights."""
 
     class LanguageModel:
         def embed_input_ids(self, input_ids: torch.Tensor) -> torch.Tensor:
             return torch.full(
-                (len(input_ids), 8),
-                -5.0,
-                dtype=torch.float16,
-                device="cuda",
+                (len(input_ids), 8), -5.0, dtype=torch.float16, device="cuda"
             )
 
     class ModelHarness:
@@ -174,61 +219,54 @@ def check_model_interface_path() -> None:
     input_ids = torch.arange(12, dtype=torch.int64, device="cuda")
     mask = torch.zeros(12, dtype=torch.bool)
     mask[[1, 4, 9]] = True
-    replacements = torch.arange(
-        24, dtype=torch.float32, device="cuda"
-    ).reshape(3, 8)
+    replacements = torch.arange(24, dtype=torch.float32, device="cuda").reshape(3, 8)
     with RejectCudaSync():
         merged = SupportsMultiModal.embed_input_ids(
-            ModelHarness(),
-            input_ids,
-            replacements,
-            is_multimodal=mask,
+            ModelHarness(), input_ids, replacements, is_multimodal=mask
         )
     torch.cuda.synchronize()
-    if not torch.equal(merged[mask], replacements.to(dtype=merged.dtype)):
-        raise AssertionError("production model interface misplaced replacements")
-    if not torch.equal(merged[~mask], torch.full_like(merged[~mask], -5.0)):
-        raise AssertionError("production model interface changed text embeddings")
+    return {
+        "replacements_placed": bool(
+            torch.equal(merged[mask], replacements.to(dtype=merged.dtype))
+        ),
+        "text_rows_preserved": bool(
+            torch.equal(merged[~mask], torch.full_like(merged[~mask], -5.0))
+        ),
+    }
 
 
-def expect_cardinality_error(num_embeddings: int, num_placeholders: int) -> None:
-    inputs = torch.zeros((9, 16), dtype=torch.bfloat16, device="cuda")
-    mask = torch.zeros(9, dtype=torch.bool)
-    mask[:num_placeholders] = True
-    embeddings = [
-        torch.ones((num_embeddings, 16), dtype=torch.float32, device="cuda")
-    ]
-    try:
-        _merge_multimodal_embeddings(inputs, embeddings, mask)
-    except ValueError as exc:
-        message = str(exc)
-        lowered = message.lower()
-        if (
-            str(num_embeddings) not in message
-            or str(num_placeholders) not in message
-            or not any(word in lowered for word in ("multimodal", "embedding", "token"))
-            or not any(word in lowered for word in ("placeholder", "mask", "expected"))
-        ):
-            raise AssertionError(f"uninformative cardinality error: {message}") from exc
-        return
-    raise AssertionError(
-        f"cardinality mismatch {num_embeddings}!={num_placeholders} was accepted"
-    )
+def dispatch(request: dict[str, Any]) -> Any:
+    kind = request["kind"]
+    if kind == "merge":
+        return observe_merge(request["dtype"], request["mask_device"])
+    if kind == "cardinality":
+        return observe_cardinality(
+            request["mask_device"],
+            request["num_embeddings"],
+            request["num_placeholders"],
+        )
+    if kind == "empty_identity":
+        return observe_empty_identity()
+    if kind == "model_interface_path":
+        return observe_model_interface_path()
+    raise AssertionError(f"unknown case kind {kind!r}")
 
 
 def main() -> int:
-    assert_runtime_binding()
-    results = {}
-    for dtype in (torch.float16, torch.bfloat16, torch.float32):
-        results[f"cpu_{dtype}"] = check_merge(dtype, "cpu")
-    results["cuda_bfloat16"] = check_merge(torch.bfloat16, "cuda")
-    check_empty_identity()
-    check_model_interface_path()
-    expect_cardinality_error(5, 3)
-    expect_cardinality_error(2, 4)
-    for name, ratio in results.items():
-        print(f"peak_ratio[{name}]={ratio:.3f}")
-    print("PASS: production merge is ordered, async, bounded, strict, and CPU-mask native")
+    request = json.loads(sys.stdin.readline())
+    envelope: dict[str, Any] = {
+        "case": request.get("case"),
+        "nonce": request.get("nonce"),
+        "error": None,
+        "value": None,
+    }
+    try:
+        assert_runtime_binding()
+        envelope["value"] = dispatch(request)
+    except BaseException as exc:  # noqa: BLE001 - reported to the trusted parent
+        envelope["error"] = f"{type(exc).__name__}: {exc}"
+    print(RESULT_PREFIX + json.dumps(envelope))
+    sys.stdout.flush()
     return 0
 
 

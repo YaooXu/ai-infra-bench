@@ -1,7 +1,8 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-09-05T00:35:00+08:00",
+  "recorded_at": "2026-09-06T02:40:00+08:00",
   "status": "final-validated",
+  "revision_note": "Regenerated after the review remediation of PR #10. No score is carried over from the pre-review revision: every result below was produced on the post-fix task files, through the real grading entry point, on the final image.",
   "source": {
     "repository": "vllm-project/vllm",
     "base_commit": "36d7f19897843c9cbdb701ba88d0f2c29954fe44"
@@ -18,42 +19,100 @@
       "environment/lock/native.sha256": "836d82c8286a99036dec7c22f52b9428b397b3f81241a101a5d6939a3c050ce5",
       "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
       "instruction.md": "4817a3a5e8717d928d8d249fa12d1c18b3d3f05fd1cec56d016690c227e85fd7",
-      "solution/oracle.patch": "6f4c23941397f5ca178724efd6a002a20ebe5b4075e0319265ebc50ad2d29256",
+      "solution/oracle.patch": "170b33bc59d945079a6d8c243facbe43ae143efee05d534f68c55bf203acfca1",
       "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
       "task.toml": "4f3530df080bc8a2d31c76d6044faf101223d266d8d4b128bae3bdf0165ef23e",
       "tests/docker-compose.yaml": "8dd1b4bd6ae0bffdc71045fc4a6fe078d1c8eb4efad9a17a4bb7fa093b66ab4f",
-      "tests/test.sh": "00d7e8e5d4c12185ab59f66a94bcc3b38144e3b5b03a10ebc897e555605aa8ab",
-      "tests/verify_multimodal_merge.py": "947078d0a2170fde378d131b71731ab820165bf7c82dd0b0377120fed580b550",
+      "tests/supervise_multimodal_merge.py": "b22c5c07c5f89863bd3ef06017b3d25956346c5b1d4cd995bb71925a186476ed",
+      "tests/test.sh": "7362bdb1e11014a860c45f5068a7f9fb1197357ce6f408bf8e6bde15b8b240c8",
+      "tests/verify_multimodal_merge.py": "0888ecbb9dca1a68f997c75a5d494cde6f10b8647d485302c422930861e5e363",
       "validation/alternative-agent-implementation.patch": "6a3232d057d9638103e028ba0752054e4aa7599595664fa88861c759690c07a6",
-      "validation/ci-cases.json": "e46ec7d306587ac7dc12bc591ce214091a8cfcfc75cb8beb9853b7deeca826d4",
+      "validation/ci-cases.json": "43d3b4c36cf4b84a70995dbf99320d5b180e2380fd0effbef01f59e2e6bcba08",
       "validation/docker-build.md": "e1ac176a7785257b3e2887287a05d08019a967ed62654ebbfa8915cf62cd250d",
+      "validation/forged-observation-bypass.patch": "fbed788bb10a4a5116904cb00022dcaff441b6ad6bb4c8f3a1d0924e9a0d18f8",
       "validation/incomplete-agent-implementation.patch": "76560b826d7ee588858c8905f0d1c63c74b0a8b33d2da392e47a7a20f28631e2",
-      "validation/remediation-matrix.md": "f4cac95a724e1c4901e2fddd15f17b7cd4b916e12f9243f8a1f4bf1dc5178839"
-    }
+      "validation/os-exit-zero-bypass.patch": "fc3ad5ac5eb07a0e69c0a1866f8de1468fbd4248cf82c43e3beb1736dbef9546",
+      "validation/remediation-matrix.md": "34c41e50e7c19d2a2666cd2f3574b71dcd8982a8abde04749dca0988c3c17197",
+      "validation/reward-tampering-bypass.patch": "9168125b69368f5d9bd787f4a89511e4d2c04a27242358a33ec0991f10600234",
+      "validation/system-exit-zero-bypass.patch": "2bd5b1ca6a668452500b9947aeac21dcec4e41e55eda865100aad08ea41b6fa9"
+    },
+    "note": "validation/e2e-evidence.json is this file and is therefore excluded from its own manifest."
   },
   "e2e_boundary": {
     "path": "production multimodal model interface -> embedding merge primitive -> CUDA transfer, synchronization, allocation, and output",
     "substitution": "Small deterministic embeddings replace model-generated embeddings; the real interface method and PyTorch CPU/CUDA operations remain real.",
-    "preserved_semantics": "Small deterministic embeddings replace model-generated embeddings; the real interface method and PyTorch CPU/CUDA operations remain real."
+    "preserved_semantics": "Transfers, stream synchronization, peak temporary allocation, placement ordering, and cardinality errors are all observed on real tensors on a real accelerator."
+  },
+  "scoring_architecture": {
+    "grading_entry_point": "bash /tests/test.sh",
+    "reward_source": "/logs/verifier/reward.txt",
+    "design": "tests/test.sh derives no reward of its own: it locates a root-owned interpreter and execs the root-owned trusted parent tests/supervise_multimodal_merge.py. The parent holds the case list and the expectations, creates the reward file exclusively with a leading 0 (root:root, mode 0600, inside a root:root 0700 directory), and runs candidate code only in unprivileged setpriv --reuid=1000 --regid=1000 --no-new-privs observation subprocesses. A case counts as passed only when its subprocess exits 0 and prints exactly one observation line carrying that case's unguessable nonce.",
+    "review_item": "P0 - reward was previously keyed off the exit status of a process that imports candidate-modifiable vllm.",
+    "properties_verified": [
+      "premature termination with status 0 (os._exit and SystemExit) yields reward 0",
+      "completion evidence cannot be forged by candidate code (per-case nonce, single accepted line)",
+      "the reward file cannot be written, unlinked, rmtree'd or symlinked by candidate code",
+      "killing the trusted parent leaves the initial 0 in place"
+    ]
   },
   "validation": {
     "executable_snapshot_frozen": true,
     "static_review": "task_ci.py validate and ai-infra-bench-task-review strict artifact audit passed",
+    "image_id": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb",
+    "hardware": "NVIDIA H20-3e, CUDA 12.9, torch 2.10.0+cu129",
     "base": {
       "reward": 0,
-      "execution_status": "passed-direct-docker-final-image",
-      "image_id": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb"
+      "cases_passed": "7/11",
+      "execution_status": "passed-direct-docker-final-image"
     },
     "oracle": {
       "reward": 1,
-      "execution_status": "passed-direct-docker-final-image",
-      "image_id": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb"
+      "cases_passed": "11/11",
+      "execution_status": "passed-direct-docker-final-image-and-harbor"
     },
     "controls": [
       {
         "name": "incomplete-agent-implementation",
+        "kind": "insufficient-fix",
         "expected_reward": 0,
         "reward": 0,
+        "cases_passed": "8/11",
+        "execution_status": "passed-direct-docker-final-image"
+      },
+      {
+        "name": "os-exit-zero-bypass",
+        "kind": "scoring-integrity",
+        "expected_reward": 0,
+        "reward": 0,
+        "cases_passed": "0/11",
+        "test_sh_exit_status": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      },
+      {
+        "name": "system-exit-zero-bypass",
+        "kind": "scoring-integrity",
+        "expected_reward": 0,
+        "reward": 0,
+        "cases_passed": "0/11",
+        "test_sh_exit_status": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      },
+      {
+        "name": "forged-observation-bypass",
+        "kind": "scoring-integrity",
+        "expected_reward": 0,
+        "reward": 0,
+        "cases_passed": "0/11",
+        "test_sh_exit_status": 0,
+        "execution_status": "passed-direct-docker-final-image"
+      },
+      {
+        "name": "reward-tampering-bypass",
+        "kind": "scoring-integrity",
+        "expected_reward": 0,
+        "reward": 0,
+        "cases_passed": "7/11",
+        "test_sh_exit_status": 0,
         "execution_status": "passed-direct-docker-final-image"
       }
     ],
@@ -62,35 +121,119 @@
         "name": "alternative-agent-implementation",
         "expected_reward": 1,
         "reward": 1,
-        "execution_status": "passed-direct-docker-final-image"
+        "cases_passed": "11/11",
+        "execution_status": "passed-direct-docker-final-image",
+        "note": "A differently-shaped fix in a different file, proving the verifier grades the declared contract rather than the oracle's code location."
       }
     ],
-    "repeated_runs": [],
+    "repeated_runs": [
+      {
+        "implementation": "base",
+        "expected_reward": 0,
+        "runs": 3,
+        "rewards": [0, 0, 0],
+        "cases_passed": ["7/11", "7/11", "7/11"]
+      },
+      {
+        "implementation": "oracle",
+        "expected_reward": 1,
+        "runs": 3,
+        "rewards": [1, 1, 1],
+        "cases_passed": ["11/11", "11/11", "11/11"]
+      },
+      {
+        "implementation": "alternative-agent-implementation",
+        "expected_reward": 1,
+        "runs": 3,
+        "rewards": [1, 1, 1],
+        "cases_passed": ["11/11", "11/11", "11/11"]
+      },
+      {
+        "implementation": "incomplete-agent-implementation",
+        "expected_reward": 0,
+        "runs": 3,
+        "rewards": [0, 0, 0],
+        "cases_passed": ["8/11", "8/11", "8/11"]
+      }
+    ],
+    "cardinality_behaviour_on_cuda": {
+      "review_item": "P1 - the oracle relied on the indexed assignment raising, but a broadcastable 1 -> N mismatch succeeds silently.",
+      "method": "Each shape measured in its own process, because a non-broadcastable mismatch against a CUDA mask raises a device-side assert that poisons the CUDA context. Measured on the declared CUDA scenario; no CPU-only probe substitutes for a CUDA result.",
+      "finding_confirmed": true,
+      "results": [
+        {"shape": "3 -> 3", "mask_device": "cpu", "base": "ValueError (the reported bug)", "oracle_before_fix": "accepted", "oracle_after_fix": "accepted", "alternative": "accepted", "incomplete": "ValueError"},
+        {"shape": "1 -> 3", "mask_device": "cpu", "base": "ValueError", "oracle_before_fix": "silently broadcast to 3 rows", "oracle_after_fix": "ValueError", "alternative": "ValueError", "incomplete": "ValueError"},
+        {"shape": "5 -> 3", "mask_device": "cpu", "base": "ValueError", "oracle_before_fix": "ValueError", "oracle_after_fix": "ValueError", "alternative": "ValueError", "incomplete": "ValueError"},
+        {"shape": "2 -> 4", "mask_device": "cpu", "base": "ValueError", "oracle_before_fix": "ValueError", "oracle_after_fix": "ValueError", "alternative": "ValueError", "incomplete": "ValueError"},
+        {"shape": "2 -> 6", "mask_device": "cpu", "base": "ValueError", "oracle_before_fix": "ValueError", "oracle_after_fix": "ValueError", "alternative": "ValueError", "incomplete": "ValueError"},
+        {"shape": "5 -> 3", "mask_device": "cuda (same device)", "base": "accepted", "oracle_before_fix": "ValueError", "oracle_after_fix": "ValueError", "alternative": "accepted", "incomplete": "accepted"}
+      ],
+      "oracle_fix": "The oracle now validates cardinality before the indexed assignment on the CPU-mask path, where counting the mask does not synchronize the accelerator's stream. Verifier regressions cardinality_cpu_1_to_3 and cardinality_cpu_1_to_9 cover the broadcastable shapes.",
+      "fairness_decision": "No cardinality case is graded on the same-device (CUDA mask) path. The unmodified base and the declared alternative both accept a same-device 5 -> 3 mismatch, so requiring a clean error there would grade one particular design rather than the declared contract.",
+      "oracle_patch_self_evidence": {
+        "added_test": "tests/models/test_utils.py::test_merge_multimodal_embeddings_cardinality_mismatch",
+        "method": "The task image ships runtime dependencies only (no pytest), so both upstream test bodies were driven directly with an explicit vllm.__file__.startswith('/workspace/repo/') binding assertion on a real CUDA device.",
+        "results": {
+          "base/test_merge_multimodal_embeddings_no_sync": "FAIL - ValueError: Error during masked scatter operation",
+          "base/test_merge_multimodal_embeddings_cardinality_mismatch": "PASS (the base is strict; it is the merge itself that is broken)",
+          "oracle/test_merge_multimodal_embeddings_no_sync": "PASS - no D2H sync, merge completed",
+          "oracle/test_merge_multimodal_embeddings_cardinality_mismatch": "PASS - Attempted to assign 1 = 1 multimodal tokens to 3 placeholders",
+          "oracle-with-new-guard-disabled/test_merge_multimodal_embeddings_no_sync": "PASS",
+          "oracle-with-new-guard-disabled/test_merge_multimodal_embeddings_cardinality_mismatch": "FAIL - no error raised; 3 rows written (broadcast)"
+        },
+        "mutation_control": "With nothing but the new cardinality guard neutralised, the added test reproduces exactly the silent 1 -> 3 broadcast the review reported, so the test covers the finding rather than passing incidentally."
+      }
+    },
+    "resource_threshold_calibration": {
+      "review_item": "Justify the mask-transfer constraint and peak_ratio < 4 against an observable resource goal, validated by repeated measurement.",
+      "metric": "peak temporary CUDA allocation during the merge divided by the size of the target inputs_embeds tensor",
+      "tensor_shape": [8192, 512],
+      "repeats_per_cell": 5,
+      "jitter": "none; every repeat produced an identical value",
+      "results": [
+        {"implementation": "base", "cpu_mask_f16_bf16": "ValueError", "cpu_mask_f32": "ValueError", "cuda_mask_f16_bf16": 5.5092, "cuda_mask_f32": 2.5879},
+        {"implementation": "oracle (after fix)", "cpu_mask_f16_bf16": 1.0027, "cpu_mask_f32": 0.5001, "cuda_mask_f16_bf16": 1.0029, "cuda_mask_f32": 0.5001},
+        {"implementation": "alternative", "cpu_mask_f16_bf16": 1.0027, "cpu_mask_f32": 0.5001, "cuda_mask_f16_bf16": 5.5092, "cuda_mask_f32": 2.5879},
+        {"implementation": "incomplete", "cpu_mask_f16_bf16": "ValueError", "cpu_mask_f32": 0.5001, "cuda_mask_f16_bf16": 5.5092, "cuda_mask_f32": 0.5001}
+      ],
+      "threshold": 4.0,
+      "rationale": "Two independently written passing designs both measure 1.003 / 0.500, while every design that keeps materialising the full request-length mask on the device measures 5.509 / 2.588. The gate at 4.0 separates 'temporaries proportional to the placeholders' from 'temporaries proportional to the whole request' with a wide margin on both sides, without prescribing an exact curve. The peak ratios did not regress after the P1 oracle fix.",
+      "no_regression_after_p1_fix": true
+    },
     "harbor": {
       "version": "0.22.0",
-      "job_id": "c609164e-a325-44bc-a969-a7297128c002",
-      "trial_id": "7f3f75bd-63fe-4afa-a958-87544c57782e",
-      "trial_name": "vllm-multimodal-merge-memory__97ir8fJ",
-      "job_directory": "/root/workspace/dxz-workspace/ai-infra-bench-data/final-harbor-oracle/final-oracle-34246",
-      "input_task_checksum": "51c89f6dcb7a8e4e2aed59e6d5043bfa2bc0b508815ea0ce60fd00f5fe37b344",
+      "job_id": "1abe0dd9-1f97-44f6-afa1-6e87f8c66d1e",
+      "trial_id": "23831eec-2325-4cd8-8727-b59f3c63ef36",
+      "trial_name": "harbor-task__UjNEHvE",
+      "job_directory": "/root/workspace/dxz-workspace/ai-infra-bench-data/pr10-harbor-final2/2026-09-06__02-29-25",
+      "task_checksum": "66292c39878bfb94df30a7fdddfd31b05217d37e5e7f402b10b950edd5bc8aab",
       "agent": "oracle",
       "environment": "docker",
+      "verifier_environment_mode": "separate",
+      "n_total_trials": 1,
       "n_completed_trials": 1,
       "n_errored_trials": 0,
+      "n_retries": 0,
+      "exception_info": null,
       "reward": 1.0,
-      "command_exit_code": 0,
-      "started_at": "2026-09-04T16:30:05.188951Z",
-      "finished_at": "2026-09-04T16:31:14.442026Z",
+      "verifier_result": {"rewards": {"reward": 1.0}},
+      "reward_stats": {"reward": {"1.0": ["harbor-task__UjNEHvE"]}},
+      "collected_grading_summary": {"reward": 1, "cases_total": 11, "cases_passed": 11, "failures": []},
+      "started_at": "2026-09-06T02:29:25.740638+08:00",
+      "finished_at": "2026-09-06T02:32:54.657004+08:00",
+      "total_runtime": "3m28s",
       "canonical_image_tag": "ai-infra-bench/vllm-multimodal-merge-memory:base-36d7f1989784",
       "canonical_image_id_at_run": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb",
       "gpu_runtime_adapter": {
-        "reason": "Harbor 0.22 Docker backend declares no GPU allocation capability.",
+        "reason": "Harbor 0.22 Docker backend declares no GPU allocation capability, so a task declaring gpus = 1 is refused before the container starts.",
         "harbor_override_gpus": 0,
+        "applied_to": "a copy of the task at /root/workspace/dxz-workspace/pr10-evidence/harbor-task; the committed task.toml still declares gpus = 1",
         "actual_device_injection": "NVIDIA device reservation in environment/docker-compose.yaml and tests/docker-compose.yaml",
-        "hardware": "NVIDIA H20"
+        "hardware": "NVIDIA H20-3e",
+        "task_checksum_note": "The recorded task_checksum is therefore the checksum of the gpus = 0 copy; all other files are byte-identical to the committed task, as covered by artifacts.files."
       }
     },
-    "note": "All four direct cases were rerun after the final task configuration freeze. Harbor Oracle used the task-declared prebuilt image tag; the local tag resolved to the recorded image ID."
+    "note": "The Harbor run and every direct case were executed against the post-review-fix task files on the final image. Results from the pre-fix revision are not reused anywhere in this file."
   },
   "image": {
     "canonical_tag": "ai-infra-bench/vllm-multimodal-merge-memory:base-36d7f1989784",
@@ -111,6 +254,22 @@
     "worktree_clean_at_container_start": true,
     "runtime_network_disabled": true,
     "verifier_mount_read_only": true,
-    "local_image_has_no_repo_digest_until_registry_push": true
+    "local_image_has_no_repo_digest_until_registry_push": true,
+    "donor_audit": {
+      "review_item": "Audit post-cutoff donor installed copies and image layers to rule out future-source leakage.",
+      "performed_on": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb",
+      "donor": "vllm-0.19.0.dist-info",
+      "findings": [
+        "The donor's installed _merge_multimodal_embeddings is still the old masked_scatter_ implementation, so the donor does not carry the answer.",
+        "Whole-filesystem grep for the oracle-specific string 'Error during index put operation' returned no hits outside the candidate repo.",
+        "'inputs_embeds[is_multimodal]' appears in the donor only inside a comment.",
+        "gemma4_mm.py:1224's is_multimodal.to(input_ids.device) is pre-existing upstream code unrelated to this task's fix.",
+        "No vLLM wheel or source archive, no pip cache, empty /home/agent/.cache.",
+        "Candidate repo: no remotes, no reflog, empty git fsck --unreachable, zero commits reachable after the 2026-04-01 cutoff, HEAD dated 2026-04-01 13:42:27 +0800.",
+        "tests/models/test_utils.py in the image does not contain the oracle's added test_merge_multimodal_embeddings_no_sync or test_merge_multimodal_embeddings_cardinality_mismatch.",
+        "All eight native .so objects come from the single v0.19.0 donor, verified against environment/lock/native.sha256 at build time."
+      ],
+      "leakage_found": false
+    }
   }
 }

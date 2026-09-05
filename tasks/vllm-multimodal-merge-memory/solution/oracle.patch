@@ -5,16 +5,16 @@ Subject: [PATCH] [Core] Simplify multimodal masking (#34246)
 
 Signed-off-by: Lukas Geiger <lukas.geiger94@gmail.com>
 ---
- tests/models/test_utils.py                    | 32 +++++++++++++++++--
+ tests/models/test_utils.py                    | 46 +++++++++++++++++++++++++++++++--
  vllm/model_executor/models/interfaces.py      |  4 ++-
  .../model_executor/models/nano_nemotron_vl.py |  5 ++-
  .../models/qwen2_5_omni_thinker.py            | 14 ++++----
  .../models/qwen3_omni_moe_thinker.py          |  5 +--
  vllm/model_executor/models/qwen3_vl.py        |  7 ++--
- vllm/model_executor/models/utils.py           | 12 ++-----
+ vllm/model_executor/models/utils.py           | 29 ++++++++++++----
  vllm/v1/worker/gpu/mm/encoder_runner.py       |  4 +--
  vllm/v1/worker/gpu_model_runner.py            | 22 ++-----------
- 9 files changed, 54 insertions(+), 51 deletions(-)
+ 9 files changed, 85 insertions(+), 51 deletions(-)
 
 diff --git a/tests/models/test_utils.py b/tests/models/test_utils.py
 index 7cc4ee3c1856..3d719940e3ae 100644
@@ -67,7 +67,7 @@ index 7cc4ee3c1856..3d719940e3ae 100644
  def test_module_skip_substr():
      """Ensure the auto weight loader can skip prefix."""
      mod = ModuleWithNestedBatchNorm()
-@@ -155,3 +161,23 @@ def weight_generator():
+@@ -155,3 +161,37 @@ def weight_generator():
      )
      assert torch.all(new_mod.nested_mod.bn.running_var == mod.nested_mod.bn.running_var)
      assert new_mod.nested_mod.bn.num_batches_tracked.item() == 1
@@ -88,6 +88,20 @@ index 7cc4ee3c1856..3d719940e3ae 100644
 +    multimodal_embeddings = [torch.ones([3, 10], dtype=torch.bfloat16, device="cuda:0")]
 +    is_multimodal = torch.tensor([True, False, True, True, False], device="cpu")
 +    with raise_if_cuda_sync():
++        _merge_multimodal_embeddings(
++            inputs_embeds, multimodal_embeddings, is_multimodal
++        )
++
++
++@pytest.mark.skipif(not current_platform.is_cuda(), reason="Skip if not cuda")
++def test_merge_multimodal_embeddings_cardinality_mismatch():
++    # An indexed assignment broadcasts a single embedding row across every
++    # placeholder instead of failing, so too few embeddings must be reported
++    # explicitly rather than left to the assignment.
++    inputs_embeds = torch.zeros([5, 10], dtype=torch.bfloat16, device="cuda:0")
++    multimodal_embeddings = [torch.ones([1, 10], dtype=torch.bfloat16, device="cuda:0")]
++    is_multimodal = torch.tensor([True, False, True, True, False], device="cpu")
++    with pytest.raises(ValueError, match="placeholders"):
 +        _merge_multimodal_embeddings(
 +            inputs_embeds, multimodal_embeddings, is_multimodal
 +        )
@@ -211,7 +225,7 @@ diff --git a/vllm/model_executor/models/utils.py b/vllm/model_executor/models/ut
 index 8abaa557f9c6..1fd18b5472b1 100644
 --- a/vllm/model_executor/models/utils.py
 +++ b/vllm/model_executor/models/utils.py
-@@ -468,14 +468,8 @@ def _merge_multimodal_embeddings(
+@@ -468,14 +468,25 @@ def _merge_multimodal_embeddings(
      input_dtype = inputs_embeds.dtype
  
      try:
@@ -224,6 +238,23 @@ index 8abaa557f9c6..1fd18b5472b1 100644
 -            is_multimodal.unsqueeze(-1), mm_embeds_flat.to(dtype=input_dtype)
 -        )
 +        # If is_multimodal is on CPU this avoids a D2H sync
++        #
++        # Validate the cardinality up front when the mask already lives on the
++        # host. Indexed assignment broadcasts a single embedding row across
++        # every placeholder instead of failing, so relying on the assignment to
++        # raise would silently duplicate embeddings for a 1 -> N mismatch.
++        # Counting a CPU mask does not synchronize the accelerator's stream.
++        if is_multimodal.device.type == "cpu":
++            num_actual_tokens = len(mm_embeds_flat)
++            num_expected_tokens = int(is_multimodal.sum())
++            if num_actual_tokens != num_expected_tokens:
++                expr = _embedding_count_expression(multimodal_embeddings)
++
++                raise ValueError(
++                    f"Attempted to assign {expr} = {num_actual_tokens} "
++                    f"multimodal tokens to {num_expected_tokens} placeholders"
++                )
++
 +        inputs_embeds[is_multimodal] = mm_embeds_flat.to(dtype=input_dtype)
      except RuntimeError as e:
          num_actual_tokens = len(mm_embeds_flat)
