@@ -1,0 +1,106 @@
+{
+  "schema_version": "ai_infra_bench_validation_cases.v1",
+  "status": "validated-final-image",
+  "grading_entry_point": "bash /tests/test.sh",
+  "reward_source": "/logs/verifier/reward.txt (created root-only by /tests/supervise_multimodal_merge.py)",
+  "image_id": "sha256:d1432a560ed68bdf8cd9e2ca9088e7bbbce3c588bcf4208e8f53a9a37fc597fb",
+  "image_tag": "ai-infra-bench/vllm-multimodal-merge-memory:base-36d7f1989784",
+  "hardware": "NVIDIA H20-3e (CUDA 12.9, torch 2.10.0+cu129)",
+  "notes": [
+    "Every case below was executed through the real grading entry point on the final image; no result is carried over from an earlier revision of the task.",
+    "The bypass cases are layered on the unmodified base repository, so the only way they could reach reward=1 is by defeating the scoring architecture rather than by fixing the bug.",
+    "`test.sh` exits 0 in all bypass cases; the reward is read from the root-owned reward file, never from the exit status."
+  ],
+  "baseline_runs": {
+    "comment": "`cases` below declares only patch-based validation cases, one per file in validation/*.patch, as the CI contract requires. These two reference runs are recorded here because they are not patch files under validation/.",
+    "base_unmodified": {
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "7/11",
+      "repeats": 3,
+      "repeat_rewards": [0, 0, 0],
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "The task's starting state must not already score. Fails the CPU-mask merge cases and the CUDA-mask peak-memory case."
+    },
+    "oracle": {
+      "patch": "../solution/oracle.patch",
+      "expected_reward": 1,
+      "observed_reward": 1,
+      "cases_passed": "11/11",
+      "repeats": 3,
+      "repeat_rewards": [1, 1, 1],
+      "execution_status": "passed-direct-docker-final-image-and-harbor",
+      "purpose": "Reference solution. Also validated end-to-end through Harbor 0.22.0 (see e2e-evidence.json)."
+    }
+  },
+  "cases": [
+    {
+      "name": "alternative-agent-implementation",
+      "patch": "alternative-agent-implementation.patch",
+      "patch_sha256": "6a3232d057d9638103e028ba0752054e4aa7599595664fa88861c759690c07a6",
+      "expected_reward": 1,
+      "observed_reward": 1,
+      "cases_passed": "11/11",
+      "repeats": 3,
+      "repeat_rewards": [1, 1, 1],
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "Fairness control: a differently-shaped correct fix in a different location must also score 1, proving the verifier grades the declared contract rather than the oracle's code."
+    },
+    {
+      "name": "incomplete-agent-implementation",
+      "patch": "incomplete-agent-implementation.patch",
+      "patch_sha256": "76560b826d7ee588858c8905f0d1c63c74b0a8b33d2da392e47a7a20f28631e2",
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "8/11",
+      "repeats": 3,
+      "repeat_rewards": [0, 0, 0],
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "A partial fix that only handles float32 must not score."
+    },
+    {
+      "name": "os-exit-zero-bypass",
+      "patch": "os-exit-zero-bypass.patch",
+      "patch_sha256": "fc3ad5ac5eb07a0e69c0a1866f8de1468fbd4248cf82c43e3beb1736dbef9546",
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "0/11",
+      "test_sh_exit_status": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "Scoring-integrity control for the P0 review item: candidate code calls os._exit(0) at vllm import time. Every observation subprocess exits 0 with no observation line, so the trusted parent scores 0/11 and the reward file keeps its initial 0."
+    },
+    {
+      "name": "system-exit-zero-bypass",
+      "patch": "system-exit-zero-bypass.patch",
+      "patch_sha256": "2bd5b1ca6a668452500b9947aeac21dcec4e41e55eda865100aad08ea41b6fa9",
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "0/11",
+      "test_sh_exit_status": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "Same as above via raise SystemExit(0), which unwinds cleanly through the worker's own exception handling."
+    },
+    {
+      "name": "forged-observation-bypass",
+      "patch": "forged-observation-bypass.patch",
+      "patch_sha256": "fbed788bb10a4a5116904cb00022dcaff441b6ad6bb4c8f3a1d0924e9a0d18f8",
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "0/11",
+      "test_sh_exit_status": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "Completion evidence must not be forgeable by candidate code. The patch prints passing observation envelopes for all 11 case names and exits 0; the parent rejects them because the per-case nonce is unguessable and exactly one observation line is accepted per subprocess."
+    },
+    {
+      "name": "reward-tampering-bypass",
+      "patch": "reward-tampering-bypass.patch",
+      "patch_sha256": "9168125b69368f5d9bd787f4a89511e4d2c04a27242358a33ec0991f10600234",
+      "expected_reward": 0,
+      "observed_reward": 0,
+      "cases_passed": "7/11",
+      "test_sh_exit_status": 0,
+      "execution_status": "passed-direct-docker-final-image",
+      "purpose": "Candidate code tries to write, unlink, rmtree and symlink /logs/verifier/reward.txt and to SIGKILL its parent. The reward path is root-owned 0700 while observation subprocesses run as uid 1000 via setpriv, so every attempt fails with EPERM/EACCES and the reward stays 0."
+    }
+  ]
+}
