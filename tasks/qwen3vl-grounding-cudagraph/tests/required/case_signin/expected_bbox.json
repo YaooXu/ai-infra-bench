@@ -1,0 +1,10 @@
+{
+  "prompt": "Locate the sign in button",
+  "expected_bbox": [
+    796,
+    19,
+    879,
+    71
+  ],
+  "threshold_px": 3
+}

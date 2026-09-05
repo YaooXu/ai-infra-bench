@@ -1,0 +1,10 @@
+{
+  "prompt": "Locate the button that is used to log in",
+  "expected_bbox": [
+    957,
+    35,
+    988,
+    52
+  ],
+  "threshold_px": 3
+}
