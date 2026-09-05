@@ -1,0 +1,17 @@
+{
+  "cases": [
+    {
+      "expected_reward": 1,
+      "name": "alternate-continuation",
+      "patch": "alternate-continuation.patch",
+      "patch_sha256": "27e220f4cd9c3b2564d34af5d2045f4c09ab90db7c93f1998577e0e3d52c9963"
+    },
+    {
+      "expected_reward": 0,
+      "name": "incomplete-output-absorption",
+      "patch": "incomplete-output-absorption.patch",
+      "patch_sha256": "ffb085a057ec8a472cc0dc6812e261d2111c88244e3a45aa6b274a8642a0355f"
+    }
+  ],
+  "schema_version": "ai_infra_bench_validation_cases.v1"
+}
