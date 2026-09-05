@@ -144,7 +144,10 @@ valid evidence.
 
 ### Multi-GPU and NCCL
 
-For PP/TP/collective behavior. In addition to the GPU rules, declare:
+Apply this subsection when the target behavior requires real multi-GPU
+execution or collective communication. TP/PP configuration or device mapping
+alone does not trigger these requirements. Declare the following where
+applicable to the task contract:
 
 - exact GPU count and topology;
 - process count and rank mapping;
