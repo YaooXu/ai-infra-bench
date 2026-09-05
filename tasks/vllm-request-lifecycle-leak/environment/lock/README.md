@@ -1,62 +1,47 @@
 # Environment lock
 
-This environment packages the survey base state for `vllm__pr__34183`.
+This environment packages the pre-fix source state for
+`vllm__pr__34183` while retaining a usable CPU runtime.
 
-## Source
+## Candidate source
 
 - Upstream repository: `https://github.com/vllm-project/vllm.git`
-- Survey base commit: `e94ec597334d9a3e9b0d04bc17152e2747c83d51`
-- Commit date: `2026-02-10T01:18:42Z`
-- Commit subject: `[LMCache] Token Base IPC API (#34175)`
-- Acquisition: depth-one fetch of the exact commit during image build
-- Runtime Git state: exported source plus one synthetic commit named
-  `Synthetic benchmark base`, branch `benchmark-base`, no upstream remote
+- Base commit: `e94ec597334d9a3e9b0d04bc17152e2747c83d51`
+- Source tree: `bfdf97989c2997f550a44ebc42ad8aa5582d67a7`
+- Commit date / dependency cutoff: `2026-02-10T01:18:42Z`
+- Acquisition: an exact-commit fetch retaining the 2,000 ancestors reachable
+  from Base; tags, remotes, reflogs, fetch metadata, unreachable objects, and
+  post-Base objects are removed.
+- Runtime Git state: branch `main` at the real Base commit with a clean tree.
 
-The original issue reported vLLM 0.11.0, PyTorch 2.8.0, and CUDA 12.8. The
-required survey base is later and was committed between v0.15.1 and v0.16.0;
-its own build files had already moved to PyTorch 2.10.0 and CUDA 12.9.1. The
-official v0.15.1 image is the latest release that existed at the base commit's
-cutoff and predates the target fix. A later release image is not used because
-its installed source could disclose post-cutoff implementation changes.
+The bounded history is intentional. A complete unshallow fetch was unreliable
+on the build host, while a depth-one or synthetic history would make ordinary
+Agent archaeology much less useful. The retained boundary contains no future
+object and is recorded here rather than represented as full upstream history.
 
-## Base image and runtime
+## Dependency donor and answer isolation
 
-- Image: `vllm/vllm-openai:v0.15.1`
-- Multi-platform manifest digest:
-  `sha256:8c9aaddfa6011b9651d06834d2fb90bdb9ab6ced4b420ec76925024eb12b22d0`
-- Linux/amd64 image digest:
-  `sha256:06f9f0d5c7cb079504615c51dab70cd18abbf609d1358b940172181ac0a92efa`
-- Linux/amd64 compressed size reported by Docker Hub: `9,125,854,482`
-  bytes
-- Platform: `linux/amd64`
-- Python: 3.12.12
-- vLLM package: 0.15.1
-- PyTorch/CUDA: 2.9.1+cu129 / CUDA 12.9
-- Ubuntu packages added at build time:
-  - `ca-certificates=20260601~22.04.1`
-  - `git=1:2.34.1-1ubuntu1.17`
-  - `git-man=1:2.34.1-1ubuntu1.17`
-  - `liberror-perl=0.17029-1`
-- Apt sources: the Ubuntu Jammy, Jammy updates/security/backports, NVIDIA CUDA,
-  and Deadsnakes repositories already configured by the official base image
-- Accelerator used for validation: NVIDIA A100-SXM4-40GB, GPU 0
-- Runtime network: disabled with `--network none`
-- `VLLM_TARGET_DEVICE`: not overridden
+- Donor image: `vllm/vllm-openai-cpu:v0.17.1-x86_64`
+- Linux/amd64 digest:
+  `sha256:d19978a2d4bb2289c740a6c89d4cc15fbcf4d20d916f1e268168b8bbad3b776b`
+- Python: 3.12.13
+- PyTorch: 2.10.0+cpu
+- Runtime accelerator: CPU
 
-The official image's CUDA compatibility directory contains
-`libcuda.so.575.57.08`. On the validation host with driver 580.126.20, that
-compatibility library returns CUDA error 803. The image therefore gives
-`/lib/x86_64-linux-gnu` priority via `LD_LIBRARY_PATH`, selecting the NVIDIA
-Container Toolkit's host-driver injection. A real CUDA tensor allocation is
-part of validation.
+The donor is used only in a build stage. Its root filesystem is copied into a
+new `FROM scratch` stage after excluding its installed vLLM Python package,
+package metadata, workspaces, and caches. Only native vLLM shared objects and
+`_version.py` are staged into the exact Base checkout. Therefore the final
+image does not inherit a layer containing the donor's already-fixed
+`vllm/v1/request.py`.
 
-The build needs network access only for Ubuntu apt metadata/packages and the
-exact Git commit fetch. On the validation host, apt uses its directly reachable
-official repositories while GitHub uses the supplied build proxy. Runtime
-reproduction has no external data, model, tokenizer, or package dependency.
+The Dockerfile asserts the exact Base commit and source tree, rejects hidden
+Git objects and network references, and rejects any second installed copy of
+the target source. Runtime imports resolve to `/workspace/repo/vllm`.
 
-## Verification boundary
+## Build and runtime boundary
 
-No task-specific reproducer or verifier is included in the Agent image. The
-hidden verifier supplies deterministic request payloads only after the Agent
-phase and exercises the production request-completion lifecycle.
+Network access is required only while pulling the digest-pinned donor and
+fetching the exact source history. Agent and verifier phases run with no
+network. The image contains no task-specific reproducer, verifier, Oracle, or
+validation artifact; those are mounted only into the separate verifier phase.

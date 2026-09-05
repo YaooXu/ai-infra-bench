@@ -1,8 +1,30 @@
-# The scored behavior is pure Python/CPU request lifecycle logic. A CPU donor
-# avoids making every Agent run download and initialize an unrelated CUDA
-# serving stack while the exact pre-fix Python source is still overlaid below.
+# Use the digest-pinned CPU image only as a build donor. The final image is a
+# flattened, filtered rootfs and therefore does not inherit donor layers that
+# contain the already-fixed vLLM Python source.
 ARG BASE_IMAGE=vllm/vllm-openai-cpu:v0.17.1-x86_64@sha256:d19978a2d4bb2289c740a6c89d4cc15fbcf4d20d916f1e268168b8bbad3b776b
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE} AS donor
+
+USER root
+
+RUN set -eux; \
+    VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
+    mkdir -p /opt/ai-infra-native/vllm; \
+    find "${VLLM_SITE}" -type f \( -name '*.so' -o -name '_version.py' \) \
+      -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/opt/ai-infra-native/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' "${VLLM_SITE}" {} +; \
+    mkdir -p /clean-root; \
+    tar -C / --one-file-system \
+      --exclude='./clean-root' \
+      --exclude='./workspace' \
+      --exclude='./proc' --exclude='./sys' --exclude='./dev' --exclude='./run' \
+      --exclude='./tmp/*' --exclude='./root/.cache' \
+      --exclude='./opt/venv/lib/python3.12/site-packages/vllm' \
+      --exclude='./opt/venv/lib/python3.12/site-packages/vllm-*.dist-info' \
+      -cf - . | tar -C /clean-root -xf -; \
+    test ! -e /clean-root/opt/venv/lib/python3.12/site-packages/vllm; \
+    test -z "$(find /clean-root -path '*/vllm/v1/request.py' -type f -print)"
+
+FROM scratch
+COPY --from=donor /clean-root/ /
 
 ARG VLLM_BASE_SHA=e94ec597334d9a3e9b0d04bc17152e2747c83d51
 ARG VLLM_SOURCE_TREE=bfdf97989c2997f550a44ebc42ad8aa5582d67a7
@@ -15,8 +37,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /workspace
 
-# Fetch the exact Base and retain its reachable history for normal code
-# archaeology. Remove all network metadata and reject hidden future objects.
+# Fetch only history reachable from the exact pre-fix base, then remove all
+# network metadata and reject hidden future objects.
 RUN set -eux; \
     command -v git; \
     mkdir -p /workspace/repo; \
@@ -31,9 +53,6 @@ RUN set -eux; \
       return 1; \
     }; \
     fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
-    while test -e /workspace/repo/.git/shallow; do \
-      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
-    done; \
     git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_SOURCE_TREE}"; \
@@ -43,11 +62,11 @@ RUN set -eux; \
     test -z "$(git -C /workspace/repo remote)"; \
     test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
     test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
-    test ! -e /workspace/repo/.git/shallow; \
     test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"; \
-    VLLM_SITE="$(python3 -c 'import pathlib, vllm; print(pathlib.Path(vllm.__file__).parent)')"; \
-    find "${VLLM_SITE}" -type f \( -name '*.so' -o -name '_version.py' \) \
-        -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/workspace/repo/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' "${VLLM_SITE}" {} +; \
+    find /opt/ai-infra-native/vllm -type f \
+      -exec sh -c 'for src do rel="${src#"$0"/}"; dst="/workspace/repo/vllm/$rel"; mkdir -p "$(dirname "$dst")"; cp -a "$src" "$dst"; done' /opt/ai-infra-native/vllm {} +; \
+    rm -rf /opt/ai-infra-native; \
+    test -z "$(find /opt/venv/lib/python3.12/site-packages -path '*/vllm/v1/request.py' -type f -print)"; \
     test -z "$(git -C /workspace/repo status --porcelain)"; \
     rm -f /root/.bash_history
 

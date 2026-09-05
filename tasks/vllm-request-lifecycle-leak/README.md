@@ -10,7 +10,12 @@ A digest-pinned vLLM CPU image with the exact Base source, offline runtime, and 
 
 ## Verifier
 
-The separate hidden verifier drives the production request-completion lifecycle and checks prompt-hash behavior plus prompt and multimodal object reclamation. Full credit is binary and is written to `/logs/verifier/reward.txt`.
+The separate hidden verifier uses a root-owned supervisor to drive eleven
+independent observations through production Scheduler lifecycle operations.
+It covers normal completion, cancellation, streaming continuation/end, live
+ownership, prefix-cache hashing, and prompt/multimodal reclamation. Candidate
+code runs as the unprivileged Agent user; only the supervisor owns expectations
+and the binary reward written to `/logs/verifier/reward.txt`.
 
 ## Layout
 
@@ -23,10 +28,9 @@ The separate hidden verifier drives the production request-completion lifecycle 
 
 ## Running
 
-After the pending image and validation records are finalized:
+With the canonical image available locally:
 
 ```bash
 harbor run -p tasks/vllm-request-lifecycle-leak -a oracle
 harbor run -p tasks/vllm-request-lifecycle-leak -a terminus-2 -m anthropic/claude-opus-4-8
 ```
-
