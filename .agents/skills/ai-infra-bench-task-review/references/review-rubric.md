@@ -335,6 +335,27 @@ test when those semantics are outside the task.
 - The verifier must not read control patches or compare a solution with the
   Oracle. It may distinguish implementations only through behavior.
 
+Trace candidate-code execution through the grading entrypoint and identify
+which process decides reward. When candidate code can terminate a process
+participating in verification, require an early-success-exit negative
+control at a reachable import or execution boundary. For Python, exercise
+`SystemExit(0)` and `os._exit(0)` when applicable: catching the former does
+not protect against the latter. Equivalent controls apply to other runtimes.
+No reward may be granted for required checks that did not execute or finish,
+even when the process exits with status 0.
+
+An independent verifier container or root-owned interpreter does not prove
+completion integrity when it executes candidate code. The trusted scorer
+must verify completion and behavioral results for all required checks; an
+exit code or a candidate-writable success marker alone is insufficient.
+If candidate code runs in a child process, verify that the grading parent
+rejects premature child termination rather than treating it as success.
+
+An exit-code-only pattern is a review lead, not by itself a demonstrated
+P0. Establish a bypass through the actual grading entrypoint and final
+reward. Label extracted or relocated probes as preliminary, recording
+their substitutions and any missing container or Harbor validation.
+
 ### 5.6 Gate 3 blockers
 
 Block when required behavior is untested, reward depends on undisclosed or
