@@ -14,9 +14,13 @@ Implement tri-state behavior for `VLLM_USE_V2_MODEL_RUNNER` and propagate the re
 
 ## Verifier
 
-- A separate hidden verifier runs `/tests/verify_runner_consumers.py`
-- Checks defaults, explicit overrides, incompatibility reporting, and real GPU worker consumption path
-- Reward is written to `/logs/verifier/reward.txt`
+- A root-owned supervisor runs candidate imports in an unprivileged child and
+  keeps reward fail-closed until all required cases are accounted for
+- Checks defaults across Qwen3/Qwen2, generation/pooling and supported/
+  unsupported features, explicit overrides, startup errors, and the real GPU
+  worker consumption path
+- Reward is written by the candidate-independent supervisor to
+  `/logs/verifier/reward.txt`
 
 ## Layout
 

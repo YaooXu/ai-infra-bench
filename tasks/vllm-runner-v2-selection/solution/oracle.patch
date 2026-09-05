@@ -19,7 +19,7 @@ index 9f93ab7944db..f9090ff588b7 100644
 
  class OptimizationLevel(IntEnum):
      """Optimization level enum."""
-@@ -489,6 +492,48 @@ def num_speculative_tokens(self) -> int:
+@@ -489,6 +492,52 @@ def num_speculative_tokens(self) -> int:
              return self.speculative_config.num_speculative_tokens
          return 0
 
@@ -63,12 +63,16 @@ index 9f93ab7944db..f9090ff588b7 100644
 +        ):
 +            return False
 +
-+        return not model_config.is_moe and not model_config.is_quantized
++        return (
++            not model_config.is_moe
++            and model_config.quantization is None
++            and not model_config.is_quantized
++        )
 +
      @property
      def needs_dp_coordinator(self) -> bool:
          """
-@@ -1233,7 +1278,7 @@ def has_blocked_weights():
+@@ -1233,7 +1282,7 @@ def has_blocked_weights():
              )
          current_platform.check_and_update_config(self)
 
@@ -77,7 +81,7 @@ index 9f93ab7944db..f9090ff588b7 100644
              self._validate_v2_model_runner()
 
          # Re-compute compile ranges after platform-specific config updates
-@@ -1908,35 +1953,72 @@ def __str__(self):
+@@ -1908,35 +1957,72 @@ def __str__(self):
              f"kernel_config={self.kernel_config!r}"
          )
 
@@ -161,7 +165,7 @@ index 9f93ab7944db..f9090ff588b7 100644
          if self.cache_config.kv_sharing_fast_prefill:
              # Will be added by https://github.com/vllm-project/vllm/pull/35045
              unsupported.append("KV sharing fast prefill")
-@@ -1945,6 +2027,14 @@ def _validate_v2_model_runner(self) -> None:
+@@ -1945,6 +2031,14 @@ def _validate_v2_model_runner(self) -> None:
              # Will be added by https://github.com/vllm-project/vllm/pull/38390
              unsupported.append("EC transfer")
 

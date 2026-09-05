@@ -1,5 +1,74 @@
 # Docker build and baseline validation
 
+## 2026-09-05 trusted-scoring and representation-independence repair
+
+Review of commit `41106b16eab924a15e7c7efc7c402d73b7098aec` found two
+blocking issues. First, the shell granted reward 1 whenever the one Python
+process that imported candidate vLLM exited zero. Injecting `os._exit(0)` at
+the candidate package boundary therefore produced no test output but received
+reward 1. Second, the verifier treated an unset environment accessor returning
+`None` as part of the contract and required forced-V2 incompatibility to be
+raised during `VllmConfig` construction.
+
+The final scoring path now has a root-owned supervisor that never imports
+candidate modules. It initializes a root-only reward file to 0, owns the list
+of 17 required cases and their expected behavior, and launches one
+unprivileged observation process per case. Each process returns only a raw,
+nonce-bound observation; it cannot report aggregate success. The parent grades
+every observation itself and is the only process able to replace reward with
+1. A child exit code or prebuilt aggregate marker cannot grant success.
+
+The behavior matrix no longer constrains the unset accessor representation or
+the precise validation phase. It observes the real startup path through local
+Qwen3/Qwen2 Hugging Face metadata, production `ModelConfig`/`VllmConfig`, and
+production `GPUWorker.__init__`. It covers dense Qwen3 automatic V2 selection,
+other-architecture and pooling fallback, KV-sharing and logits-processor
+fallback/rejection, explicit V1/V2, and explanatory forced-V2 failure before a
+usable worker exists.
+
+Direct final-image controls on NVIDIA H20-3e produced:
+
+```text
+Base:                                 0
+Oracle:                               1
+Tri-state alternative:                1
+Boolean-accessor/presence alternative: 1
+Tri-state-only incomplete control:    0
+SystemExit(0) early-exit control:      0
+os._exit(0) early-exit control:        0
+```
+
+Before parent-owned per-case grading was added, the two early-exit controls
+also ran through Harbor 0.22.0 with zero errored trials. These IDs are retained
+as historical evidence only; exact-commit Harbor results for the final
+protocol are attached to the pull request:
+
+```text
+pr3-p0-system-exit-zero: job 0d396b20-cd6a-495b-93df-3b96a7253358,
+                          trial 753f4a21-6a4f-41b5-af57-5ceb317942c1,
+                          reward 0
+pr3-p0-os-exit-zero:     job 02208374-287d-4acb-8011-71fbf748e7c7,
+                          trial ace1d876-6719-453c-8198-d4207fd7ce61,
+                          reward 0
+```
+
+The replacement parent-owned protocol was then replayed on the retained
+canonical image:
+
+```text
+Base:                                  0 (16/17 accepted observations)
+Oracle:                                1 (17/17 accepted observations)
+Boolean-accessor/presence alternative: 1 (17/17 accepted observations)
+SystemExit(0):                         0 (0/17 accepted observations)
+os._exit(0):                           0 (0/17 accepted observations)
+```
+
+The environment files did not change, so the validation playbook permits
+reusing the retained canonical image
+`sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189`.
+The image was re-inspected and task metadata remains digest-aligned. Results
+below this section are historical evidence for earlier scoring snapshots.
+
 ## 2026-09-05 public-startup verifier repair
 
 The verifier no longer calls `_validate_v2_model_runner` or any other candidate
