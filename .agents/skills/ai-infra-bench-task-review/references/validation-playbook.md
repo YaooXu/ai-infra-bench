@@ -98,6 +98,17 @@ construct at least one small contract-valid case that was not copied from the
 Oracle or existing test inventory. Run it against the Oracle and a correct
 alternative when practical.
 
+For the fairness checks in rubric sections 5.1–5.4, record the public contract,
+actual entrypoint and lifecycle transitions, exercised parameter combinations,
+and expected versus observed behavior for the Oracle and each alternative.
+Where an assertion rejects a contract-valid representation, repair location,
+or failure exit status, replace it with an observable contract check. Retain
+counterexamples for lifecycle gaps, implicit broadcasting, and interacting
+configuration dimensions as applicable verifier-side regressions or controls.
+Keep these artifacts out of the agent image. Distinguish function-level probes
+from final grading runs and re-run affected cases and controls after fixes;
+an earlier reward of 1 does not certify a control's correctness.
+
 Base must receive 0 because of the target behavior. Oracle and correct
 alternatives must receive 1 with no skips or errors. Incorrect controls must
 receive 0 through behavior alone.

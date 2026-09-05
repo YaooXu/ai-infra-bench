@@ -283,6 +283,13 @@ Check both directions:
 Never repair a verifier mismatch by publishing Oracle helpers, private fields,
 file paths, buffer layouts, call order, or algorithms in the task statement.
 
+Audit assertions on internal representations and validation timing as well as
+outputs. For example, automatic selection need not use a `None` accessor, and
+an invalid configuration may be rejected at different startup stages when the
+public contract permits it. For failure handling, distinguish successful cleanup
+from a successful exit status: require a particular exit code only when the
+public contract entails it. Judge alternatives at the observable boundary.
+
 ### 5.2 Behavioral boundary and E2E
 
 Reward should enter through a public or stable subsystem boundary and observe
@@ -302,6 +309,13 @@ reverse, or materially alter the Base-versus-Oracle distinction. Preserve other
 explicit output contracts through real downstream tests without automatically
 pulling the entire production stack into the target E2E.
 
+For retention or cleanup tasks, execute the real ownership transitions before
+checking reclamation: creation and use, the applicable completion/cancellation/
+stream-end event, and owner release. Deleting a test-local reference is not a
+substitute for completing the subsystem lifecycle. Include a still-live case
+where retention is required. When hashing or caching is part of the contract,
+callback counts or sentinel results alone do not establish real cache behavior.
+
 ### 5.3 Regressions, hidden cases, and controls
 
 Protect adjacent behavior that already works, especially results the statement
@@ -316,6 +330,15 @@ least one semantically different correct alternative must receive reward 1 and
 differ from the Oracle in algorithm, data representation, or repair location.
 Patch similarity alone cannot establish semantic difference.
 
+Exercise interacting dimensions that can hide incomplete repairs when fixed
+at trivial values. For device allocation, this can include TP and PP greater
+than one, rank offsets, and existing visibility restrictions when in scope.
+Choose combinations from the contract; an exhaustive Cartesian product is not
+required. Validate every claimed correct control independently of its reward:
+a passing alternative may expose a coverage hole rather than prove fairness.
+Reclassify a contract-violating alternative as an incorrect control, repair the
+coverage, and provide a genuinely correct alternative before acceptance.
+
 ### 5.4 Challenge the Oracle independently
 
 Derive the behavioral invariants before treating the Oracle as evidence. Create
@@ -323,6 +346,14 @@ at least one small contract-valid case not copied from the current tests or
 Oracle conditions. The Oracle and a correct alternative should pass it. This is
 a general challenge, not a requirement for any particular concurrency or state
 test when those semantics are outside the task.
+
+Challenge implicit runtime behavior as well as explicit error branches. For
+shape or cardinality contracts, include applicable empty, singleton,
+broadcastable-mismatch, and non-broadcastable-mismatch cases; an operation may
+silently accept invalid input instead of throwing. Check the Oracle and claimed
+correct alternatives across relevant device/backend paths, including same- and
+cross-device paths when promised. CPU-only probes do not establish CUDA
+behavior. Select applicable cases, not a universal matrix for unrelated tasks.
 
 ### 5.5 Base, Oracle, and result integrity
 
