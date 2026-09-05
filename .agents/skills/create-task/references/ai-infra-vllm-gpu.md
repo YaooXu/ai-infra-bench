@@ -5,6 +5,17 @@ infrastructure mechanisms. It supplements the generic task-creation workflow.
 The post-construction independent review remains governed by the
 `ai-infra-bench-task-review` skill.
 
+## Contents
+
+1. [Provenance and contract](#1-record-provenance-and-define-an-independent-contract)
+2. [Task contract and difficulty](#2-freeze-the-task-contract-and-difficulty)
+3. [Instruction rules](#3-instruction-rules)
+4. [Hardware requirements](#4-hardware-requirements-and-applicable-technical-guidance)
+5. [Version and fixtures](#5-version-and-offline-fixture-compatibility)
+6. [Native and image provenance](#6-native-and-image-provenance)
+7. [Construction checks](#7-construction-acceptance-checks)
+8. [Independent-review handoff](#8-handoff-to-independent-review)
+
 ## 1. Record provenance and define an independent contract
 
 Before using evaluated-agent outcomes to make design decisions, record the
