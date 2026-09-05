@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 REWARD = Path("/logs/verifier/reward.txt")
-WORKER = Path("/tests/verify_retention.py")
+WORKER = Path(__file__).resolve().with_name("verify_retention.py")
 RESULT_PREFIX = "AI_INFRA_OBSERVATION="
 CASES = (
     "candidate_source",
@@ -34,10 +34,10 @@ CASES = (
 def write_reward(value: int, *, exclusive: bool = False) -> None:
     flags = os.O_WRONLY | os.O_NOFOLLOW | os.O_CREAT
     flags |= os.O_EXCL if exclusive else os.O_TRUNC
-    descriptor = os.open(REWARD, flags, 0o600)
+    descriptor = os.open(REWARD, flags, 0o644)
     try:
         os.fchown(descriptor, 0, 0)
-        os.fchmod(descriptor, 0o600)
+        os.fchmod(descriptor, 0o644)
         os.write(descriptor, f"{value}\n".encode())
         os.fsync(descriptor)
     finally:
@@ -49,13 +49,14 @@ def prepare_reward() -> None:
     try:
         info = directory.lstat()
     except FileNotFoundError:
-        directory.mkdir(parents=True, mode=0o700)
+        directory.mkdir(parents=True, mode=0o755)
     else:
         if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
             directory.unlink()
-            directory.mkdir(parents=True, mode=0o700)
+            directory.mkdir(parents=True, mode=0o755)
     os.chown(directory, 0, 0)
-    directory.chmod(0o700)
+    # The host Harbor process must traverse/read outputs; only root may write.
+    directory.chmod(0o755)
     try:
         REWARD.unlink()
     except FileNotFoundError:
@@ -162,12 +163,15 @@ def main() -> int:
     # interpreter retains its prefix; separately validate its resolved target.
     python_bin = Path(sys.argv[1])
     python_target = python_bin.resolve()
-    if not all(
-        trusted_file(path)
-        for path in (python_bin, python_target, Path(__file__).resolve(), WORKER)
-    ):
-        print("FAIL: verifier executable or scripts are not root-owned/read-only")
-        return 0
+    for path in (python_bin, python_target, Path(__file__).resolve(), WORKER):
+        if not trusted_file(path):
+            info = path.stat()
+            print(
+                f"FAIL: untrusted verifier file {path}: "
+                f"uid={info.st_uid}, gid={info.st_gid}, "
+                f"mode={stat.S_IMODE(info.st_mode):04o}"
+            )
+            return 0
     agent = pwd.getpwnam("agent")
     completed: list[str] = []
     for case in CASES:

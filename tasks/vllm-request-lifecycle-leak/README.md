@@ -34,3 +34,11 @@ With the canonical image available locally:
 harbor run -p tasks/vllm-request-lifecycle-leak -a oracle
 harbor run -p tasks/vllm-request-lifecycle-leak -a terminus-2 -m anthropic/claude-opus-4-8
 ```
+
+## Permission-fix validation status
+
+The verifier now stages trusted harness scripts independently of host UID and
+keeps root-only write access while allowing Harbor to read outputs. Runtime
+validation was not rerun for this change at the maintainer's request. Historical
+results are retained under `validation/history`; they do not certify the current
+verifier. Non-root host collection and the full control matrix remain pending.

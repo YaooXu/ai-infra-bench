@@ -20,7 +20,7 @@ workload_type = "bug_fix"
 subsystems = ["request_lifecycle", "memory", "multimodal"]
 dependency_cutoff = "2026-02-10T01:18:42Z"
 environment_template = "vllm-cutoff-pinned"
-publication_state = "staged-smoke-only"
+publication_state = "hardening-pending-validation"
 difficulty = "medium"
 grader_kind = "correctness"
 
