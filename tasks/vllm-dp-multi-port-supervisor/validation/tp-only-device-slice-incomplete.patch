@@ -79,7 +79,7 @@ new file mode 100644
 index 0000000..6cb4300
 --- /dev/null
 +++ b/vllm/entrypoints/openai/dp_supervisor.py
-@@ -0,0 +1,544 @@
+@@ -0,0 +1,541 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 +"""Node-local supervisor for multi-port external-load-balancer data parallel.
@@ -299,24 +299,21 @@ index 0000000..6cb4300
 +def _child_device_env(args: argparse.Namespace, local_index: int) -> dict[str, str]:
 +    """Compute the device-control env var slice for one local child.
 +
-+    Each local rank owns ``tensor_parallel_size * pipeline_parallel_size``
-+    contiguous devices. We map logical device ids through the platform helper
-+    so an already-restricted device view (e.g. an outer
-+    ``CUDA_VISIBLE_DEVICES``) is respected.
++    Each local rank owns ``tensor_parallel_size`` contiguous devices. We map
++    logical device ids through the platform helper so an already-restricted
++    device view (e.g. an outer ``CUDA_VISIBLE_DEVICES``) is respected.
 +    """
 +    tp_size = getattr(args, "tensor_parallel_size", 1) or 1
-+    pp_size = getattr(args, "pipeline_parallel_size", 1) or 1
-+    devices_per_rank = tp_size * pp_size
 +    env_var = current_platform.device_control_env_var
 +    if env_var == "VLLM_DEVICE_CONTROL_ENV_VAR_PLACEHOLDER":
 +        # Platform does not use a device-control env var (e.g. CPU). Nothing
 +        # to assign; children inherit the parent environment.
 +        return {}
 +
-+    start = local_index * devices_per_rank
++    start = local_index * tp_size
 +    physical_ids = [
 +        str(current_platform.device_id_to_physical_device_id(i))
-+        for i in range(start, start + devices_per_rank)
++        for i in range(start, start + tp_size)
 +    ]
 +    return {env_var: ",".join(physical_ids)}
 +

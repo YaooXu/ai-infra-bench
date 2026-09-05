@@ -5,8 +5,15 @@
     {
       "name": "alternative-agent-implementation",
       "patch": "alternative-agent-implementation.patch",
-      "patch_sha256": "f2fa5a424663e6ccbd688023becab752afec71b23c81cb68a742c3335550651c",
+      "patch_sha256": "c79b191f63269b417ce292c73c2ade9b0169b21aa5de6480faec85230a2d15f9",
       "expected_reward": 1,
+      "execution_status": "passed-direct-docker-final-image"
+    },
+    {
+      "name": "tp-only-device-slice-incomplete",
+      "patch": "tp-only-device-slice-incomplete.patch",
+      "patch_sha256": "646b918010ae82964da32899bd45118eb01743fbcc5bbbea075173eda9740779",
+      "expected_reward": 0,
       "execution_status": "passed-direct-docker-final-image"
     },
     {

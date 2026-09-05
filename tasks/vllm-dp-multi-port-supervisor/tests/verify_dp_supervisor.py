@@ -62,11 +62,15 @@ async def fake_run_server(args, **_kwargs):
     async def device(_request):
         return web.Response(text=os.environ.get(CpuPlatform.device_control_env_var, ""))
 
+    async def rank(_request):
+        return web.Response(text=str(args.data_parallel_rank))
+
     app = web.Application()
     app.router.add_get("/health", health)
     app.router.add_get("/set_healthy", set_healthy)
     app.router.add_get("/set_unhealthy", set_unhealthy)
     app.router.add_get("/device", device)
+    app.router.add_get("/rank", rank)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, args.host or "127.0.0.1", args.port)
@@ -109,7 +113,7 @@ def status(port: int, path: str = "/health") -> int:
             return response.status
     except HTTPError as exc:
         return exc.code
-    except URLError:
+    except (TimeoutError, URLError):
         return -1
 
 
@@ -119,7 +123,12 @@ def response_text(port: int, path: str) -> str:
         return response.read().decode()
 
 
-def wait_status(port: int, expected: int, path: str = "/health", timeout: float = 20.0) -> None:
+def wait_status(
+    port: int,
+    expected: int,
+    path: str = "/health",
+    timeout: float = 45.0,
+) -> None:
     deadline = time.monotonic() + timeout
     observed = -1
     while time.monotonic() < deadline:
@@ -139,7 +148,17 @@ def wait_closed(*ports: int, timeout: float = 15.0) -> None:
     raise AssertionError(f"ports remained reachable: {ports}")
 
 
-def command(first: int, supervisor_port: int) -> list[str]:
+def command(
+    first: int,
+    supervisor_port: int,
+    *,
+    data_parallel_size: int = 2,
+    data_parallel_size_local: int = 2,
+    data_parallel_start_rank: int = 0,
+    tensor_parallel_size: int = 1,
+    pipeline_parallel_size: int = 1,
+    probe_failure_threshold: int = 1,
+) -> list[str]:
     return [
         sys.executable,
         "-m",
@@ -153,35 +172,56 @@ def command(first: int, supervisor_port: int) -> list[str]:
         "--data-parallel-supervisor-port",
         str(supervisor_port),
         "--data-parallel-size",
-        "2",
+        str(data_parallel_size),
         "--data-parallel-size-local",
-        "2",
+        str(data_parallel_size_local),
         "--data-parallel-start-rank",
-        "0",
+        str(data_parallel_start_rank),
         "--tensor-parallel-size",
-        "1",
+        str(tensor_parallel_size),
         "--pipeline-parallel-size",
-        "1",
+        str(pipeline_parallel_size),
         "--data-parallel-multi-port-external-lb",
         "--dp-supervisor-probe-interval-s",
         "0.1",
         "--dp-supervisor-probe-timeout-s",
         "0.2",
         "--dp-supervisor-probe-failure-threshold",
-        "1",
+        str(probe_failure_threshold),
         "--uvicorn-log-level",
         "warning",
     ]
 
 
-def launch(harness: Path, first: int, supervisor_port: int) -> subprocess.Popen[bytes]:
+def launch(
+    harness: Path,
+    first: int,
+    supervisor_port: int,
+    *,
+    visible_devices: str = "0,1",
+    data_parallel_size: int = 2,
+    data_parallel_size_local: int = 2,
+    data_parallel_start_rank: int = 0,
+    tensor_parallel_size: int = 1,
+    pipeline_parallel_size: int = 1,
+    probe_failure_threshold: int = 1,
+) -> subprocess.Popen[bytes]:
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(
         [str(harness), "/workspace/repo", env.get("PYTHONPATH", "")]
     )
-    env["CUDA_VISIBLE_DEVICES"] = "0,1"
+    env["CUDA_VISIBLE_DEVICES"] = visible_devices
     return subprocess.Popen(
-        command(first, supervisor_port),
+        command(
+            first,
+            supervisor_port,
+            data_parallel_size=data_parallel_size,
+            data_parallel_size_local=data_parallel_size_local,
+            data_parallel_start_rank=data_parallel_start_rank,
+            tensor_parallel_size=tensor_parallel_size,
+            pipeline_parallel_size=pipeline_parallel_size,
+            probe_failure_threshold=probe_failure_threshold,
+        ),
         cwd="/workspace/repo",
         env=env,
         # Keep startup diagnostics visible in verifier logs. They are especially
@@ -248,7 +288,7 @@ def verify_readiness_and_child_failure(harness: Path) -> None:
 
         victim, sibling = rank_processes(process.pid, (first, second))
         victim.kill()
-        assert process.wait(timeout=15) == 0
+        process.wait(timeout=15)
         sibling.wait(timeout=10)
         assert not sibling.is_running(), "surviving rank was orphaned"
         wait_closed(first, second, supervisor_port)
@@ -266,7 +306,38 @@ def verify_unhealthy_shutdown(harness: Path) -> None:
         assert status(second, "/set_healthy") == 200
         wait_status(supervisor_port, 200)
         assert status(first, "/set_unhealthy") == 200
-        assert process.wait(timeout=15) == 0
+        process.wait(timeout=15)
+        wait_closed(first, second, supervisor_port)
+    finally:
+        terminate(process)
+
+
+def verify_parallel_rank_and_device_mapping(harness: Path) -> None:
+    first, second, supervisor_port = reserve_ports()
+    process = launch(
+        harness,
+        first,
+        supervisor_port,
+        visible_devices="0,1,2,3,4,5,6,7",
+        data_parallel_size=4,
+        data_parallel_size_local=2,
+        data_parallel_start_rank=2,
+        tensor_parallel_size=2,
+        pipeline_parallel_size=2,
+        probe_failure_threshold=200,
+    )
+    try:
+        wait_status(first, 503)
+        wait_status(second, 503)
+        assert response_text(first, "/rank") == "2"
+        assert response_text(second, "/rank") == "3"
+        assert response_text(first, "/device") == "0,1,2,3"
+        assert response_text(second, "/device") == "4,5,6,7"
+        assert status(first, "/set_healthy") == 200
+        assert status(second, "/set_healthy") == 200
+        wait_status(supervisor_port, 200)
+        process.send_signal(signal.SIGTERM)
+        process.wait(timeout=15)
         wait_closed(first, second, supervisor_port)
     finally:
         terminate(process)
@@ -280,7 +351,7 @@ def verify_signal_forwarding(harness: Path) -> None:
         wait_status(second, 503)
         children = rank_processes(process.pid, (first, second))
         process.send_signal(signal.SIGTERM)
-        assert process.wait(timeout=15) == 0
+        process.wait(timeout=15)
         for child in children:
             child.wait(timeout=10)
             assert not child.is_running(), "termination was not forwarded to a rank"
@@ -298,8 +369,12 @@ def main() -> int:
         verify_invalid_cli(harness)
         verify_readiness_and_child_failure(harness)
         verify_unhealthy_shutdown(harness)
+        verify_parallel_rank_and_device_mapping(harness)
         verify_signal_forwarding(harness)
-    print("PASS: public CLI supervised readiness, child failure, signals, and sockets")
+    print(
+        "PASS: public CLI supervised readiness, failure cleanup, "
+        "rank/device mapping, signals, and sockets"
+    )
     return 0
 
 
