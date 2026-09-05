@@ -1,6 +1,12 @@
 # Review remediation matrix
 
-Review version: `fa13f4541d1da9d42dc400e4468178ce6b00b8da`.
+Historical review version: `fa13f4541d1da9d42dc400e4468178ce6b00b8da`.
+
+The table and runtime results below describe the original PR #9 snapshot.
+The current verifier additionally requires explicit TCP refusal and checks retained
+descendant identities after shutdown. Runtime revalidation, including a
+nonresponsive-listener negative control, was deferred at the maintainer's request.
+See `e2e-evidence.json` for the current pending status and historical evidence link.
 
 | Review finding | Remediation | Validation | Current state |
 | --- | --- | --- | --- |
@@ -9,14 +15,14 @@ Review version: `fa13f4541d1da9d42dc400e4468178ce6b00b8da`.
 | Positive/negative controls needed to match the final verifier. | Updated `alternative-agent-implementation.patch` to account for TP*PP device slices and to expose supervisor health before slow child startup finishes. Added the old TP-only implementation as a separate negative control. | Direct Docker final matrix: Base=0, Oracle=1, alternative=1, TP-only incomplete=0, wrong-CLI incomplete=0. | Fixed |
 | Evidence must be bound to the final task files rather than the pre-review snapshot. | Refreshed `ci-cases.json` hashes and `e2e-evidence.json` with final file hashes, direct Docker results, and a new Harbor Oracle run. | Harbor 0.22.0 Oracle: reward 1, job `5b129b95-3014-4a0d-978e-ad41ee1d8cd3`, trial `973c52f6-4131-47b7-acb9-3f08e1ac8a50`, task checksum `90bca2f00bb9d0b6c0f58f40681469ababc4e98d08b4a1fcb4469988d82f2e9d`. | Fixed |
 
-## Final E2E boundary
+## E2E boundary
 
 The verifier enters through the public `vllm serve` CLI. Heavy model serving is
 replaced by verifier-owned loopback HTTP handlers, but CLI parsing, supervisor
 dispatch, rank/port/device derivation, child process management, health probing,
 signal forwarding, and socket cleanup all run through the candidate code.
 
-## Final controls
+## Historical controls (before TCP/process cleanup changes)
 
 | Candidate | Expected reward | Observed reward | Notes |
 | --- | ---: | ---: | --- |

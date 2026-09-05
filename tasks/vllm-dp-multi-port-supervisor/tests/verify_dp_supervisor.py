@@ -8,6 +8,7 @@ it does not require a particular supervisor module, class or helper name.
 
 from __future__ import annotations
 
+import errno
 import os
 import signal
 import socket
@@ -142,7 +143,17 @@ def wait_status(
 def wait_closed(*ports: int, timeout: float = 15.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if all(status(port) == -1 for port in ports):
+        # An HTTP timeout does not prove that a listener released its socket.
+        # Only an explicit local TCP refusal establishes absence of a listener;
+        # connection success, timeout and other errors must keep this check open.
+        refused = []
+        for port in ports:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                probe.settimeout(0.2)
+                refused.append(
+                    probe.connect_ex(("127.0.0.1", port)) == errno.ECONNREFUSED
+                )
+        if all(refused):
             return
         time.sleep(0.05)
     raise AssertionError(f"ports remained reachable: {ports}")
@@ -232,11 +243,30 @@ def launch(
     )
 
 
-def terminate(process: subprocess.Popen[bytes]) -> None:
-    if process.poll() is not None:
-        return
-    os.killpg(process.pid, signal.SIGKILL)
-    process.wait(timeout=5)
+def wait_exited(children: list[psutil.Process], timeout: float = 15.0) -> None:
+    """Check retained process identities even after their parent exits."""
+    _, alive = psutil.wait_procs(children, timeout=timeout)
+    assert not alive, f"orphaned processes: {[child.pid for child in alive]}"
+
+
+def terminate(
+    process: subprocess.Popen[bytes],
+    children: list[psutil.Process] | tuple[psutil.Process, ...] = (),
+) -> None:
+    # Cleanup must also work after an incorrect supervisor has already exited.
+    # Retain Process objects (PID + creation time), rather than rediscovering
+    # children from a dead parent or signalling potentially reused PIDs.
+    for child in children:
+        try:
+            for descendant in child.children(recursive=True):
+                descendant.kill()
+            child.kill()
+        except psutil.NoSuchProcess:
+            pass
+    if process.poll() is None:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=5)
+    psutil.wait_procs(children, timeout=5)
 
 
 def rank_processes(pid: int, ports: tuple[int, ...]) -> list[psutil.Process]:
@@ -273,6 +303,7 @@ def verify_invalid_cli(harness: Path) -> None:
 def verify_readiness_and_child_failure(harness: Path) -> None:
     first, second, supervisor_port = reserve_ports()
     process = launch(harness, first, supervisor_port)
+    tracked: list[psutil.Process] = []
     try:
         wait_status(supervisor_port, 503)
         wait_status(first, 503)
@@ -287,29 +318,34 @@ def verify_readiness_and_child_failure(harness: Path) -> None:
             wait_status(supervisor_port, 200, path)
 
         victim, sibling = rank_processes(process.pid, (first, second))
+        tracked = psutil.Process(process.pid).children(recursive=True)
         victim.kill()
         process.wait(timeout=15)
         sibling.wait(timeout=10)
         assert not sibling.is_running(), "surviving rank was orphaned"
+        wait_exited(tracked)
         wait_closed(first, second, supervisor_port)
     finally:
-        terminate(process)
+        terminate(process, tracked)
 
 
 def verify_unhealthy_shutdown(harness: Path) -> None:
     first, second, supervisor_port = reserve_ports()
     process = launch(harness, first, supervisor_port)
+    tracked: list[psutil.Process] = []
     try:
         wait_status(first, 503)
         wait_status(second, 503)
         assert status(first, "/set_healthy") == 200
         assert status(second, "/set_healthy") == 200
         wait_status(supervisor_port, 200)
+        tracked = psutil.Process(process.pid).children(recursive=True)
         assert status(first, "/set_unhealthy") == 200
         process.wait(timeout=15)
+        wait_exited(tracked)
         wait_closed(first, second, supervisor_port)
     finally:
-        terminate(process)
+        terminate(process, tracked)
 
 
 def verify_parallel_rank_and_device_mapping(harness: Path) -> None:
@@ -326,6 +362,7 @@ def verify_parallel_rank_and_device_mapping(harness: Path) -> None:
         pipeline_parallel_size=2,
         probe_failure_threshold=200,
     )
+    tracked: list[psutil.Process] = []
     try:
         wait_status(first, 503)
         wait_status(second, 503)
@@ -336,28 +373,33 @@ def verify_parallel_rank_and_device_mapping(harness: Path) -> None:
         assert status(first, "/set_healthy") == 200
         assert status(second, "/set_healthy") == 200
         wait_status(supervisor_port, 200)
+        tracked = psutil.Process(process.pid).children(recursive=True)
         process.send_signal(signal.SIGTERM)
         process.wait(timeout=15)
+        wait_exited(tracked)
         wait_closed(first, second, supervisor_port)
     finally:
-        terminate(process)
+        terminate(process, tracked)
 
 
 def verify_signal_forwarding(harness: Path) -> None:
     first, second, supervisor_port = reserve_ports()
     process = launch(harness, first, supervisor_port)
+    tracked: list[psutil.Process] = []
     try:
         wait_status(first, 503)
         wait_status(second, 503)
         children = rank_processes(process.pid, (first, second))
+        tracked = psutil.Process(process.pid).children(recursive=True)
         process.send_signal(signal.SIGTERM)
         process.wait(timeout=15)
         for child in children:
             child.wait(timeout=10)
             assert not child.is_running(), "termination was not forwarded to a rank"
+        wait_exited(tracked)
         wait_closed(first, second, supervisor_port)
     finally:
-        terminate(process)
+        terminate(process, tracked)
 
 
 def main() -> int:

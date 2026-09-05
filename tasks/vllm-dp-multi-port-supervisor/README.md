@@ -23,7 +23,12 @@ The separate hidden verifier enters through the public CLI, starts real HTTP chi
 
 ## Running
 
-After the pending image and validation records are finalized:
+The TCP/process cleanup checks were tightened after the original PR validation.
+At the maintainer's request, this revision has not been rerun through Docker or
+Harbor. Prior results are retained as historical evidence and do not certify the
+modified verifier. Publication remains pending validation.
+
+To validate this revision:
 
 ```bash
 harbor run -p tasks/vllm-dp-multi-port-supervisor -a oracle
