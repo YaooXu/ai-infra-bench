@@ -1,16 +1,5 @@
-Work in `/workspace/repo`.
+Let vLLM choose the model runner when `VLLM_USE_V2_MODEL_RUNNER` is unset. For this initial rollout, default to V2 only for supported dense, unquantized Qwen3 text-generation configurations. Leave other configurations on V1.
 
-I am starting to roll out Model Runner V2, but requiring every operator to know
-when it is safe and set `VLLM_USE_V2_MODEL_RUNNER` manually has been fragile. I
-would like vLLM to choose from the resolved serving configuration when this
-setting is absent.
+Keep the explicit overrides: `0` forces V1, and `1` requests V2, including compatible models outside the automatic rollout. If V2 cannot handle the configuration, fail startup with a clear explanation instead of silently falling back.
 
-For the initial rollout, supported dense, unquantized Qwen3 text-generation
-configurations should select V2 automatically, while configurations that V2
-cannot run should remain on V1. I still need an explicit escape hatch: `0`
-must select V1 and `1` must select V2. If I explicitly request V2 for an
-unsupported configuration, startup should explain the incompatibility instead
-of silently changing my choice.
-
-Please make sure the worker created for an engine startup uses the resolved
-selection rather than reading a conflicting default.
+Make sure the engine worker actually starts with the selected runner, rather than making a conflicting choice from the environment default.

@@ -22,5 +22,8 @@ trusted_dir="$(mktemp -d /tmp/runner-verifier.XXXXXXXX)"
 trap 'rm -rf -- "$trusted_dir"' EXIT
 install -o root -g root -m 0644 /tests/supervise_runner_consumers.py "$trusted_dir/supervise_runner_consumers.py"
 install -o root -g root -m 0644 /tests/verify_runner_consumers.py "$trusted_dir/verify_runner_consumers.py"
+install -o root -g root -m 0644 /tests/checkpoint.c "$trusted_dir/checkpoint.c"
+python_include="$("$python_bin" -I -c 'import sysconfig; print(sysconfig.get_path("include"))')"
+/usr/bin/cc -O2 -shared -fPIC -fvisibility=hidden -I"$python_include" "$trusted_dir/checkpoint.c" -o "$trusted_dir/_checkpoint.so" -lcrypto
 chmod 0755 "$trusted_dir"
 "$python_bin" -I "$trusted_dir/supervise_runner_consumers.py" "$python_bin"

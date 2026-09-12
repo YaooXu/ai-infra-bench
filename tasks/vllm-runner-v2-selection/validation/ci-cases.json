@@ -1,41 +1,134 @@
 {
   "schema_version": "ai_infra_bench_validation_cases.v1",
-  "status": "pending-permission-fix-validation",
+  "status": "local-docker-validated; Harbor pending",
   "cases": [
     {
       "name": "alternative-agent-implementation",
       "patch": "alternative-agent-implementation.patch",
-      "patch_sha256": "35f6af2a6cd6467e12ce0164c5e35cf90dc118bbb5ea921d96add7e7a45ddc26",
       "expected_reward": 1,
-      "execution_status": "historical-not-rerun-after-permission-fix"
+      "patch_sha256": "a16c6f5a573b9c060bef8da7988affe82f6d636f91a9974239e45fbabebad9cc",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
     },
     {
       "name": "boolean-accessor-alternative",
       "patch": "boolean-accessor-alternative.patch",
-      "patch_sha256": "2e05eaf7a27d4b9d1728def16ad8ba0d483c0edd9a197c384567d8684a30db02",
       "expected_reward": 1,
-      "execution_status": "historical-not-rerun-after-permission-fix"
+      "patch_sha256": "6f753fe017d34eed264e4c894ece0eb855b38be6e5518f55da9967251368f4a8",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
+    },
+    {
+      "name": "cached-startup-env",
+      "patch": "cached-startup-env.patch",
+      "expected_reward": 1,
+      "patch_sha256": "36cc0c9886f7e68095d966c18f661bae9e19680f846eca3012fb86d5d6978b81",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
+    },
+    {
+      "name": "clear-error-wording",
+      "patch": "clear-error-wording.patch",
+      "expected_reward": 1,
+      "patch_sha256": "297486fb9b6e5a36c7137803243a1023d38f189ef30427a4295b0d4c098645dc",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
+    },
+    {
+      "name": "renamed-worker-field",
+      "patch": "renamed-worker-field.patch",
+      "expected_reward": 1,
+      "patch_sha256": "1c8ef862fd88cde526c692fd23716390fa9cd646dc8bcce9b97070c01393ce74",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
+    },
+    {
+      "name": "delayed-startup-validation",
+      "patch": "delayed-startup-validation.patch",
+      "expected_reward": 1,
+      "patch_sha256": "f62f7fb8b5064c42738d1f9936e4715e6da2bb3d1a5f4d44a3a16c5dcb759109",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 1
+    },
+    {
+      "name": "wrong-runner-construction",
+      "patch": "wrong-runner-construction.patch",
+      "expected_reward": 0,
+      "patch_sha256": "767b532209032503cb2266fa7dd2f330761e532e885e80b913a995eb096d599f",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "missing-raw-logits-check",
+      "patch": "missing-raw-logits-check.patch",
+      "expected_reward": 0,
+      "patch_sha256": "1a62e438448d6ba18956e3786f4f7bef37ceb5bddf001c81ab0216ab43c2cfab",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "missing-prompt-embeds-check",
+      "patch": "missing-prompt-embeds-check.patch",
+      "expected_reward": 0,
+      "patch_sha256": "755d6041c4349742352d33b4195ddd74a3cb9fddec5c1722227078db3c72c032",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
     },
     {
       "name": "incomplete-agent-implementation",
       "patch": "incomplete-agent-implementation.patch",
-      "patch_sha256": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
       "expected_reward": 0,
-      "execution_status": "historical-not-rerun-after-permission-fix"
+      "patch_sha256": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
     },
     {
       "name": "system-exit-zero-bypass",
       "patch": "system-exit-zero-bypass.patch",
-      "patch_sha256": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de",
       "expected_reward": 0,
-      "execution_status": "historical-not-rerun-after-permission-fix"
+      "patch_sha256": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
     },
     {
       "name": "os-exit-zero-bypass",
       "patch": "os-exit-zero-bypass.patch",
-      "patch_sha256": "02f8ba93689b9197eb1cdd31868a358b4abf0c016013c084683e00ed1ba2a0c0",
       "expected_reward": 0,
-      "execution_status": "historical-not-rerun-after-permission-fix"
+      "patch_sha256": "02f8ba93689b9197eb1cdd31868a358b4abf0c016013c084683e00ed1ba2a0c0",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "forged-observations",
+      "patch": "forged-observations.patch",
+      "expected_reward": 0,
+      "patch_sha256": "f13360042aeb1ecea46a859a2bc57006b1d4bffce8550c55d341e3d1b9bb8362",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "forged-checkpoints",
+      "patch": "forged-checkpoints.patch",
+      "expected_reward": 0,
+      "patch_sha256": "301611e3e30e0aedb02325adda858aeba448cec9459e1e20344ac3f99cd50e4b",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "unfixed-boolean-alternative",
+      "patch": "unfixed-boolean-alternative.patch",
+      "expected_reward": 0,
+      "patch_sha256": "1e6545f368fdfc5360503872d47d19f9de922bb66ddaec4da5b339275ba4e0d5",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
+    },
+    {
+      "name": "forged-callback",
+      "patch": "forged-callback.patch",
+      "expected_reward": 0,
+      "patch_sha256": "7841b393040b895810f0374dd0ddcc7daba21c77f48857303c0ac222c5dd5572",
+      "execution_status": "local Docker test.sh passed expected reward",
+      "actual_reward": 0
     }
   ]
 }

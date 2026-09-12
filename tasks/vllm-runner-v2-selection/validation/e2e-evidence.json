@@ -1,80 +1,323 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "recorded_at": "2026-09-06",
-  "status": "hardening-pending-validation",
-  "reviewed_revision": "41106b16eab924a15e7c7efc7c402d73b7098aec",
-  "source": {
-    "repository": "vllm-project/vllm",
-    "pull_request": 39337,
-    "base_commit": "c7560af42487b1570c4e6f4cea5df1605a4d59fc",
-    "oracle_commit": "0579be818c0d2b438cd41b76d8d09f9338ac1fd8",
-    "scope": "tri-state or presence-aware automatic runner selection plus production GPUWorker consumption"
+  "recorded_at": "2026-09-12T19:49:45.862686+00:00",
+  "status": "local-environment-and-verifier-validated; Harbor pending",
+  "reviewed_revision": "e575a2bba1265e7b02a193e30acf3bfb364840f7 plus uncommitted artifacts hashed below",
+  "identity": {
+    "task_worktree": "/tmp/ai-infra-pr56-hardening",
+    "branch": "codex/runner-selection-permissions",
+    "parent": "e575a2bba1265e7b02a193e30acf3bfb364840f7",
+    "skill_path": "/root/ai-infra-bench-worksapce/ai-infra-bench/.agents/skills/ai-infra-bench-task-review",
+    "skill_head": "61a836a8acfca9f5ef5f3f33afb9894928135115",
+    "skill_dirty": true,
+    "skill_hashes": {
+      "SKILL.md": "b1801200a32078906e323cf2e6d91bf1ba4aae7988cda641a5aa86e605379684",
+      "references/review-rubric.md": "904b32d5259ac509a7903b57562240a4924ecbfc4428c13c4215e95f6b102b93",
+      "references/validation-playbook.md": "803fc8d1b120753003db681b20f1990d697f01ae52952e121255071af86a342e",
+      "scripts/audit_task_artifacts.py": "3c4f882ed2aa3542ddbb2d2c51522819be17dc22a12f2cd492076bd882190022"
+    }
   },
+  "image": {
+    "schema_version": "vllm_harbor_image.v1",
+    "task": "ai-infra-bench/vllm-runner-v2-selection",
+    "canonical_tag": "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487-v1.1.0",
+    "image_id": "sha256:ccb82551c03138c166b47b5ab885baa70235fa913c204684682691f5527da126",
+    "repo_digests": [
+      "ai-infra-bench/vllm-runner-v2-selection@sha256:ccb82551c03138c166b47b5ab885baa70235fa913c204684682691f5527da126",
+      "pr56-hardening@sha256:ccb82551c03138c166b47b5ab885baa70235fa913c204684682691f5527da126"
+    ],
+    "size_bytes": 8858570614,
+    "created": "2026-09-13T03:19:41.539100489+08:00",
+    "recorded_at": "2026-09-12T19:22:03.429426+00:00",
+    "base_commit": "c7560af42487b1570c4e6f4cea5df1605a4d59fc",
+    "dependency_cutoff": "2026-05-14T14:12:30Z",
+    "dockerfile_sha256": "b0186c486598b516018464e8750caf1d4b4ebaa7f3e9aae7559e0ed27a9eea37",
+    "dependency_lock_sha256": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+    "dependency_lock_manifest_sha256": "4f88b301ecd59800af472e3473ba470453be4e525be5afbeb80eda1d55e16de2",
+    "build_context": "environment-only",
+    "validation_state": "local environment and verifier validated; Harbor and registry publication pending"
+  },
+  "semantic_boundary": "environment/config -> real ModelConfig/VllmConfig -> Worker.init_device -> actual runner or startup rejection",
+  "substitution": "Elastic EP orchestration only; no weights or generation required for selection",
+  "validation": {
+    "entrypoint": "bash /tests/test.sh",
+    "matrix": [
+      {
+        "name": "oracle",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 147.4,
+        "container": "pr56-harden-oracle"
+      },
+      {
+        "name": "base",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 90.66,
+        "container": "pr56-harden-base"
+      },
+      {
+        "name": "alternative-agent-implementation",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 144.18,
+        "container": "pr56-harden-alternative-agent-implementation"
+      },
+      {
+        "name": "boolean-accessor-alternative",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 147.87,
+        "container": "pr56-harden-boolean-accessor-alternative"
+      },
+      {
+        "name": "cached-startup-env",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 151.85,
+        "container": "pr56-harden-cached-startup-env"
+      },
+      {
+        "name": "clear-error-wording",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 145.76,
+        "container": "pr56-harden-clear-error-wording"
+      },
+      {
+        "name": "renamed-worker-field",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 145.9,
+        "container": "pr56-harden-renamed-worker-field"
+      },
+      {
+        "name": "delayed-startup-validation",
+        "expected_reward": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 145.74,
+        "container": "pr56-harden-delayed-startup-validation"
+      },
+      {
+        "name": "wrong-runner-construction",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 96.36,
+        "container": "pr56-harden-wrong-runner-construction"
+      },
+      {
+        "name": "missing-raw-logits-check",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 91.52,
+        "container": "pr56-harden-missing-raw-logits-check"
+      },
+      {
+        "name": "missing-prompt-embeds-check",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 89.47,
+        "container": "pr56-harden-missing-prompt-embeds-check"
+      },
+      {
+        "name": "incomplete-agent-implementation",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 93.44,
+        "container": "pr56-harden-incomplete-agent-implementation"
+      },
+      {
+        "name": "system-exit-zero-bypass",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 6.98,
+        "container": "pr56-harden-system-exit-zero-bypass"
+      },
+      {
+        "name": "os-exit-zero-bypass",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 6.9,
+        "container": "pr56-harden-os-exit-zero-bypass"
+      },
+      {
+        "name": "forged-observations",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 7.46,
+        "container": "pr56-harden-forged-observations"
+      },
+      {
+        "name": "forged-checkpoints",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 6.15,
+        "container": "pr56-harden-forged-checkpoints"
+      },
+      {
+        "name": "unfixed-boolean-alternative",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 95.81,
+        "container": "pr56-harden-unfixed-boolean-alternative"
+      },
+      {
+        "name": "forged-callback",
+        "expected_reward": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 7.18,
+        "container": "pr56-harden-forged-callback"
+      }
+    ],
+    "independent_challenge_and_permissions": {
+      "reward": "1",
+      "seconds": 147.94,
+      "test_mount_uid": 1000,
+      "venv": "/opt/venv",
+      "independent_input_changes": [
+        "vocab_size=192",
+        "max_position_embeddings=2048",
+        "num_hidden_layers=3"
+      ]
+    },
+    "independent_challenge_cases": [
+      "challenge_forced_v1_quantized",
+      "challenge_forced_v1_pooling"
+    ],
+    "environment_checks": "final-environment.log and repo-image-check.log in evidence archive",
+    "no_gpu": "independent preflight rejects; reward remains 0",
+    "harbor": "not run for this snapshot",
+    "publication": "not published",
+    "mechanical_audit": {
+      "checks": 5,
+      "errors": 0,
+      "warnings": 0,
+      "patch_applicability_checks": 17,
+      "log": "/tmp/pr56-hardening-20260913/final-audit.log"
+    },
+    "patch_format_normalization": {
+      "missing-prompt-embeds-check.patch": {
+        "tested_patch_sha256": "634511f26ba447c5fdb06251307668aa7aa0876925ceb59610e9a15cabcdfe6a",
+        "normalized_patch_sha256": "755d6041c4349742352d33b4195ddd74a3cb9fddec5c1722227078db3c72c032",
+        "identical_applied_files": {
+          "vllm/config/vllm.py": "2753d1f02717145af1d0727357939000f6b957882800c82c64a422078ca4b230",
+          "vllm/envs.py": "8bec6c58f24b6495841c84e0f00c7fc9c32512f4ed235d843f9407d26db64833",
+          "vllm/v1/worker/gpu_worker.py": "3e6bb7fecc511846b32facd0a2fd3f4d54bbd4cfa3fbc384468d9ad062090c6e"
+        }
+      },
+      "unfixed-boolean-alternative.patch": {
+        "tested_patch_sha256": "e84ce4f1be7dfc45e52cd968f241daa2ea81b13fb3daac8cfb640c559a848b7c",
+        "normalized_patch_sha256": "1e6545f368fdfc5360503872d47d19f9de922bb66ddaec4da5b339275ba4e0d5",
+        "identical_applied_files": {
+          "vllm/config/vllm.py": "ed18b95309a2e79d160f326477841d1a435f3bcb79645f049bbc7b75ad56e640",
+          "vllm/v1/attention/backends/flashinfer.py": "6cb8de5a1deded93b30a8ee22b0fcb9022e1c40f689502789c99173ed17be696",
+          "vllm/v1/core/sched/scheduler.py": "4751cc6b67089fd9882b043084ff3e4f23a3c2c255240d974f4fa13ac8d4a549",
+          "vllm/v1/worker/gpu_worker.py": "3e6bb7fecc511846b32facd0a2fd3f4d54bbd4cfa3fbc384468d9ad062090c6e"
+        }
+      },
+      "cached-startup-env.patch": {
+        "tested_patch_sha256": "6a44b9e07c54ca901aef52d61b4161b53b6a86f3783a57bf19b7cd08a4eec267",
+        "normalized_patch_sha256": "36cc0c9886f7e68095d966c18f661bae9e19680f846eca3012fb86d5d6978b81",
+        "identical_applied_files": {
+          "vllm/envs.py": "26e0e5c9698fe53f75ad449ebc2f310697b68f73d7e4ce1c5af19b6a0a4e7ad0",
+          "vllm/config/vllm.py": "e79d44b6ff77b61ef540810a4e96bfb2cc171cacd2fe0a6a62f46c2ce8cdba07",
+          "vllm/v1/worker/gpu_worker.py": "3e6bb7fecc511846b32facd0a2fd3f4d54bbd4cfa3fbc384468d9ad062090c6e"
+        }
+      },
+      "missing-raw-logits-check.patch": {
+        "tested_patch_sha256": "58c31f18b9f0b3c78a0042e27e7416773ddc27bfec5fc44cd11c21269bab7965",
+        "normalized_patch_sha256": "1a62e438448d6ba18956e3786f4f7bef37ceb5bddf001c81ab0216ab43c2cfab",
+        "identical_applied_files": {
+          "vllm/config/vllm.py": "86779da6d4a2ed8086a4dfbc374f3e662ef97e04813b74483de00d3e5d2c8474",
+          "vllm/envs.py": "8bec6c58f24b6495841c84e0f00c7fc9c32512f4ed235d843f9407d26db64833",
+          "vllm/v1/worker/gpu_worker.py": "3e6bb7fecc511846b32facd0a2fd3f4d54bbd4cfa3fbc384468d9ad062090c6e"
+        }
+      },
+      "clear-error-wording.patch": {
+        "tested_patch_sha256": "8cb85b95506ae1d81b94c94bfdb936edd788dbb10b090f3d5fead9ffbb8add3b",
+        "normalized_patch_sha256": "297486fb9b6e5a36c7137803243a1023d38f189ef30427a4295b0d4c098645dc",
+        "identical_applied_files": {
+          "vllm/config/vllm.py": "2aa42a07347ac6ec37d352046c1d3ebf0a87c1d69f25fa67e940db482b0a69b1",
+          "vllm/envs.py": "8bec6c58f24b6495841c84e0f00c7fc9c32512f4ed235d843f9407d26db64833",
+          "vllm/v1/worker/gpu_worker.py": "3e6bb7fecc511846b32facd0a2fd3f4d54bbd4cfa3fbc384468d9ad062090c6e"
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Representative compatibility coverage, not every distributed or speculative option",
+    "No weights or generation kernels",
+    "Diagnostic nonemptiness is checked, full explanation quality is not automatic",
+    "Authenticated checkpoints are not an arbitrary native-memory or Python-mutation sandbox"
+  ],
   "artifacts": {
     "files": {
       ".dockerignore": "fe57c1ef2dcfcb5ceaa20f0582985984061600f14d404fd7f1ef5de91a710cc8",
-      "README.md": "b51ad3df6b403d694de51a806a61e05380ece0d2f2a0b7dc8fa5ffb30723f34e",
-      "environment/Dockerfile": "2d66e3d81ff0df75e76a18615793c2c39b6114ba13d9d7073d7f3509ef269d7a",
-      "environment/docker-compose.yaml": "cd850676bd02cc735fa6ce09ae8734251b9c56252b40bf0de55b874b5ab225d8",
-      "environment/image-manifest.json": "6432a0bf18081a7f6fded60314ad2fa10cffe89047f31a62e2f4afb9b0719a9c",
-      "environment/lock/README.md": "b7ce6665595479c1edb6e300c94d4f0d7e83223e703b0677f5327ba48967c792",
+      "README.md": "28ffde18cc354a3f8e84234ee551a80c088c0b2e71bd17cc45435f0f37fcb508",
+      "environment/Dockerfile": "b0186c486598b516018464e8750caf1d4b4ebaa7f3e9aae7559e0ed27a9eea37",
+      "environment/docker-compose.yaml": "2a8ebdb1c56b1d74ce13762d408a6efac3cd46c9b4277c669dbac6580db3b523",
+      "environment/image-manifest.json": "32b2681d82d45bbc13dd369cb5165eb70bb05019e1a8ddc1e79ab59d1cd9e5cd",
+      "environment/lock/README.md": "6ff4ae98179610ca9d404ae3629a241fc1716313c80bcd74f0cb4992ece198a0",
       "environment/lock/manifest.json": "4f88b301ecd59800af472e3473ba470453be4e525be5afbeb80eda1d55e16de2",
-      "environment/lock/native.sha256": "04e76eabada8a083478120eadab285dcfb3c3c0ce16fde063ce315bed8eb09ca",
+      "environment/lock/native.sha256": "c37d4330fef1f22818194d167e5f818efb58aa7f2bb8a2deaad788a4a238e37f",
       "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
-      "instruction.md": "4cdc516c9c5e160f99540984cf078bceb5c05bf9748f435fad093380eb54a254",
+      "instruction.md": "21fabc5a9e240683ec624c5ba66abe8522941d8e6518023b4c44ffa031f9d915",
       "solution/oracle.patch": "4498c4ae89237df6b750ba9c4d73530790dd25789feb8538d43560a73fa4f9e1",
       "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
-      "task.toml": "6602cd9be93275e47c27f5074d3409aaaa8aea0b886fa89cf164091bb311112b",
-      "tests/docker-compose.yaml": "8dd1b4bd6ae0bffdc71045fc4a6fe078d1c8eb4efad9a17a4bb7fa093b66ab4f",
+      "task.toml": "b7e6eb56830b844a18ba37658796748ce0dba44dbb864c1e3eab8350b4cf7bc3",
+      "tests/checkpoint.c": "0bdc1387ff06b5f7974c165035cae775c5aa4419d6184762e049c475eaea4352",
+      "tests/docker-compose.yaml": "597e3b182f1714efc87b877f5ac9af369aae9a54beba9debf65eca7d7ac7af23",
       "tests/fixtures/qwen2/config.json": "0e1252c54896de0d33e2dafc35bcbee8a3fca12d43bff3e4f8d88eb1478a855b",
       "tests/fixtures/qwen3/config.json": "f6832afbacadf460bdb281c305cfcbae20b9d5e83c52b777105a118f8007b01a",
-      "tests/supervise_runner_consumers.py": "71b3a0e66d36b982c6ac1ae0279c3fac7baaca13aa8c2b3b68006a8252d30527",
-      "tests/test.sh": "30db09e0b1622ea10a65d7148f428e5e17b17190902940c1df52cb8a5453a974",
-      "tests/verify_runner_consumers.py": "9badb1c30ec6f4cb966a98d422c2b4237c7d833020c447d14179feca2115444b",
-      "validation/alternative-agent-implementation.patch": "35f6af2a6cd6467e12ce0164c5e35cf90dc118bbb5ea921d96add7e7a45ddc26",
-      "validation/boolean-accessor-alternative.patch": "2e05eaf7a27d4b9d1728def16ad8ba0d483c0edd9a197c384567d8684a30db02",
-      "validation/ci-cases.json": "f4f79d4b91c11346c3c8ec927a5901127b0cf19f6ef7f524fa82f3e2d86da7b9",
-      "validation/docker-build.md": "bfc1145f479437c931e543deed9e8ab06d5b1e714b19352e89265f74ab5b368e",
+      "tests/fixtures/qwen3-fp8/config.json": "ecd2dc12ee95e6b5972bdf4ea5abdb28cc930d5030ddb1a91295e20cefffb5cc",
+      "tests/fixtures/qwen3-moe/config.json": "d6e677b595480455f1976c9ba52608f66d9cd9b149d67612445ab8f1499cb5bf",
+      "tests/supervise_runner_consumers.py": "99dee27ea3676055e31730c7bf3edc937644dbc2235cf37020d927342c2f5afc",
+      "tests/test.sh": "a0857f921e1cbc7a6915267b4ea68c90991116cc87674e95411f8082f737beb8",
+      "tests/verify_runner_consumers.py": "0a0d1e4e99fff958bed0b800a251d9e056d2a96a3d757366939af63f151e45bf",
+      "validation/alternative-agent-implementation.patch": "a16c6f5a573b9c060bef8da7988affe82f6d636f91a9974239e45fbabebad9cc",
+      "validation/boolean-accessor-alternative.patch": "6f753fe017d34eed264e4c894ece0eb855b38be6e5518f55da9967251368f4a8",
+      "validation/cached-startup-env.patch": "36cc0c9886f7e68095d966c18f661bae9e19680f846eca3012fb86d5d6978b81",
+      "validation/ci-cases.json": "6bb17ab9b48a907503e1e830b18c8208527d8d305b74d93139edd65ecd151bdb",
+      "validation/clear-error-wording.patch": "297486fb9b6e5a36c7137803243a1023d38f189ef30427a4295b0d4c098645dc",
+      "validation/delayed-startup-validation.patch": "f62f7fb8b5064c42738d1f9936e4715e6da2bb3d1a5f4d44a3a16c5dcb759109",
+      "validation/docker-build.md": "90817824a73ff47ca5cd8321d156bcb1b04763a29d9bc2eba153eadc07ccfb52",
+      "validation/evidence/local-hardening-20260913.tar.gz": "76a356a078d3c35b4213ca9e142cc1f65cb6690de488777dafcf02d61e24ca1e",
+      "validation/forged-callback.patch": "7841b393040b895810f0374dd0ddcc7daba21c77f48857303c0ac222c5dd5572",
+      "validation/forged-checkpoints.patch": "301611e3e30e0aedb02325adda858aeba448cec9459e1e20344ac3f99cd50e4b",
+      "validation/forged-observations.patch": "f13360042aeb1ecea46a859a2bc57006b1d4bffce8550c55d341e3d1b9bb8362",
       "validation/history/pr3-fba6a6c-e2e-evidence.json": "a59bcf18e48c288fa0493590e54c0766de1adab654bf5cd6f408d2e1ba05bd47",
+      "validation/history/pr56-e575a2b-docker-build.md": "bfc1145f479437c931e543deed9e8ab06d5b1e714b19352e89265f74ab5b368e",
+      "validation/history/pr56-e575a2b-e2e-evidence.json": "2243ea932f56894bbff883407099ff4f2bcefd393d1c5af146d909661e7ff8b0",
+      "validation/history/pr56-e575a2b-remediation-matrix.md": "ffce8b365d5b442f94a7292c1cbd2e5b1f90c587b10d1a38d90397b79f23c5bc",
       "validation/incomplete-agent-implementation.patch": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
+      "validation/missing-prompt-embeds-check.patch": "755d6041c4349742352d33b4195ddd74a3cb9fddec5c1722227078db3c72c032",
+      "validation/missing-raw-logits-check.patch": "1a62e438448d6ba18956e3786f4f7bef37ceb5bddf001c81ab0216ab43c2cfab",
       "validation/os-exit-zero-bypass.patch": "02f8ba93689b9197eb1cdd31868a358b4abf0c016013c084683e00ed1ba2a0c0",
-      "validation/remediation-matrix.md": "ffce8b365d5b442f94a7292c1cbd2e5b1f90c587b10d1a38d90397b79f23c5bc",
-      "validation/system-exit-zero-bypass.patch": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de"
+      "validation/remediation-matrix.md": "41553f0eff7dca7ad56d0334e1e3bd6b23029a236096a5d6d44f286349106dbe",
+      "validation/renamed-worker-field.patch": "1c8ef862fd88cde526c692fd23716390fa9cd646dc8bcce9b97070c01393ce74",
+      "validation/review-report.md": "8800e496b15efa8805644be1c9a661916e559e2af5d936dfa084d1086867206a",
+      "validation/semantic-boundary.md": "27ab4f8943cc6bacefdf453f1edd3d6761dd802dd966d0d1bbdddd02ff2aa687",
+      "validation/system-exit-zero-bypass.patch": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de",
+      "validation/unfixed-boolean-alternative.patch": "1e6545f368fdfc5360503872d47d19f9de922bb66ddaec4da5b339275ba4e0d5",
+      "validation/wrong-runner-construction.patch": "767b532209032503cb2266fa7dd2f330761e532e885e80b913a995eb096d599f"
     }
-  },
-  "contract": {
-    "automatic_supported": "dense, unquantized Qwen3 text generation selects V2",
-    "automatic_fallbacks": [
-      "other architecture",
-      "pooling runner",
-      "KV sharing fast prefill",
-      "custom logits processor"
-    ],
-    "explicit": "0 selects V1; 1 selects V2 when compatible",
-    "forced_incompatibility": "startup rejects clearly before returning a usable worker",
-    "representation_independence": "unset accessor may be None or legacy False; validation may occur during config construction or worker startup"
-  },
-  "e2e_boundary": {
-    "path": "environment override plus local HF config -> production ModelConfig -> production VllmConfig -> production GPUWorker.__init__ -> observed worker selection",
-    "substitution": "Tiny local Qwen3 and Qwen2 Hugging Face configs replace external weights and tokenizer downloads.",
-    "preserved_semantics": "Configuration parsing, support checks, startup error propagation, CUDA availability, and the production worker consumer remain real.",
-    "limitations": "No model weights, inference kernels, Scheduler migration, or Distributed FlashInfer/NIXL behavior are claimed."
-  },
-  "validation": {
-    "execution_status": "not-rerun-at-maintainer-request",
-    "note": "Only Python/Shell syntax and whitespace checks are performed. Non-root host collection, venv execution, GPU Base/Oracle and controls remain unverified for this revision."
-  },
-  "image": {
-    "canonical_tag": "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487",
-    "image_id": "sha256:d22ddb74a5d77fe9df2ce4a04b91fa937c83c9b8ed9105e3dec91fa838019189",
-    "size_bytes": 26366057540,
-    "created": "2026-09-04T15:41:50.91749769Z",
-    "retained": true,
-    "reused_because": "environment and dependency files did not change"
-  },
-  "historical_evidence": {
-    "path": "validation/history/pr3-fba6a6c-e2e-evidence.json",
-    "source_commit": "fba6a6c3d214ac13dbd9eb31ab120ff9f24107dd",
-    "note": "Original runtime results predate permission and interpreter-path changes."
   }
 }

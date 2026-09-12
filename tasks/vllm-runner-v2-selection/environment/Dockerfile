@@ -12,9 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /workspace
 
-COPY lock/native.sha256 /tmp/native.sha256
-
-# Acquire the exact survey Base and retain its reachable history.
+# Acquire only the exact Base; no future commits or task-specific artifacts.
 # Docker's predefined proxy args are deliberately not redeclared, so proxy
 # values are not persisted in image configuration or history.
 RUN set -eux; \
@@ -35,10 +33,7 @@ RUN set -eux; \
       done; \
       return 1; \
     }; \
-    fetch_step --depth=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
-    while test -e /workspace/repo/.git/shallow; do \
-      fetch_step --deepen=2000 --no-tags origin "${VLLM_BASE_SHA}"; \
-    done; \
+    fetch_step --depth=1 --no-tags origin "${VLLM_BASE_SHA}"; \
     git -C /workspace/repo checkout -q -b main "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse HEAD)" = "${VLLM_BASE_SHA}"; \
     test "$(git -C /workspace/repo rev-parse 'HEAD^{tree}')" = "${VLLM_BASE_TREE}"; \
@@ -47,9 +42,11 @@ RUN set -eux; \
     rm -f /workspace/repo/.git/FETCH_HEAD /workspace/repo/.git/ORIG_HEAD; \
     test -z "$(git -C /workspace/repo remote)"; \
     test -z "$(git -C /workspace/repo for-each-ref --format='%(refname)' refs/remotes refs/tags)"; \
-    test "$(git -C /workspace/repo rev-list --all --count)" -gt 1; \
-    test ! -e /workspace/repo/.git/shallow; \
+    test "$(git -C /workspace/repo rev-list --all --count)" -eq 1; \
+    test "$(cat /workspace/repo/.git/shallow)" = "${VLLM_BASE_SHA}"; \
     test -z "$(git -C /workspace/repo fsck --full --no-reflogs --unreachable --no-progress 2>/dev/null)"
+
+COPY lock/native.sha256 /tmp/native.sha256
 
 # Bind the exact Python source to an explicit, hash-locked whitelist of native
 # and generated artifacts from the closest pre-cutoff official release. The
@@ -74,6 +71,7 @@ RUN set -eux; \
         install -D -m 0755 "${VLLM_SITE}/${rel}" "/workspace/repo/vllm/${rel}"; \
     done; \
     install -D -m 0644 "${VLLM_SITE}/_version.py" "/workspace/repo/vllm/_version.py"; \
+    install -D -m 0644 "${VLLM_SITE}/third_party/flashmla/flash_mla_interface.py" "/workspace/repo/vllm/third_party/flashmla/flash_mla_interface.py"; \
     cd /workspace/repo/vllm; \
     sha256sum -c /tmp/native.sha256; \
     test "$(find /workspace/repo/vllm -type f -name '*.so' | wc -l)" = 9; \
@@ -84,7 +82,7 @@ RUN set -eux; \
     if ! id -u agent >/dev/null 2>&1; then \
         useradd --create-home --shell /bin/bash agent; \
     fi; \
-    PYTHONPATH=/workspace/repo python3 -c 'import importlib.util,pathlib,subprocess,vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; assert not subprocess.check_output(["git", "-C", str(root), "remote"]).strip(); assert not subprocess.check_output(["git", "-C", str(root), "tag"]).strip(); assert int(subprocess.check_output(["git", "-C", str(root), "rev-list", "--all", "--count"])) > 1; print("candidate_source", src)'; \
+    PYTHONPATH=/workspace/repo python3 -c 'import importlib.util,pathlib,subprocess,vllm; root=pathlib.Path("/workspace/repo").resolve(); src=pathlib.Path(vllm.__file__).resolve(); native=pathlib.Path(importlib.util.find_spec("vllm._C").origin).resolve(); assert src.is_relative_to(root), src; assert native.is_relative_to(root), native; assert not subprocess.check_output(["git", "-C", str(root), "remote"]).strip(); assert not subprocess.check_output(["git", "-C", str(root), "tag"]).strip(); assert int(subprocess.check_output(["git", "-C", str(root), "rev-list", "--all", "--count"])) == 1; print("candidate_source", src)'; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 

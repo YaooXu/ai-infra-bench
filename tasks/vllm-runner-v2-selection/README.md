@@ -1,45 +1,15 @@
 # vLLM Model Runner V2 selection
 
-## What the task asks
+Add configuration-based defaults for Model Runner V2 while preserving explicit environment overrides and selecting the correct runner during worker startup. The statement does not require a particular environment accessor representation or internal worker field.
 
-Implement tri-state behavior for `VLLM_USE_V2_MODEL_RUNNER` and propagate the resolved selection through `VllmConfig`/`GPUWorker` consistently.
+The environment uses the exact Base SHA, a digest-pinned pre-cutoff runtime, one A100 and offline execution. See `environment/lock/README.md` for the source and native binding. The agent budget is ten hours.
 
-## Environment
+The verifier drives real `ModelConfig`, `VllmConfig`, `Worker.init_device` and V1/V2 runner constructors with small local model configurations. It covers automatic defaults, compatible explicit overrides, incompatible configurations, explanatory startup failure and repeated automatic startup. Elastic EP orchestration is the only substituted startup component; weights and generation are outside this selection task.
 
-- Base image: pinned digest in `environment/Dockerfile`
-- Workdir: `/workspace/repo`
-- Runtime policy: offline (`network_mode = "no-network"`)
-- GPU: one A100-class accelerator
-- Agent budget: 10 hours
+The root supervisor performs a candidate-independent CUDA preflight and grades authenticated per-case observations. The trusted suite is loaded before candidate imports. A verifier-only native checkpoint emitter authenticates events from that suite's code object; ordinary stdout is diagnostic and cannot grant reward. These checks cover the retained report-forgery and early-exit controls. They are not a sandbox against arbitrary native memory modification or arbitrary mutation of Python test execution.
 
-## Verifier
+Cases with the same startup override reuse one observation process; unset, 0 and 1 each start in a separate process, with fresh configuration and worker objects plus distributed cleanup for each case. Candidate implementations and controls are run in separate containers. Stage timings and case diagnostics are retained in `/logs/verifier`.
 
-- A root-owned supervisor runs candidate imports in an unprivileged child and
-  keeps reward fail-closed until all required cases are accounted for
-- Checks defaults across Qwen3/Qwen2, generation/pooling and supported/
-  unsupported features, explicit overrides, startup errors, and the real GPU
-  worker consumption path
-- Reward is written by the candidate-independent supervisor to
-  `/logs/verifier/reward.txt`
+Build with `docker build -t <image> tasks/vllm-runner-v2-selection/environment`, supplying the build network/proxy settings appropriate to the host. Only `environment/` is a build input. Set the resulting image identity in the manifest and task configuration before formal validation.
 
-## Layout
-
-- `instruction.md`: user-facing behavioral contract
-- `task.toml`: task config and resource constraints
-- `environment/`: deterministic base and native runtime checks
-- `solution/`: Oracle patch + solve script
-- `tests/`: behavioral + hidden-mode checks
-- `validation/`: control manifest and evidence for the frozen snapshot
-
-## Run
-
-- Oracle: `harbor run -p tasks/vllm-runner-v2-selection -a oracle`
-- Agent: `harbor run -p tasks/vllm-runner-v2-selection -a agent -m claude-opus-4-8`
-
-## Permission and interpreter follow-up
-
-Trusted harness scripts are staged into a protected container-local directory,
-outputs remain root-writable but readable by Harbor, and worker execution
-preserves the selected virtual-environment Python path. GPU/Harbor/control runs
-were not repeated at the maintainer's request. Prior runtime results are archived
-under `validation/history` and do not certify this modified verifier.
+Validation status and exact executable hashes are recorded under `validation/`. Historical results do not certify the changed verifier. Local script validation and a formal Harbor trial are reported separately.
