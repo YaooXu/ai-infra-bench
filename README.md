@@ -9,3 +9,7 @@ The original answer received reward 1 under task 1.1.0 but reward 0 under task 1
 The ZIP is an incremental evidence bundle; it does not include the large full workspace tar. The complete original session is retained inside the continued session JSONL.
 
 SHA256 (`pr54-codex-feedback.zip`): `b637c448f49d51d194f7c4d3f71fbece2f43e6067a1e955ac11c7ffe4dec6956`
+
+## Complete validation archive
+
+`pr54-validation-evidence.zip` preserves the task snapshot before evidence cleanup, detailed logs, historical reports, input hashes, rollout review and feedback evidence. SHA256: `8d3f1bc9cd723e4fbe377cbd49e442fb149ffa5e7aca2a0bcf6bf75d3c09083a`. See the task's validation README for current results and limits.
