@@ -1,8 +1,0 @@
-INFO 09-13 05:30:26 [importing.py:44] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
-INFO 09-13 05:30:26 [importing.py:68] Triton not installed or not compatible; certain GPU-related functions will not be available.
-INFO 09-13 05:30:30 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
-INFO 09-13 05:30:31 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
-INFO 09-13 05:30:31 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
-INFO 09-13 05:30:31 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
-INFO 09-13 05:30:31 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
-["waiting-stream-cancel-released", {"turn": 0, "cache_hit": 12}, {"turn": 1, "cache_hit": 16}, {"turn": 2, "cache_hit": 20}, "resumed-stream-cancel-released"]

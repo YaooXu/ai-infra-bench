@@ -1,7 +1,0 @@
-{
-  "/data/pr55-final-two-rollouts/jobs/codex-two/task__iK5A7YN/artifacts/logs/artifacts/final-state/repo.tar.gz": "8ae4d5945b64b520b3dde5fec921e12125f6585e7795deec751fdb23847e4194",
-  "/data/pr55-final-two-rollouts/independent_probe.py": "7eec537b963b977745fd3dacdfb888c4f96131a249ba64f999b0525148bdebf7",
-  "/data/pr55-final-two-rollouts/task/tests/verify_retention.py": "f43e52481770970a9a074423744138f2413434174bab90963aeb630483c89634",
-  "/data/pr55-final-two-rollouts/task/tests/supervise_retention.py": "3e544e317bfc634782e1dadc3939e21d087009c845463784e590fefe37bd0e85",
-  "/data/pr55-final-two-rollouts/task/tests/test.sh": "2a57d71bd02a43b82d94fffb6c3cc4d22c5a2abf2313f7dd1c16ad8c75df656e"
-}
