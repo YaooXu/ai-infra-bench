@@ -73,6 +73,8 @@ or consumers may be substituted when the substitution preserves the relevant
 state, cardinality, ordering, timing class, and lifecycle semantics. The number
 of technologies mentioned in the user story does not determine E2E depth.
 
+For Gate 3, independently check [fixture reachability](references/review-rubric.md#fixture-reachability): reward-affecting cases must follow from the contract and supported inputs and lifecycle transitions, not merely constructible internal states. Keep unresolved reachability claims unverified rather than treating candidate failure as proof of a product defect.
+
 For Gate 3, apply the [early-exit checks](references/review-rubric.md#9-trace-scoring-trust-and-completion-integrity)
 when candidate code can terminate a process participating in verification.
 

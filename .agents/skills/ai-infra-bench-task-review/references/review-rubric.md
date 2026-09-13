@@ -146,6 +146,16 @@ For retention or cleanup, execute creation and use, the applicable completion/ca
 
 Checkpoint: the fixture reaches the target behavior through valid interfaces, and a legal change of internal representation or repair location does not invalidate the evaluation.
 
+### Fixture reachability
+
+Hidden tests must be concrete consequences of the public task contract under supported inputs and lifecycle transitions at the frozen Base. Deliberately chosen rare edge cases are valid; impossible internal states and unstated defensive requirements are not. Invalid external inputs may be tested when rejection or recovery is part of the contract, through the boundary that accepts those inputs rather than by bypassing its validation. An agent missing a case does not make it unfair, and many agents failing it does not make it valid.
+
+When a fixture directly constructs or mutates internal objects, establish how the tested state can arise within the stated workflow. Constructor success, correct field types, and a local function reproducer are insufficient on their own. Check constraints imposed by preprocessing, validation, scheduling, and earlier lifecycle transitions, including relationships between fields that cannot vary independently. For example, moving a media range while keeping token IDs fixed needs evidence that the supported processor can produce that combination; a cache collision in a hand-built Request alone does not establish it.
+
+Record a supported input or event sequence, the path that produces the relevant state, and the evidence connecting it to the fixture. A clear source-level derivation can establish straightforward invariants. When preprocessing or another disputed transformation determines whether the state can occur, run that transformation on representative valid input and inspect the resulting state. Reviewers must independently check this connection rather than infer reachability from an upstream merge or an Oracle pass. Keep reproduction evidence curator-only; do not expose hidden cases or add internal defensive requirements to the statement merely to justify a fixture.
+
+Once reachability is established, a smaller behavioral test may reuse or reconstruct the state while preserving the relevant constraints and real behavior-determining components. This does not require running the entire service for every case or every scoring run. Mark unresolved reachability as unverified and keep the case diagnostic-only until resolved; do not use it to deduct reward, approve the task, or attribute failure to agent capability. If it currently affects reward, resolve the evidence gap or revise the case before acceptance. Remove or replace cases shown to be unreachable under the contract. Rare but reachable cases remain eligible even without a reported production incident.
+
 ## 8. Test progress and waiting through causal observations
 
 Apply this step when concurrency, nonblocking execution, synchronization, or liveness is part of the contract. Correct final outputs and total runtime alone do not establish those properties.
