@@ -1,8 +1,103 @@
 {
   "schema_version": "vllm_harbor_task_validation.v1",
-  "status": "archived",
-  "archive_url": "https://github.com/YaooXu/ai-infra-bench/releases/download/pr55-codex-validation-20260913/pr55-validation-evidence-cb120e1.zip",
-  "archive_sha256": "548f00c51972c9105de3fa47f78c107c09ce9ab2b4876ca01489daa090951b59",
-  "source_commit": "cb120e1a83ac04ece7019db4a5d1e5a3d967b4e4",
-  "note": "Logs, measured results, reproduction details and limitations are in the ZIP. Each run applies to its recorded snapshot; these historical runs do not validate the clarified instruction."
+  "status": "validated-limited-threat-model",
+  "task_version": "1.4.0",
+  "artifacts": {
+    "files": {
+      "validation/last-media-only.patch": "daf036c8268fe06f0b1ae97e96c8343484f29df52dc52c37e52ff4106a3c9460",
+      "validation/media-boundary.patch": "eae0f0fe963ed0f6888c21fe9610ce4f3f4c47297faf7079a77fcc90e3f6e77f",
+      "validation/media-position-alias.patch": "db9494a3b048029b5b08c2dffe00a83e65ab18632e6cf91844938bcbd6509885",
+      "validation/old-oracle.patch": "bb180e9846584a2b0bc28ac1f9d89376f1f939682836cebd2368432a4516787e",
+      "validation/stream-stale.patch": "052f18acb0d321e2b494388c0bee27bf6a26765427771849b8339ef4e61a41fa",
+      "validation/upstream-review.md": "740ee70313d6213cd25164700346b447e405ac87049536a42f8674470e274dfa",
+      ".dockerignore": "914c87fd58ee5c87f0f8e48b891a5dc3d24f662b7e083e1d6c99b3ac0e477514",
+      "README.md": "b313f7602e22d902b7c1aefd8f225421a171f8192bacdd1b302402d07d820444",
+      "environment/Dockerfile": "abd076180be1ba7ca29548dcb06eaea381f40aab0c1859448a0a50a4ef986633",
+      "environment/image-manifest.json": "f2b16805798916bc6caac8d495155bf12aa01b40d1291c62993223546dfe7470",
+      "environment/lock/README.md": "275795d94633e340c72da0d4b9880aee8f8e1d191764d648b1e410a233599716",
+      "environment/lock/manifest.json": "ee0ff9360a216aff48d868802168d806e6918bb7e08673eb29821fc09d64b954",
+      "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+      "instruction.md": "0ac48903f4e8ac818268c8f3a9bb09ac9c91ba49b178b28e4c91393cb75d8c22",
+      "solution/oracle.patch": "af0eb45002d6a2dc22837785eadb0d9dfa0810669e26adb826516ee8caf7d91c",
+      "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
+      "task.toml": "01706a29811ae64353937cc429e6ec20fb03515d03adac0a64b44eeac12db740",
+      "tests/docker-compose.yaml": "0d09303b1c19f8c49715144dd45709027cc46a6ad42be95907fb59724342d30f",
+      "tests/supervise_retention.py": "3e544e317bfc634782e1dadc3939e21d087009c845463784e590fefe37bd0e85",
+      "tests/test.sh": "2a57d71bd02a43b82d94fffb6c3cc4d22c5a2abf2313f7dd1c16ad8c75df656e",
+      "tests/verify_retention.py": "a46422540bc4390a594167ef92ab571f4ee8f60ac8be6a4d4ea85d61d0d4f694",
+      "validation/alternative-agent-implementation.patch": "3d3498e2a4454db0d4766ee508056c555114a4edcd7e76b8da4eb4ed26b777e7",
+      "validation/ci-cases.json": "7d16bdaad7ab0bd34dea513b540d36c184fac239db1f06f1643c7d9e732be756",
+      "validation/external-finish-only.patch": "9097b806b42a4efe081bdbd575662e57ce601e8c0c924de466c5bc6d578d2284",
+      "validation/forced-gc.patch": "d9af2fc645b41c01c9d6e1dfda1a858e048a236ae92e963137925c2f892d2d89",
+      "validation/forged-observations.patch": "a1b4c891290b18c31dfa7ceea5a80ccce028eb86f32478fafaaa6d4488635d21",
+      "validation/incomplete-agent-implementation.patch": "88e7202cc8f5676a2dd9dae490221c22077f95637048f958acbca287c1b443d3",
+      "validation/ordinal-hashes.patch": "19756109f62847ee4e829e8c4e60897c2fa70210713e2400bbfda0d65cd53c2b",
+      "validation/os-exit-zero-bypass.patch": "2ff359bf99a822fc6b2ab29c29abde293e4e96e43d0ac9dc72787ac5d5bbb34d",
+      "validation/renamed-private-helper.patch": "05660e02c1300484bcda4c40bfe467e8b33dac1543bc9d763b8ea6aea9b8a435",
+      "validation/run-local-matrix.py": "273ed31ee3a9f6cdf3d3bdc3879d2ac2e0fe343c9ccf1c7b44a673c07cb4d21c",
+      "validation/system-exit-zero-bypass.patch": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de"
+    }
+  },
+  "historical_archive": {
+    "schema_version": "vllm_harbor_task_validation.v1",
+    "status": "archived",
+    "archive_url": "https://github.com/YaooXu/ai-infra-bench/releases/download/pr55-codex-validation-20260913/pr55-validation-evidence-cb120e1.zip",
+    "archive_sha256": "548f00c51972c9105de3fa47f78c107c09ce9ab2b4876ca01489daa090951b59",
+    "source_commit": "cb120e1a83ac04ece7019db4a5d1e5a3d967b4e4",
+    "note": "Logs, measured results, reproduction details and limitations are in the ZIP. Each run applies to its recorded snapshot; these historical runs do not validate the clarified instruction."
+  },
+  "local_matrix": {
+    "cases": 16,
+    "all_expected": true
+  },
+  "harbor": {
+    "oracle": {
+      "trial": "oracle__avoEgou",
+      "reward": 1.0,
+      "errors": 0,
+      "task_checksum": "058d18986663104aa33cef7f3686fc885f3f8a77e97af6bc4309a0f88578d1e6",
+      "job_id": "1efb6956-f62a-4c9f-8172-c03ee2e390f8",
+      "started_at": "2026-09-13T22:54:30.451534",
+      "finished_at": "2026-09-13T22:55:22.524069"
+    },
+    "oracle-final": {
+      "trial": "vllm-request-lifecycle-leak__4HpYMVE",
+      "reward": 1.0,
+      "errors": 0,
+      "task_checksum": "6da42e7f0c25b142187e2b155127ecf55c6f3fd4f65914c3321f4229163c224f",
+      "job_id": "4280a2c8-4dd8-44aa-a736-ed166f99a2b5",
+      "started_at": "2026-09-13T22:56:51.518911",
+      "finished_at": "2026-09-13T22:57:44.499158"
+    },
+    "old-oracle": {
+      "trial": "old-oracle__LqfsqeY",
+      "reward": 0.0,
+      "errors": 0,
+      "task_checksum": "bfbca2831d2f5f193aed53be127f98184795afb42376f2248ef33507384b8acf",
+      "job_id": "e82deead-0386-4081-8510-b08f50928ea7",
+      "started_at": "2026-09-13T22:57:23.063431",
+      "finished_at": "2026-09-13T22:58:15.532185"
+    },
+    "system-exit-zero-bypass": {
+      "trial": "system-exit-zero-bypass__cXaMMvb",
+      "reward": 0.0,
+      "errors": 0,
+      "task_checksum": "2613eda43e4b11fbbdda1ddfc06d964e4aa5420068d1d9e61763016d84823bdd",
+      "job_id": "f2404bdc-a492-4037-a1d0-b8c4390a5759",
+      "started_at": "2026-09-13T22:55:17.242225",
+      "finished_at": "2026-09-13T22:55:59.378158"
+    },
+    "os-exit-zero-bypass": {
+      "trial": "os-exit-zero-bypass__TTQW83i",
+      "reward": 0.0,
+      "errors": 0,
+      "task_checksum": "5c7a927e99f1542991190a2b71d46507d348db453f61137b51819c94b701f634",
+      "job_id": "537eafe1-6232-4757-b2ea-f2a30dacbe40",
+      "started_at": "2026-09-13T22:56:06.126285",
+      "finished_at": "2026-09-13T22:56:47.410835"
+    }
+  },
+  "archive_url": "https://github.com/YaooXu/ai-infra-bench/releases/download/pr55-codex-validation-20260913/pr55-upstream-regressions-v1.4.0.zip",
+  "archive_sha256": "9fbb175fded1153846696b89099d854ec565b924302b1633b32c1b5eca67371c",
+  "note": "Current scoped validation is in this ZIP. Earlier model rollouts apply to their own snapshots. Evidence-only updates change the task-directory checksum without changing tested executables."
 }

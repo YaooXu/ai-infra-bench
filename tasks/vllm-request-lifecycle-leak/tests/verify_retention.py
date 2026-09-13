@@ -40,12 +40,12 @@ class ModelInputs:
     def processor_only_cache_from_config(self, config):
         return None
     def create_processor(self, config, cache=None):
-        return NS(info=NS(supported_mm_limits={'image': 1},
-            allowed_mm_limits={'image': 1},
+        return NS(info=NS(supported_mm_limits={'image': 2},
+            allowed_mm_limits={'image': 2},
             get_mm_max_tokens_per_item=lambda **kw: {'image': 4}))
 
-def make_scheduler(caching=True):
-    cache = CacheConfig(block_size=4, enable_prefix_caching=caching)
+def make_scheduler(caching=True, block_size=4):
+    cache = CacheConfig(block_size=block_size, enable_prefix_caching=caching)
     cache.num_gpu_blocks = 512
     config = NS(
         scheduler_config=SchedulerConfig(max_num_seqs=32, max_num_batched_tokens=512,
@@ -57,10 +57,10 @@ def make_scheduler(caching=True):
             get_multimodal_config=lambda: NS(enable_mm_embeds=False)),
         kv_transfer_config=None, ec_transfer_config=None, speculative_config=None)
     kv = KVCacheConfig(num_blocks=512, kv_cache_tensors=[], kv_cache_groups=[
-        KVCacheGroupSpec(['layer'], FullAttentionSpec(block_size=4,
+        KVCacheGroupSpec(['layer'], FullAttentionSpec(block_size=block_size,
             num_kv_heads=1, head_size=8, dtype=torch.float32))])
     return Scheduler(config, kv, NS(should_advance=lambda request: False),
-                     block_size=4, mm_registry=ModelInputs())
+                     block_size=block_size, mm_registry=ModelInputs())
 
 def make_request(name, *, tokens=None, image='image-A', resumable=False,
                  caching=True, size=256 * 1024, media=True):
@@ -168,6 +168,93 @@ def cache_cases():
             assert cached_hits(manager, other) == 8, 'stream: stale final block reused'
 
 
+def media_request(name, tokens, layout, block_size, *, resumable=False):
+    """Create independent input objects; never copy candidate cache identities."""
+    features = [MultiModalFeatureSpec(data={'payload': Payload()}, modality='image',
+        identifier=image, mm_position=PlaceholderRange(offset=offset, length=length))
+        for offset, length, image in layout]
+    return Request(request_id=name, prompt_token_ids=list(tokens),
+        sampling_params=SamplingParams(max_tokens=24), pooling_params=None,
+        eos_token_id=0, mm_features=features,
+        block_hasher=get_request_block_hasher(block_size, sha256), resumable=resumable)
+
+
+def check_reuse(scheduler, tokens, layout, block_size, expected, label):
+    query = media_request('query-' + label, tokens, layout, block_size)
+    actual = cached_hits(scheduler.kv_cache_manager, query)
+    assert actual == expected, f'{label}: expected {expected} cached tokens, got {actual}'
+    print('CACHE_CHECK=' + json.dumps({'case': label, 'expected': expected,
+                                     'actual': actual}), flush=True)
+
+
+def incremental_media_cases():
+    # Populate cache only through actual scheduling and output processing.
+    # No manual hash invalidation, cache insertion, or private helper calls.
+    for block_size in (4, 16):
+        b = block_size
+        length = min(4, b // 4)
+        for stage in ('partial', 'boundary', 'stream'):
+            scheduler = make_scheduler(block_size=b)
+            prompt_len = 2 * b if stage == 'boundary' else 2 * b - 1
+            layout = [(b, length, 'first-media'),
+                      (2 * b - length if stage == 'boundary' else b + b // 2,
+                       length, 'last-media')]
+            tokens = [rng.randrange(50, 10000) for _ in range(prompt_len)]
+            request = media_request('source', tokens, layout, b,
+                                    resumable=stage == 'stream')
+            scheduler.add_request(request)
+            expected_tokens = tokens.copy()
+            if stage == 'stream':
+                step(scheduler, 0)
+                # EOS completes a hash block but has not itself been computed.
+                update_tokens = [rng.randrange(50, 10000) for _ in range(b + 1)]
+                update = media_request('source', update_tokens, [], b, resumable=True)
+                scheduler.add_request(update)
+                expected_tokens += update_tokens
+                assert list(request.all_token_ids) == expected_tokens
+                outputs = [101, 0]
+            else:
+                outputs = list(range(101, 101 + (b if stage == 'boundary' else 2))) + [0]
+            for token in outputs:
+                step(scheduler, token)
+                expected_tokens.append(token)
+            assert list(request.all_token_ids) == expected_tokens
+            if stage == 'stream':
+                end = media_request('source', [], [], b)
+                scheduler.add_request(end)
+            assert not scheduler.has_unfinished_requests(), stage
+            # Each scheduled token except the last sampled EOS was computed.
+            expected = ((len(expected_tokens) - 1) // b) * b
+            label = f'media-{stage}-block-{b}'
+            check_reuse(scheduler, expected_tokens, layout, b, expected, label + '-same')
+            for index in (0, 1):
+                changed = list(layout)
+                offset, size, _ = changed[index]
+                changed[index] = (offset, size, 'different-media')
+                check_reuse(scheduler, expected_tokens, changed, b, b,
+                            label + f'-changed-media-{index}')
+            if stage == 'stream':
+                stale = expected_tokens.copy()
+                stale[prompt_len] = 0
+                check_reuse(scheduler, stale, layout, b, b, label + '-discarded-token')
+
+
+def media_position_case():
+    # Identical placeholder token IDs do not make different media positions
+    # interchangeable. Use valid, non-overlapping one-token media ranges.
+    b = 16
+    scheduler = make_scheduler(block_size=b)
+    tokens = [77] * (2 * b + 1)
+    layout = [(b, 1, 'first-media'), (b + 8, 1, 'last-media')]
+    request = media_request('positions', tokens, layout, b)
+    scheduler.add_request(request)
+    step(scheduler, 0)
+    full = tokens + [0]
+    check_reuse(scheduler, full, layout, b, 2 * b, 'media-position-same')
+    moved = [(b + 1, 1, 'first-media'), layout[1]]
+    check_reuse(scheduler, full, moved, b, b, 'media-position-changed')
+
+
 def checkpoint(phase):
     print('CHECKPOINT=' + phase, flush=True)
     assert sys.stdin.readline().strip() == 'continue', 'parent did not acknowledge'
@@ -210,6 +297,8 @@ def main():
             assert not collections, f'GC ran during {mode} lifecycle'
         lifecycle('normal', caching=False)
         cache_cases()
+        incremental_media_cases()
+        media_position_case()
         memory_rounds()
         assert not collections, 'GC ran during target lifecycle'
         print('BEHAVIOR_COMPLETE', flush=True)

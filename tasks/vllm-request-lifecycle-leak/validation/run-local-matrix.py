@@ -8,7 +8,7 @@ import subprocess
 import time
 
 TASK = Path(__file__).resolve().parents[1]
-IMAGE = os.environ.get('TASK_IMAGE', 'ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d-avx2')
+IMAGE = os.environ.get('TASK_IMAGE', 'ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d-pytest-full')
 OUT = Path(os.environ.get('MATRIX_OUT', '/tmp/pr55-hardening-matrix')).resolve()
 CASES = {'base': None, 'oracle': TASK / 'solution/oracle.patch'}
 for case in json.loads((TASK / 'validation/ci-cases.json').read_text())['cases']:
