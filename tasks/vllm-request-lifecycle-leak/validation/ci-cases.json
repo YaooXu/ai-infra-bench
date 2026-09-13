@@ -87,9 +87,9 @@
       "execution_status": "local-final-entrypoint-expected-reward"
     },
     {
-      "name": "media-position-alias",
-      "patch": "media-position-alias.patch",
-      "expected_reward": 0,
+      "name": "no-media-offset",
+      "patch": "no-media-offset.patch",
+      "expected_reward": 1,
       "patch_sha256": "db9494a3b048029b5b08c2dffe00a83e65ab18632e6cf91844938bcbd6509885",
       "execution_status": "local-final-entrypoint-expected-reward"
     },

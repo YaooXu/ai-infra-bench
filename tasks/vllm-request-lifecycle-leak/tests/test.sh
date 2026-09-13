@@ -22,5 +22,6 @@ trusted_dir="$(mktemp -d /tmp/retention-verifier.XXXXXXXX)"
 trap 'rm -rf -- "$trusted_dir"' EXIT
 install -o root -g root -m 0644 /tests/supervise_retention.py "$trusted_dir/supervise_retention.py"
 install -o root -g root -m 0644 /tests/verify_retention.py "$trusted_dir/verify_retention.py"
+install -o root -g root -m 0644 /tests/qwen_inputs.json "$trusted_dir/qwen_inputs.json"
 chmod 0755 "$trusted_dir"
 "$python_bin" -I "$trusted_dir/supervise_retention.py" "$python_bin"

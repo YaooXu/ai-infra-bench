@@ -134,7 +134,8 @@ def run_worker(python_bin, agent):
 def main():
     prepare_reward()
     python_bin = Path(sys.argv[1])
-    for path in (python_bin.resolve(), Path(__file__).resolve(), WORKER):
+    for path in (python_bin.resolve(), Path(__file__).resolve(), WORKER,
+                 WORKER.with_name('qwen_inputs.json')):
         if not trusted_file(path):
             raise RuntimeError(f'untrusted harness file: {path}')
     try:

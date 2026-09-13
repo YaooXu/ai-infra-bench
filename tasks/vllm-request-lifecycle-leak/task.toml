@@ -3,7 +3,7 @@ artifacts = ["/workspace/repo/vllm"]
 
 [task]
 name = "ai-infra-bench/vllm-request-lifecycle-leak"
-version = "1.4.0"
+version = "1.5.0"
 description = "Fix completed vLLM requests retaining multimodal payloads until cyclic garbage collection."
 authors = [{ name = "AI Infra Bench Curators" }]
 keywords = ["vllm", "memory-leak", "prefix-caching", "multimodal"]

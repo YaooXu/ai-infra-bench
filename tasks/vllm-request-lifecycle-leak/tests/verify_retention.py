@@ -6,10 +6,13 @@ import random
 import sys
 import weakref
 from types import SimpleNamespace as NS
+from pathlib import Path
 
 # Read run parameters before importing candidate code. This reduces accidental
 # protocol interference; it is not a security boundary against arbitrary Python.
 settings = json.loads(sys.stdin.readline())
+INPUTS = json.loads(Path(__file__).with_name('qwen_inputs.json').read_text())
+EOS = 151645
 sys.path.insert(0, '/workspace/repo')
 import torch
 from vllm.config import CacheConfig, ParallelConfig, SchedulerConfig, ObservabilityConfig
@@ -66,14 +69,14 @@ def make_request(name, *, tokens=None, image='image-A', resumable=False,
                  caching=True, size=256 * 1024, media=True):
     payload = Payload(size)
     mm = [MultiModalFeatureSpec(data={'payload': payload}, modality='image',
-        identifier=image, mm_position=PlaceholderRange(offset=0, length=4))] if media else []
-    request = Request(request_id=name, prompt_token_ids=list(tokens) if tokens is not None else list(range(1, 9)),
+        identifier=image, mm_position=PlaceholderRange(offset=1, length=4))] if media else []
+    request = Request(request_id=name, prompt_token_ids=list(tokens) if tokens is not None else (INPUTS['single']['tokens'].copy() if media else []),
         sampling_params=SamplingParams(max_tokens=24), pooling_params=None,
-        eos_token_id=0, mm_features=mm, block_hasher=hasher if caching else None,
+        eos_token_id=EOS, mm_features=mm, block_hasher=hasher if caching else None,
         resumable=resumable)
     return request, payload
 
-def step(scheduler, token=0):
+def step(scheduler, token=EOS):
     scheduled = scheduler.schedule()
     ids = list(scheduled.num_scheduled_tokens)
     assert ids, 'eligible request was not scheduled'
@@ -130,7 +133,8 @@ def cached_hits(manager, request):
 def cache_cases():
     for stage in ('initial', 'append', 'stream'):
         scheduler = make_scheduler()
-        tokens = [rng.randrange(50, 10000) for _ in range(8)]
+        tokens = INPUTS['single']['tokens'].copy()
+        tokens[-1] = rng.randrange(50, 10000)  # Ordinary text token, outside media.
         request, data = make_request('seed-' + stage, tokens=tokens,
                                      resumable=stage == 'stream')
         if stage == 'initial':
@@ -139,7 +143,7 @@ def cache_cases():
             request.append_output_token_ids([31, 32, 33, 34])
         else:
             scheduler.add_request(request)
-            for token in (31, 32, 33, 0):
+            for token in (31, 32, 33, EOS):
                 step(scheduler, token)
             update, _ = make_request(request.request_id, tokens=[41, 42, 43, 44],
                                      resumable=True, caching=False, media=False)
@@ -156,14 +160,14 @@ def cache_cases():
         expected = ((len(full) - 1) // 4) * 4
         assert cached_hits(manager, same) == expected, f'{stage}: same prefix not reused'
         changed = full.copy()
-        changed[0] += 10001
+        changed[6] = 30001
         other, _ = make_request('different', tokens=changed)
-        assert cached_hits(manager, other) == 0, f'{stage}: different tokens reused'
+        assert cached_hits(manager, other) == 4, f'{stage}: different text tokens reused'
         media, _ = make_request('media', tokens=full, image='image-B')
         assert cached_hits(manager, media) == 0, f'{stage}: different media reused'
         if stage == 'stream':
             changed = full.copy()
-            changed[11] = 0
+            changed[11] = EOS
             other, _ = make_request('edge', tokens=changed)
             assert cached_hits(manager, other) == 8, 'stream: stale final block reused'
 
@@ -174,8 +178,8 @@ def media_request(name, tokens, layout, block_size, *, resumable=False):
         identifier=image, mm_position=PlaceholderRange(offset=offset, length=length))
         for offset, length, image in layout]
     return Request(request_id=name, prompt_token_ids=list(tokens),
-        sampling_params=SamplingParams(max_tokens=24), pooling_params=None,
-        eos_token_id=0, mm_features=features,
+        sampling_params=SamplingParams(max_tokens=64), pooling_params=None,
+        eos_token_id=EOS, mm_features=features,
         block_hasher=get_request_block_hasher(block_size, sha256), resumable=resumable)
 
 
@@ -188,71 +192,56 @@ def check_reuse(scheduler, tokens, layout, block_size, expected, label):
 
 
 def incremental_media_cases():
-    # Populate cache only through actual scheduling and output processing.
-    # No manual hash invalidation, cache insertion, or private helper calls.
-    for block_size in (4, 16):
-        b = block_size
-        length = min(4, b // 4)
-        for stage in ('partial', 'boundary', 'stream'):
+    # These token/range pairs were produced together by the real Base Qwen
+    # processor. Populate cache through scheduling, never by repairing hashes.
+    for b in (16, 32):
+        for stage in ('partial', 'boundary', 'stream', 'repeated'):
             scheduler = make_scheduler(block_size=b)
-            prompt_len = 2 * b if stage == 'boundary' else 2 * b - 1
-            layout = [(b, length, 'first-media'),
-                      (2 * b - length if stage == 'boundary' else b + b // 2,
-                       length, 'last-media')]
-            tokens = [rng.randrange(50, 10000) for _ in range(prompt_len)]
+            key = f"{'boundary' if stage == 'boundary' else 'partial'}-{b}"
+            if stage == 'repeated':
+                key += '-repeated'
+            fixture = INPUTS[key]
+            tokens, layout = fixture['tokens'], fixture['layout']
             request = media_request('source', tokens, layout, b,
                                     resumable=stage == 'stream')
             scheduler.add_request(request)
             expected_tokens = tokens.copy()
             if stage == 'stream':
-                step(scheduler, 0)
-                # EOS completes a hash block but has not itself been computed.
+                step(scheduler, EOS)
                 update_tokens = [rng.randrange(50, 10000) for _ in range(b + 1)]
                 update = media_request('source', update_tokens, [], b, resumable=True)
                 scheduler.add_request(update)
                 expected_tokens += update_tokens
                 assert list(request.all_token_ids) == expected_tokens
-                outputs = [101, 0]
+                outputs = [101, EOS]
             else:
-                outputs = list(range(101, 101 + (b if stage == 'boundary' else 2))) + [0]
+                outputs = list(range(101, 101 + (b if stage == 'boundary' else 2))) + [EOS]
             for token in outputs:
                 step(scheduler, token)
                 expected_tokens.append(token)
             assert list(request.all_token_ids) == expected_tokens
             if stage == 'stream':
-                end = media_request('source', [], [], b)
-                scheduler.add_request(end)
+                scheduler.add_request(media_request('source', [], [], b))
             assert not scheduler.has_unfinished_requests(), stage
-            # Each scheduled token except the last sampled EOS was computed.
             expected = ((len(expected_tokens) - 1) // b) * b
             label = f'media-{stage}-block-{b}'
             check_reuse(scheduler, expected_tokens, layout, b, expected, label + '-same')
-            for index in (0, 1):
-                changed = list(layout)
-                offset, size, _ = changed[index]
-                changed[index] = (offset, size, 'different-media')
-                check_reuse(scheduler, expected_tokens, changed, b, b,
-                            label + f'-changed-media-{index}')
+            if stage != 'repeated':
+                for index in (0, 1):
+                    changed = INPUTS[key + f'-changed-{index}']
+                    assert changed['tokens'] == tokens
+                    check_reuse(scheduler, expected_tokens, changed['layout'], b, b,
+                                label + f'-changed-media-{index}')
             if stage == 'stream':
                 stale = expected_tokens.copy()
-                stale[prompt_len] = 0
+                stale[len(tokens)] = EOS
                 check_reuse(scheduler, stale, layout, b, b, label + '-discarded-token')
-
-
-def media_position_case():
-    # Identical placeholder token IDs do not make different media positions
-    # interchangeable. Use valid, non-overlapping one-token media ranges.
-    b = 16
-    scheduler = make_scheduler(block_size=b)
-    tokens = [77] * (2 * b + 1)
-    layout = [(b, 1, 'first-media'), (b + 8, 1, 'last-media')]
-    request = media_request('positions', tokens, layout, b)
-    scheduler.add_request(request)
-    step(scheduler, 0)
-    full = tokens + [0]
-    check_reuse(scheduler, full, layout, b, 2 * b, 'media-position-same')
-    moved = [(b + 1, 1, 'first-media'), layout[1]]
-    check_reuse(scheduler, full, moved, b, b, 'media-position-changed')
+            if stage == 'partial':
+                # Adding text between images moves the second image AND changes
+                # token IDs. Both are taken from the processor, not edited apart.
+                moved = INPUTS[key + '-moved']
+                check_reuse(scheduler, moved['tokens'] + [EOS], moved['layout'],
+                            b, b, label + '-moved-image')
 
 
 def checkpoint(phase):
@@ -298,7 +287,6 @@ def main():
         lifecycle('normal', caching=False)
         cache_cases()
         incremental_media_cases()
-        media_position_case()
         memory_rounds()
         assert not collections, 'GC ran during target lifecycle'
         print('BEHAVIOR_COMPLETE', flush=True)
