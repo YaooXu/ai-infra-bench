@@ -2,6 +2,6 @@ I run a long-lived Qwen2.5-VL service with prefix caching enabled. When I replay
 
 Please find and fix whatever is keeping the completed requests alive. A finished request and its large multimodal payload should be reclaimable through the normal engine lifecycle. This needs to hold for requests that finish normally, requests cancelled after a client disconnects, and streaming sessions once the client really ends them. A live request or a streaming session merely waiting for its next input must keep its multimodal data available.
 
-Prefix-cache results must stay correct for the initial request and for later token updates. Also fix prefix-cache reuse when a streaming session receives more input. Matching prefixes should still be reusable after the update, and discarded tokens must not cause incorrect cache hits.
+Prefix-cache results must stay correct for the initial request and for later token updates. Prefix-cache reuse also goes wrong when a streaming session receives more input. Matching prefixes can miss the cache, while prefixes containing tokens dropped during the update can incorrectly hit it.
 
 We need to keep prefix caching and multimodal input enabled. This should be fixed in the request lifecycle without adding explicit GC calls.
