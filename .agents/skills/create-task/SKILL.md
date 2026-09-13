@@ -7,6 +7,12 @@ Guide the user through creating a new Harbor task end-to-end. Don't just dump co
 walk them through each decision, especially around the verifier (which is usually the
 hardest part).
 
+## Step 0: Define the initial scope and investigate upstream history
+
+For tasks that repair or extend an existing repository, define the intended behavior and initial scope, then search related upstream PRs, issues, discussions, and code history before choosing the Oracle or freezing the instruction and verifier. Follow [references/upstream-history.md](references/upstream-history.md). This applies even when the user supplies one specific PR: check later fixes and unresolved reports, including open and closed-but-unmerged PRs. A merged patch is not proof of correctness.
+
+Record which findings apply to the frozen Base and task contract, turn applicable defects into behavioral checks, and resolve contradictions with the proposed Oracle before accepting it. Keep the search evidence and future implementation details in curator-only artifacts. If upstream research is not applicable, record why; if access is unavailable, record the investigation as incomplete rather than claiming no related bugs exist.
+
 ## Step 1: Scaffold the task
 
 ```bash
