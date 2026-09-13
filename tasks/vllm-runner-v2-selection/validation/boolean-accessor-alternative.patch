@@ -1,6 +1,8 @@
+diff --git a/vllm/config/vllm.py b/vllm/config/vllm.py
+index 9f93ab7..b6d0b06 100644
 --- a/vllm/config/vllm.py
 +++ b/vllm/config/vllm.py
-@@ -24,6 +24,7 @@
+@@ -24,6 +24,7 @@ from pydantic import ConfigDict, Field, model_validator
  import vllm.envs as envs
  from vllm.logger import enable_trace_function_call, init_logger
  from vllm.transformers_utils.runai_utils import is_runai_obj_uri
@@ -8,7 +10,7 @@
  from vllm.utils import random_uuid
  from vllm.utils.hashing import safe_hash
 
-@@ -1233,8 +1234,10 @@
+@@ -1233,8 +1234,10 @@ class VllmConfig:
              )
          current_platform.check_and_update_config(self)
 
@@ -21,7 +23,7 @@
 
          # Re-compute compile ranges after platform-specific config updates
          # (e.g., XPU may lower max_num_batched_tokens when MLA is enabled)
-@@ -1908,34 +1911,71 @@
+@@ -1908,35 +1911,86 @@ class VllmConfig:
              f"kernel_config={self.kernel_config!r}"
          )
 
@@ -30,11 +32,10 @@
 +    def _v2_model_runner_unsupported_features(self) -> list[str]:
 +        """Collect features not yet supported by the V2 model runner."""
          unsupported: list[str] = []
--
--        if self.model_config is not None and self.model_config.has_inner_state:
 +        model_config = self.model_config
 +        speculative_config = self.speculative_config
-+
+
+-        if self.model_config is not None and self.model_config.has_inner_state:
 +        if model_config is not None and model_config.has_inner_state:
              unsupported.append("hybrid/mamba models")
 
@@ -47,11 +48,10 @@
          if (
 -            self.speculative_config is not None
 -            and self.speculative_config.method not in ("eagle", "eagle3", "mtp")
--        ):
--            unsupported.append(f"speculative method '{self.speculative_config.method}'")
 +            self.compilation_config.pass_config.enable_sp
 +            and self.parallel_config.tensor_parallel_size > 1
-+        ):
+         ):
+-            unsupported.append(f"speculative method '{self.speculative_config.method}'")
 +            unsupported.append("sequence parallelism")
 +
 +        if speculative_config is not None:
@@ -93,7 +93,7 @@
 +            model_config.logits_processors or has_logitsproc_plugins
 +        ):
              unsupported.append("custom logits processors")
-+
+
 +        if model_config is not None and model_config.enable_prompt_embeds:
 +            unsupported.append("prompt embeds")
 +
@@ -103,10 +103,25 @@
 +            and model_config.logprobs_mode in ("raw_logits", "processed_logits")
 +        ):
 +            unsupported.append(f"logprobs mode '{model_config.logprobs_mode}'")
-
++
++        if model_config is not None and model_config.runner_type == "pooling":
++            pooler = model_config.pooler_config
++            # V2 bypasses the model pooler and returns normalized LAST embeddings.
++            if (
++                model_config.attn_type != "decoder"
++                or model_config.convert_type == "classify"
++                or pooler is None
++                or pooler.task not in (None, "embed")
++                or pooler.seq_pooling_type != "LAST"
++                or pooler.use_activation is False
++                or pooler.dimensions is not None
++            ):
++                unsupported.append("pooling other than normalized LAST decoder embeddings")
++
          if self.cache_config.kv_sharing_fast_prefill:
              # Will be added by https://github.com/vllm-project/vllm/pull/35045
-@@ -1945,11 +1985,103 @@
+             unsupported.append("KV sharing fast prefill")
+@@ -1945,12 +1999,104 @@ class VllmConfig:
              # Will be added by https://github.com/vllm-project/vllm/pull/38390
              unsupported.append("EC transfer")
 
@@ -127,7 +142,7 @@
                  "VLLM_USE_V2_MODEL_RUNNER does not yet support: "
                  + ", ".join(unsupported)
              )
-+
+
 +    def _model_defaults_to_v2_model_runner(self) -> bool:
 +        """Whether the resolved model config defaults to the V2 model runner.
 +
@@ -207,10 +222,11 @@
 +            return False
 +
 +        return True
-
++
      def validate_block_size(self) -> None:
          """Validate block_size against DCP and mamba constraints.
-@@ -1998,7 +2130,7 @@
+
+@@ -1998,7 +2144,7 @@ class VllmConfig:
                  "in the middle of a mm input"
              )
              # TODO: support align mamba cache mode for model runner v2
@@ -219,39 +235,11 @@
                  "Model Runner V2 has not yet supported mamba_cache_mode='align'. "
              )
 
---- a/vllm/v1/worker/gpu_worker.py
-+++ b/vllm/v1/worker/gpu_worker.py
-@@ -153,7 +153,7 @@
-         if self.profiler_config.profiler not in ("torch", "cuda", None):
-             raise ValueError(f"Unknown profiler type: {self.profiler_config.profiler}")
-
--        self.use_v2_model_runner = envs.VLLM_USE_V2_MODEL_RUNNER
-+        self.use_v2_model_runner = vllm_config.use_v2_model_runner
-         # pending non-blocking PP send work from the previous iteration
-         self._pp_send_work: list[Handle] = []
-
---- a/vllm/v1/core/sched/scheduler.py
-+++ b/vllm/v1/core/sched/scheduler.py
-@@ -7,7 +7,6 @@
- from dataclasses import replace
- from typing import Any
-
--from vllm import envs
- from vllm.compilation.cuda_graph import CUDAGraphStat
- from vllm.config import VllmConfig
- from vllm.distributed.ec_transfer.ec_connector.base import (
-@@ -242,7 +241,7 @@
-             self.connector.bind_gpu_block_pool(self.kv_cache_manager.block_pool)
-
-         self.use_pp = self.parallel_config.pipeline_parallel_size > 1
--        self.use_v2_model_runner = envs.VLLM_USE_V2_MODEL_RUNNER
-+        self.use_v2_model_runner = vllm_config.use_v2_model_runner
-         self.scheduler_reserve_full_isl = (
-             self.scheduler_config.scheduler_reserve_full_isl
-         )
+diff --git a/vllm/v1/attention/backends/flashinfer.py b/vllm/v1/attention/backends/flashinfer.py
+index dc4b1cc..2b206cb 100755
 --- a/vllm/v1/attention/backends/flashinfer.py
 +++ b/vllm/v1/attention/backends/flashinfer.py
-@@ -681,7 +681,7 @@
+@@ -681,7 +681,7 @@ class FlashInferMetadataBuilder(AttentionMetadataBuilder[FlashInferMetadata]):
          # reused CPU buffers to avoid a race condition between step N async copies to
          # GPU and step N+1 buffer updates.
          self.pin_memory = (
@@ -260,3 +248,36 @@
          )
          self.paged_kv_indptr = self._make_buffer(max_num_reqs + 1)
          self.paged_kv_indptr_cpu_buffer = torch.zeros_like(
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index e6edbb2..1b46657 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -7,7 +7,6 @@ from collections.abc import Iterable
+ from dataclasses import replace
+ from typing import Any
+
+-from vllm import envs
+ from vllm.compilation.cuda_graph import CUDAGraphStat
+ from vllm.config import VllmConfig
+ from vllm.distributed.ec_transfer.ec_connector.base import (
+@@ -242,7 +241,7 @@ class Scheduler(SchedulerInterface):
+             self.connector.bind_gpu_block_pool(self.kv_cache_manager.block_pool)
+
+         self.use_pp = self.parallel_config.pipeline_parallel_size > 1
+-        self.use_v2_model_runner = envs.VLLM_USE_V2_MODEL_RUNNER
++        self.use_v2_model_runner = vllm_config.use_v2_model_runner
+         self.scheduler_reserve_full_isl = (
+             self.scheduler_config.scheduler_reserve_full_isl
+         )
+diff --git a/vllm/v1/worker/gpu_worker.py b/vllm/v1/worker/gpu_worker.py
+index 18c7941..53e62c9 100644
+--- a/vllm/v1/worker/gpu_worker.py
++++ b/vllm/v1/worker/gpu_worker.py
+@@ -153,6 +153,6 @@ class Worker(WorkerBase):
+         if self.profiler_config.profiler not in ("torch", "cuda", None):
+             raise ValueError(f"Unknown profiler type: {self.profiler_config.profiler}")
+
+-        self.use_v2_model_runner = envs.VLLM_USE_V2_MODEL_RUNNER
++        self.use_v2_model_runner = vllm_config.use_v2_model_runner
+         # pending non-blocking PP send work from the previous iteration
+         self._pp_send_work: list[Handle] = []

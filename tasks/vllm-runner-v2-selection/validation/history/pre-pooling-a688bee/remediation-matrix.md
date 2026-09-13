@@ -15,7 +15,3 @@ This record supersedes the archived e575a2b verification claims. Current results
 | Host test ownership and venv handling were unverified | Root staging and preservation of selected interpreter path | Non-root-owned mount with an actual /opt/venv interpreter |
 
 The image and executable hashes are frozen for each local run. Runtime outcomes and limitations are reported without carrying forward older results as acceptance evidence.
-
-## Pooling compatibility hardening (1.1.2)
-
-The successful-rollout review reproduced an explicit-V2 pooling gap in two candidates and both reference implementations. Added six public-configuration startup cases, repaired pooling guards in the Oracle and six positive controls, and retained the old Oracle as `missing-pooling-check.patch`. Current replay and Harbor outcomes are recorded in `pooling-evidence.json`; earlier results above remain historical. The instruction and image are unchanged.

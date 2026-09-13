@@ -53,6 +53,13 @@ CASES = [
     case("reject_prompt_embeds", "reject", "1", model_options={"enable_prompt_embeds": True}),
     case("reject_raw_logits", "reject", "1", model_options={"logprobs_mode": "raw_logits"}),
     case("reject_processed_logits", "reject", "1", model_options={"logprobs_mode": "processed_logits"}),
+    # Pooling support is narrower than the set of valid V1 configurations.
+    case('pool_last', 'V2', '1', model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'LAST', 'use_activation': True}}),
+    case('pool_mean', 'reject', '1', model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'MEAN', 'use_activation': True}}),
+    case('pool_cls', 'reject', '1', model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'CLS', 'use_activation': True}}),
+    case('pool_unnormalized', 'reject', '1', model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'LAST', 'use_activation': False}}),
+    case('pool_auto_mean', 'V1', None, model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'MEAN', 'use_activation': True}}),
+    case('pool_forced_v1_mean', 'V1', '0', model_options={'runner': 'pooling', 'convert': 'embed', 'pooler_config': {'pooling_type': 'MEAN', 'use_activation': True}}),
     # Repeat an automatic startup with a fresh configuration.
     case("auto_repeat", "V2"),
 ]

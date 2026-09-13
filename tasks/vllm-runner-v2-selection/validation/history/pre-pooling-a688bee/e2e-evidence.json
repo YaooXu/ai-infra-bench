@@ -1,0 +1,189 @@
+{
+  "schema_version": "vllm_harbor_task_validation.v1",
+  "recorded_at": "2026-09-13T05:44:23.879702+00:00",
+  "status": "offline developer tools and selected current-image control/Harbor validation passed; registry pending",
+  "reviewed_revision": "ff71f0d1547b825f3d115835e78a347cf3e60fc8 plus final artifacts hashed below",
+  "identity": {
+    "task_worktree": "/tmp/ai-infra-pr56-hardening",
+    "parent_commit": "ff71f0d1547b825f3d115835e78a347cf3e60fc8",
+    "git_identity": {
+      "name": "yaoxu",
+      "email": "csxuyao@qq.com"
+    },
+    "skill_path": "/root/ai-infra-bench-worksapce/ai-infra-bench/.agents/skills/ai-infra-bench-task-review",
+    "skill_head": "61a836a8acfca9f5ef5f3f33afb9894928135115",
+    "skill_dirty": true,
+    "skill_hashes": {
+      "SKILL.md": "290cba688d869a08b494f40104d20b3cc39c38a737887c4b2a9c035a5dd21915",
+      "references/review-rubric.md": "71ac1af37abf18ee2963c0df09ddb6337bcfbf8dea4144c06d0446ba8e0ce8a7",
+      "scripts/audit_task_artifacts.py": "3c4f882ed2aa3542ddbb2d2c51522819be17dc22a12f2cd492076bd882190022"
+    },
+    "semantic_boundary": "environment/config -> real ModelConfig/VllmConfig -> Worker.init_device -> actual runner or startup rejection",
+    "change_scope": "offline development tools only; instruction, oracle and verifier unchanged",
+    "tooling_cutoff": "exempt infrastructure; semantic runtime remains pinned"
+  },
+  "image": {
+    "schema_version": "vllm_harbor_image.v1",
+    "task": "ai-infra-bench/vllm-runner-v2-selection",
+    "canonical_tag": "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487-v1.1.1",
+    "image_id": "sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f",
+    "repo_digests": [
+      "ai-infra-bench/vllm-runner-v2-selection@sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f",
+      "pr56-hardening@sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f"
+    ],
+    "size_bytes": 9309865826,
+    "created": "2026-09-13T13:37:41.748157468+08:00",
+    "recorded_at": "2026-09-13T05:38:22.027946+00:00",
+    "base_commit": "c7560af42487b1570c4e6f4cea5df1605a4d59fc",
+    "dependency_cutoff": "2026-05-14T14:12:30Z",
+    "dockerfile_sha256": "b17004f01040431649d6a1b7ce69a05ecad032612dd8459791ffac6d92c40a65",
+    "dependency_lock_sha256": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+    "dependency_lock_manifest_sha256": "f03119a2abb6de21762092b78272a9f240bfb77e43b3135d314172e00ad4442f",
+    "build_context": "environment-only",
+    "validation_state": "offline developer smoke, selected control regressions and Harbor Oracle/early-exit trials passed; registry publication pending"
+  },
+  "semantic_boundary": "environment/config -> real ModelConfig/VllmConfig -> Worker.init_device -> actual runner or startup rejection",
+  "validation": {
+    "offline_developer_smoke": {
+      "image": "sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f",
+      "user": "agent",
+      "network": "none",
+      "cpus": 4,
+      "memory": "16g",
+      "pytest_passed": 20,
+      "pytest_warnings": 2,
+      "applicable_precommit_passed": 14,
+      "unmatched_precommit_skipped": 11,
+      "negative_ruff": "F821 observed; exit 1 expected",
+      "runtime_overlap_versions": "unchanged",
+      "exit_code": 0,
+      "script_sha256": "7ec4681f44e29b8c7770977d866cd90502085a54d694290b4a4eb9e6b219c09f"
+    },
+    "current_image_controls": [
+      {
+        "case": "base",
+        "expected": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 95.45
+      },
+      {
+        "case": "alternative",
+        "expected": 1,
+        "reward": "1",
+        "exit_code": 0,
+        "seconds": 143.99
+      },
+      {
+        "case": "forged-checkpoints",
+        "expected": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 8.54
+      },
+      {
+        "case": "missing-prompt-embeds",
+        "expected": 0,
+        "reward": "0",
+        "exit_code": 0,
+        "seconds": 91.79
+      }
+    ],
+    "harbor": [
+      {
+        "case": "oracle",
+        "expected": 1,
+        "reward": 1.0,
+        "exception": null,
+        "checksum": "d23760038e8cc806c8a78eededee3d9949e6436494f697fa8eeef8ca6c9fdbf0"
+      },
+      {
+        "case": "os-exit",
+        "expected": 0,
+        "reward": 0.0,
+        "exception": null,
+        "checksum": "99e52500b6100afad1743c0c260f383209ffae0fea952ef44a6995c131df6215"
+      },
+      {
+        "case": "system-exit",
+        "expected": 0,
+        "reward": 0.0,
+        "exception": null,
+        "checksum": "2e9b25fee8deb429a8523923071c79367eb3b04047a8be38d3f25c5a514056a2"
+      }
+    ],
+    "historical_full_matrix": "validation/history/ff71f0d/e2e-evidence.json",
+    "entrypoint": "bash /tests/test.sh",
+    "publication": "image not published to registry"
+  },
+  "limitations": [
+    "The full historical matrix was not rerun for this tooling-only change",
+    "No full model generation or exhaustive compatibility product",
+    "Offline hooks do not supply arbitrary new dependencies/models",
+    "Authenticated checkpoints do not prove arbitrary native-memory isolation"
+  ],
+  "artifacts": {
+    "files": {
+      ".dockerignore": "fe57c1ef2dcfcb5ceaa20f0582985984061600f14d404fd7f1ef5de91a710cc8",
+      "README.md": "5be24fbd813223659ce1b9fe5e0c6bb65692ce9a126c20c2e78ba6543217becc",
+      "environment/Dockerfile": "b17004f01040431649d6a1b7ce69a05ecad032612dd8459791ffac6d92c40a65",
+      "environment/docker-compose.yaml": "2a8ebdb1c56b1d74ce13762d408a6efac3cd46c9b4277c669dbac6580db3b523",
+      "environment/image-manifest.json": "16bd3d2ed9aaf1241802b308905183c0b2a861bf93ec49a87051dec964a00211",
+      "environment/lock/README.md": "1f290f77f4b7eedea626d22cec24234d8a4f34238fedac315ae4e70b77c10604",
+      "environment/lock/dev-tools.in": "0d1a75e7f51a7950d6ab4882d76f4096a3ffe4e886109a3c25b856da7bbae7ca",
+      "environment/lock/dev-tools.txt": "774894af497749f9d455473f80f5b20de77d03ce700e2c646f05c866ee0a16a4",
+      "environment/lock/hook-constraints.txt": "129e999d2e1bc0cb9e1f94370c0d5331b4e4f4029cb333f4292c262f9982c03d",
+      "environment/lock/hook-revisions.json": "3576c359bc834ea99d150b60d99c1671250c87946efd719ea44a93878a6eaf25",
+      "environment/lock/manifest.json": "f03119a2abb6de21762092b78272a9f240bfb77e43b3135d314172e00ad4442f",
+      "environment/lock/markdownlint-npm-shrinkwrap.json": "292af7a2e5bcfb9ac8b98db25aa387245276bc506e3ac4d7cf19a0304d5ac4f3",
+      "environment/lock/native.sha256": "c37d4330fef1f22818194d167e5f818efb58aa7f2bb8a2deaad788a4a238e37f",
+      "environment/lock/requirements.txt": "cb3b63dd4ccb3861651fb63081183ffaf801162ccf99830a8e71179c1fdb88cb",
+      "environment/lock/runtime-constraints.txt": "9acee3c973ceb8bc600bcb47224569d6c773b6e0b35686fff0bf8e3cf89eeaac",
+      "environment/lock/toolchains.json": "c6e260b4c0036db0439fc9802f42d7f35908bde8e9b170037c6f0021451bc0c9",
+      "environment/prepare-dev-tools.py": "5049db2211aa2caab25234418ee78e102ef0a7a107da81bfba9697fabb8d8754",
+      "instruction.md": "21fabc5a9e240683ec624c5ba66abe8522941d8e6518023b4c44ffa031f9d915",
+      "solution/oracle.patch": "4498c4ae89237df6b750ba9c4d73530790dd25789feb8538d43560a73fa4f9e1",
+      "solution/solve.sh": "d87049bbe7f08c33ad34919492650f4c5d42c50acb3c5e20c25e1189d437fd16",
+      "task.toml": "d4faca94e0b732e79b620c12bb5ed2ddd0552e0a2099be4381bc9e18828832b3",
+      "tests/checkpoint.c": "0bdc1387ff06b5f7974c165035cae775c5aa4419d6184762e049c475eaea4352",
+      "tests/docker-compose.yaml": "597e3b182f1714efc87b877f5ac9af369aae9a54beba9debf65eca7d7ac7af23",
+      "tests/fixtures/qwen2/config.json": "0e1252c54896de0d33e2dafc35bcbee8a3fca12d43bff3e4f8d88eb1478a855b",
+      "tests/fixtures/qwen3/config.json": "f6832afbacadf460bdb281c305cfcbae20b9d5e83c52b777105a118f8007b01a",
+      "tests/fixtures/qwen3-fp8/config.json": "ecd2dc12ee95e6b5972bdf4ea5abdb28cc930d5030ddb1a91295e20cefffb5cc",
+      "tests/fixtures/qwen3-moe/config.json": "d6e677b595480455f1976c9ba52608f66d9cd9b149d67612445ab8f1499cb5bf",
+      "tests/supervise_runner_consumers.py": "99dee27ea3676055e31730c7bf3edc937644dbc2235cf37020d927342c2f5afc",
+      "tests/test.sh": "a0857f921e1cbc7a6915267b4ea68c90991116cc87674e95411f8082f737beb8",
+      "tests/verify_runner_consumers.py": "0a0d1e4e99fff958bed0b800a251d9e056d2a96a3d757366939af63f151e45bf",
+      "validation/alternative-agent-implementation.patch": "a16c6f5a573b9c060bef8da7988affe82f6d636f91a9974239e45fbabebad9cc",
+      "validation/boolean-accessor-alternative.patch": "6f753fe017d34eed264e4c894ece0eb855b38be6e5518f55da9967251368f4a8",
+      "validation/cached-startup-env.patch": "36cc0c9886f7e68095d966c18f661bae9e19680f846eca3012fb86d5d6978b81",
+      "validation/check-offline-tools.sh": "7ec4681f44e29b8c7770977d866cd90502085a54d694290b4a4eb9e6b219c09f",
+      "validation/ci-cases.json": "d92e0c9ee13fd9bc06a8a23f80625d0b0951e2cff25ea4977819d5b9b52251d7",
+      "validation/clear-error-wording.patch": "297486fb9b6e5a36c7137803243a1023d38f189ef30427a4295b0d4c098645dc",
+      "validation/delayed-startup-validation.patch": "f62f7fb8b5064c42738d1f9936e4715e6da2bb3d1a5f4d44a3a16c5dcb759109",
+      "validation/docker-build.md": "c70902238bf21c2a86773a2d4a21f9202c5dccd43d7ff025458bb6c08ea8434c",
+      "validation/evidence/local-hardening-20260913.tar.gz": "76a356a078d3c35b4213ca9e142cc1f65cb6690de488777dafcf02d61e24ca1e",
+      "validation/evidence/offline-tools-20260913.tar.gz": "6fe9b42bd60e0d2133b1c706c7485f8f1fde4414b43b08d98d2172137ab6a5c3",
+      "validation/forged-callback.patch": "7841b393040b895810f0374dd0ddcc7daba21c77f48857303c0ac222c5dd5572",
+      "validation/forged-checkpoints.patch": "301611e3e30e0aedb02325adda858aeba448cec9459e1e20344ac3f99cd50e4b",
+      "validation/forged-observations.patch": "f13360042aeb1ecea46a859a2bc57006b1d4bffce8550c55d341e3d1b9bb8362",
+      "validation/history/ff71f0d/e2e-evidence.json": "098ffd32512b8c9b69eec67e743edd71bff012b5ade6ac434cdb9cbd75692e1a",
+      "validation/history/ff71f0d/review-report.md": "8800e496b15efa8805644be1c9a661916e559e2af5d936dfa084d1086867206a",
+      "validation/history/pr3-fba6a6c-e2e-evidence.json": "a59bcf18e48c288fa0493590e54c0766de1adab654bf5cd6f408d2e1ba05bd47",
+      "validation/history/pr56-e575a2b-docker-build.md": "bfc1145f479437c931e543deed9e8ab06d5b1e714b19352e89265f74ab5b368e",
+      "validation/history/pr56-e575a2b-e2e-evidence.json": "2243ea932f56894bbff883407099ff4f2bcefd393d1c5af146d909661e7ff8b0",
+      "validation/history/pr56-e575a2b-remediation-matrix.md": "ffce8b365d5b442f94a7292c1cbd2e5b1f90c587b10d1a38d90397b79f23c5bc",
+      "validation/incomplete-agent-implementation.patch": "f60b1d69086cd6c4f20cad1f3bf995c0723675c83f6a21046d4d85445ecbb4f8",
+      "validation/missing-prompt-embeds-check.patch": "755d6041c4349742352d33b4195ddd74a3cb9fddec5c1722227078db3c72c032",
+      "validation/missing-raw-logits-check.patch": "1a62e438448d6ba18956e3786f4f7bef37ceb5bddf001c81ab0216ab43c2cfab",
+      "validation/os-exit-zero-bypass.patch": "02f8ba93689b9197eb1cdd31868a358b4abf0c016013c084683e00ed1ba2a0c0",
+      "validation/remediation-matrix.md": "41553f0eff7dca7ad56d0334e1e3bd6b23029a236096a5d6d44f286349106dbe",
+      "validation/renamed-worker-field.patch": "1c8ef862fd88cde526c692fd23716390fa9cd646dc8bcce9b97070c01393ce74",
+      "validation/review-report.md": "1f43532072075c88988dfd6718978c8e303b31cbc9e452ab41d067ef96b69b6d",
+      "validation/semantic-boundary.md": "27ab4f8943cc6bacefdf453f1edd3d6761dd802dd966d0d1bbdddd02ff2aa687",
+      "validation/system-exit-zero-bypass.patch": "46857414f715b704e0ea8a8d35ef8efaffb8438c6a6d729b956ead2df12937de",
+      "validation/unfixed-boolean-alternative.patch": "1e6545f368fdfc5360503872d47d19f9de922bb66ddaec4da5b339275ba4e0d5",
+      "validation/wrong-runner-construction.patch": "767b532209032503cb2266fa7dd2f330761e532e885e80b913a995eb096d599f"
+    }
+  }
+}
