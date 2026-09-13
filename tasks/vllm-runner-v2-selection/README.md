@@ -2,7 +2,7 @@
 
 Add configuration-based defaults for Model Runner V2 while preserving explicit environment overrides and selecting the correct runner during worker startup. The statement does not require a particular environment accessor representation or internal worker field.
 
-The environment uses the exact Base SHA, a digest-pinned pre-cutoff runtime, one A100 and offline execution. See `environment/lock/README.md` for the source and native binding. The agent budget is ten hours.
+The environment uses the exact Base SHA, a digest-pinned pre-cutoff runtime, one A100 and offline execution. See `environment/lock/README.md` for the source and native binding. The agent budget is ten hours. A writable `.venv` provides pytest and pre-commit, inherits the pinned runtime, and has the Base hook environments cached for offline Python development.
 
 The verifier drives real `ModelConfig`, `VllmConfig`, `Worker.init_device` and V1/V2 runner constructors with small local model configurations. It covers automatic defaults, compatible explicit overrides, incompatible configurations, explanatory startup failure and repeated automatic startup. Elastic EP orchestration is the only substituted startup component; weights and generation are outside this selection task.
 

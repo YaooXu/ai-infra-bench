@@ -13,3 +13,5 @@ docker build --network host --build-arg HTTP_PROXY --build-arg HTTPS_PROXY --bui
 The image ID, canonical local tag, build-input hashes and dependency identity are recorded in environment/image-manifest.json. This was a local build; the tag has not been published to a registry.
 
 Final-image checks cover exact Git HEAD/tree, clean status, absent remote/tag/unreachable history, writable source as agent, all native hashes, source and extension import paths, and a real CUDA allocation. Tests, fixtures and Oracle are mounted only for verification, not baked into the environment. The full log and build output are retained with the local evidence bundle. Historical build results are archived under validation/history and do not certify this image.
+
+Version 1.1.1 additionally preinstalls the offline development venv and Base pre-commit hook environments. See review-report.md and evidence/offline-tools-20260913.tar.gz for the new build, agent-user network-none smoke and Harbor checks. The earlier logs describe version 1.1.0 only.

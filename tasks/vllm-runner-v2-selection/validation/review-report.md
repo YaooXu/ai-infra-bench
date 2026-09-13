@@ -1,53 +1,47 @@
-# PR #56 task 修复与本地验证
+# PR #56 离线开发环境修复
 
-题目可以保留；本轮环境和验证脚本的本地验收通过，正式 Harbor 验收与发布尚未执行。检查的是分支 codex/runner-selection-permissions 上、父提交 e575a2bba1265e7b02a193e30acf3bfb364840f7 之后的未提交修改，精确文件哈希见 e2e-evidence.json。已评分 9/10 个维度，小计 18/18；第 10 项未验证，总分暂不结算。当前不宣称任务已通过发布验收。
+题目保留，本轮离线开发环境修复验证通过。新镜像的 pytest、适用 pre-commit hooks、选定评分回归以及正式 Harbor Oracle/提前退出对照均符合预期。10/10 个维度可评分，20/20；结论限定于下述代表性场景和既有评分安全边界，镜像尚未发布到 registry。
 
-| # | 检查维度 | 得分 / 状态 | 关键依据或缺口 | 下一步 |
+本轮以 ff71f0d1547b825f3d115835e78a347cf3e60fc8 为父提交，任务版本更新为 1.1.1。工作目录 `/tmp/ai-infra-pr56-hardening`，分支 `codex/runner-selection-permissions`。Git 本地身份为 `yaoxu <csxuyao@qq.com>`。原始题面、Oracle、verifier 和控制补丁均未改变；精确最终文件哈希见 e2e-evidence.json。此前全矩阵证据移至 history/ff71f0d，不能把历史镜像结果写成本轮重跑结果。
+
+| # | 检查维度 | 得分 / 状态 | 关键依据或边界 | 下一步 |
 | --- | --- | --- | --- | --- |
-| 1 | 题目真实吗、清楚吗？ | 2 | 明确自动选择、显式覆盖和 worker 启动；去掉目录提示和手动断行 | 保持行为契约 |
-| 2 | 是否独立于原 PR？ | 2 | 不要求 None、私有字段、helper 或历史错误文案 | 以题面评判参考解 |
-| 3 | 环境能解题吗？ | 2 | 精确浅克隆 Base，原生文件哈希、离线真实 CUDA 与构造路径均验证 | 发布时保持镜像身份 |
-| 4 | 题面与测试双向对齐吗？ | 2 | 21 个代表场景映射到题面行为，合法模型/调度配置 | 见 semantic-boundary.md 的范围限制 |
-| 5 | 测到了真正的执行过程吗？ | 2 | 真实 init_device、NCCL 和 runner 构造；错误构造反例被拒 | 不扩大为推理数值正确性声明 |
-| 6 | 不同的正确实现能通过吗？ | 2 | 两种独立表示、启动时缓存环境变量、改名、不同文案和较晚启动校验全部通过 | 保留这些正例 |
-| 7 | 错误实现能被准确拒绝吗？ | 2 | Base、缺少兼容检查、错误 runner、伪造和提前退出均拒绝 | 保留实际失败原因 |
-| 8 | Oracle 本身可靠吗？ | 2 | 同一套 21 场景全过；另改模型规模并增加强制 V1 的量化/pooling 组合 | 不以历史 PR 代替验证 |
-| 9 | 评分结果可信吗？ | 2 | root 父进程拥有奖励；报告、伪造 checkpoint、直接调用签名回调均无效 | 限定到已验证的攻击范围 |
-| 10 | 验收能复现、交付说清楚了吗？ | U | 本地镜像、脚本、哈希和日志已保存；未跑本轮 Harbor | 正式 Harbor 后再判断发布验收 |
+| 1 | 题目真实吗、清楚吗？ | 2 | 三段开发者请求未变，无工作目录提示或手动断行 | 保持当前契约 |
+| 2 | 是否独立于原 PR？ | 2 | 仍按行为定义自动选择、覆盖和启动 | 不要求复刻 Oracle |
+| 3 | 环境能解题吗？ | 2 | 新镜像 agent 禁网下 20 个上游测试、14 个适用 hooks 通过 | 维护工具锁 |
+| 4 | 题面与测试双向对齐吗？ | 2 | 题面及 21 场景 verifier 未变，沿用 semantic-boundary.md 映射 | 不把工具 smoke 加进评分 |
+| 5 | 测到了真正的执行过程吗？ | 2 | 新镜像仍执行真实配置、init_device 和 runner 构造 | 不宣称完整生成测试 |
+| 6 | 不同正确实现能通过吗？ | 2 | 当前镜像的独立替代实现获 1，全部 21 场景完成 | 保留正例 |
+| 7 | 错误实现能被准确拒绝吗？ | 2 | Base、缺失 prompt-embeds 判断、伪造 checkpoint、两类提前退出均拒绝 | 保留实际失败原因 |
+| 8 | Oracle 本身可靠吗？ | 2 | 当前 Harbor Oracle 完成 21 场景获 1；既有独立挑战见历史证据 | 本轮未重复全部历史挑战，运行时版本保持一致 |
+| 9 | 评分结果可信吗？ | 2 | 当前 Harbor 两类提前退出均 0、无 trial error，伪造认证数据也失败 | 不扩展为任意原生攻击隔离声明 |
+| 10 | 验收能复现、交付说清楚了吗？ | 2 | Docker、工具锁、禁网 smoke、控制和 Harbor 日志/哈希已保存 | Git 推送后由发布流程处理 registry |
 
-unset、0、1 各自在独立候选进程中启动；同组复用初始化，不要求运行时切换环境变量。新增缓存启动环境变量的正确实现，验证这一公平性边界。
+修复针对实际 rollout 暴露的问题：按上游 AGENTS 创建的隔离 venv 没有 pytest 和运行时包，pre-commit 即便安装也会首次联网下载 hooks。Dockerfile 现在创建 agent 可写、继承固定运行时的 `.venv`，安装带哈希的测试工具，并预装 Base 配置的所有 hook 环境。相关 Python 工具依赖、hook Git revisions、Node/Go archives 和 npm shrinkwrap 都有版本锁；不修改上游 `.pre-commit-config.yaml`。Go 的正常命令路径也已提供，避免 login shell 改变 PATH 后导致 pre-commit 换用未缓存的环境。ShellCheck 预装，避免本地 shell hook 临时下载。
 
-本轮解决了此前已复现的报告伪造、错误 runner 漏检、私有字段与错误关键词误拒，以及测试维度不足。两份原有“正确替代实现”本身也有缺失，本轮保留它们不同的选择表示方式，补齐兼容性判断，并把原来的不完整版本保留为负例。详细变化见 remediation-matrix.md。
+工具属于 cutoff 豁免的基础设施。运行时仍来自同一 digest-pinned vLLM 镜像，Base、九个原生扩展及两个生成文件的绑定不变。禁网 smoke 比对 venv 与系统同名包的版本，确认没有升级运行时依赖，且 vLLM 和原生扩展都从可编辑工作区导入。新镜像 ID 为 `sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f`，canonical local tag 为 `ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487-v1.1.1`。
 
-本地矩阵共 18 组，每组使用独立容器和单张 A100，两个容器并发共享 GPU 3。下面时间包含容器启动、补丁应用和整套验证，不能当作隔离单卡性能基准。通过的完整实现耗时范围 144.2–151.8 秒。单次评测资源要求仍是一张 A100，脚本预算 600 秒。
+禁网 smoke 以 agent 用户运行，不挂载任务隐藏 tests 或 solution：`pytest tests/config/test_config_utils.py -q` 通过 20 项，耗时 28.46 秒；pre-commit 通过 14 个适用 hook，11 个不匹配文件类型的 hook 正常跳过。另用通用未定义名称样例确认 Ruff 实际返回 F821 和退出码 1。完整脚本和日志在 evidence/offline-tools-20260913.tar.gz；执行器 exit 0 和最后的 smoke marker 均核对。
 
-| 实现 / 反例 | 预期奖励 | 实际奖励 | 秒 |
+本轮评分对照使用单张 A100/容器、4 CPU、16 GB，离线执行原始 `bash /tests/test.sh`。两个本地控制容器并发使用 GPU 4，Harbor 使用 GPU 3；单次 task 的资源需求仍为一张 GPU。以下耗时包含本地容器设置和验证，不能当作隔离硬件的性能基准。
+
+| 本地控制 | 预期 reward | 实际 reward | 秒 |
 | --- | --- | --- | --- |
-| oracle | 1 | 1 | 147.4 |
-| base | 0 | 0 | 90.66 |
-| alternative-agent-implementation | 1 | 1 | 144.18 |
-| boolean-accessor-alternative | 1 | 1 | 147.87 |
-| cached-startup-env | 1 | 1 | 151.85 |
-| clear-error-wording | 1 | 1 | 145.76 |
-| renamed-worker-field | 1 | 1 | 145.9 |
-| delayed-startup-validation | 1 | 1 | 145.74 |
-| wrong-runner-construction | 0 | 0 | 96.36 |
-| missing-raw-logits-check | 0 | 0 | 91.52 |
-| missing-prompt-embeds-check | 0 | 0 | 89.47 |
-| incomplete-agent-implementation | 0 | 0 | 93.44 |
-| system-exit-zero-bypass | 0 | 0 | 6.98 |
-| os-exit-zero-bypass | 0 | 0 | 6.9 |
-| forged-observations | 0 | 0 | 7.46 |
-| forged-checkpoints | 0 | 0 | 6.15 |
-| unfixed-boolean-alternative | 0 | 0 | 95.81 |
-| forged-callback | 0 | 0 | 7.18 |
+| base | 0 | 0 | 95.45 |
+| alternative | 1 | 1 | 143.99 |
+| forged-checkpoints | 0 | 0 | 8.54 |
+| missing-prompt-embeds | 0 | 0 | 91.79 |
 
-Base 到达真实 runner 构造后，在自动 Qwen3 和再次自动启动处违反契约；失败后评分提前结束，不将未运行组记为通过。正例通过真实启动，不靠伪造报告。负例的 case 级失败原因保存在 evidence/local-hardening-20260913.tar.gz 中各自的 verifier.log 和 worker.log；伪造 channel 数据必须因为认证失败被拒，直接调用回调必须因为调用方不是预加载 suite 被拒。
+Base 因自动 Qwen3 和重复自动启动仍选 V1 被拒，达到真实目标路径，没有用 import 失败代替行为失败。缺失 prompt-embeds 判断的控制因错误选择 V2 被拒；伪造 checkpoint 因认证失败且未完成所需检查被拒。正例完成 21 个场景；失败组之后未执行的场景不记为通过。
 
-额外检查使用 UID 1000 拥有的只读测试挂载和 /opt/venv 解释器，修改本地模型的词表大小、层数和上下文长度，并增加两个不在评分清单里的合法覆盖组合。Oracle 在该独立挑战中获得 1，耗时 147.94 秒。没有 GPU 时，独立预检查报环境错误并保留 0，不会把无 GPU 运行算成有效行为验证。
+正式 Harbor 使用 0.22.0，以及仅处理 GPU 分配和共享内存的本地 Docker adapter；没有改评分逻辑，没有调用付费模型。Oracle 直接使用原 solution；提前退出试验在隔离 task 副本中只用对应控制补丁替换 solution/oracle.patch，让真实 artifact transfer 和 separate verifier 路径处理控制。每次 trial 的冻结输入哈希及输入 checksum 保留，执行后核对未变化。
 
-语义边界是配置和环境变量进入真实配置解析、Worker.init_device，最终观察构造出的 runner 或解释性启动失败。Elastic EP 编排是唯一被替换的启动组件；没有加载权重或执行文本生成。检查覆盖代表性的兼容与不兼容选项，不是所有 speculative、分布式和平台配置的笛卡尔积。错误说明自动检查到非空诊断，无法自动判断任意自然语言解释的质量。
+| Harbor trial | reward | trial error | 输入 checksum |
+| --- | --- | --- | --- |
+| oracle | 1.0 | 无 | `d23760038e8cc806c8a78eededee3d9949e6436494f697fa8eeef8ca6c9fdbf0` |
+| os-exit | 0.0 | 无 | `99e52500b6100afad1743c0c260f383209ffae0fea952ef44a6995c131df6215` |
+| system-exit | 0.0 | 无 | `2e9b25fee8deb429a8523923071c79367eb3b04047a8be38d3f25c5a514056a2` |
 
-评分通道的认证防止单纯打印结果、提前退出、伪造数据包或从候选导入路径直接调用回调得到成功。候选和行为探针仍共享 Python 进程；本轮不声称能隔离任意 Python 测试篡改或原生内存访问。该限制已写入 README 和语义边界文档。
+以上 task checksum 对应执行前快照。最后只更新报告、镜像验证状态和证据索引，因此最终目录 checksum 会不同；评分代码、控制、题面和 Docker 构建输入未在执行后修改。没有重新运行此前的付费 Codex 作答，其原始零分和轨迹保持不变。
 
-工作目录为 /tmp/ai-infra-pr56-hardening。镜像为 pr56-hardening:base，ID 为 sha256:ccb82551c03138c166b47b5ab885baa70235fa913c204684682691f5527da126。两个 Compose 资源声明已从所有 GPU 改为一张，与本地实际分配一致；当前宿主机没有 Compose CLI，尚未验证该编排入口。没有提交、推送或发布镜像，也没有修改主工作区的用户改动。本轮证据仅支持本地环境及验证脚本通过，不能沿用旧 Harbor 记录宣称当前版本已正式验收。
+限制：离线支持正常 Python 开发和已缓存的 Base hooks，不代表整个上游测试集的所有模型/数据都已下载。修改依赖或重新生成 requirements 可以仍然需要外部索引。评分继续覆盖 runner 选择与启动，不执行权重加载和完整 token 生成；认证机制不是任意 Python/native 篡改的完整沙箱。完整 18 组历史矩阵及独立挑战仍可追溯，本轮只重跑与环境变更相关的代表控制。镜像未推送 registry，Git 提交与推送状态以交付消息为准。

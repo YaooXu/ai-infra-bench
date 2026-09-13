@@ -3,7 +3,7 @@ artifacts = ["/workspace/repo/vllm"]
 
 [task]
 name = "ai-infra-bench/vllm-runner-v2-selection"
-version = "1.1.0"
+version = "1.1.1"
 description = "Select Model Runner V2 by configuration and propagate the decision to GPUWorker."
 authors = [{ name = "AI Infra Bench Curators" }]
 keywords = ["vllm", "model-runner", "configuration", "gpu-worker"]
@@ -14,7 +14,7 @@ track = "representative"
 source_ids = ["vllm__pr__39337"]
 repository = "vllm-project/vllm"
 base_commit = "c7560af42487b1570c4e6f4cea5df1605a4d59fc"
-image_digest = "sha256:ccb82551c03138c166b47b5ab885baa70235fa913c204684682691f5527da126"
+image_digest = "sha256:772e7f217078cee581097b23a4ea0458727f49a5a91afad996fa666a7c8acd2f"
 oracle_commit = "0579be818c0d2b438cd41b76d8d09f9338ac1fd8"
 workload_type = "feature_fix"
 subsystems = ["configuration", "worker", "model_runner"]
@@ -36,7 +36,7 @@ user = "root"
 network_mode = "no-network"
 
 [environment]
-docker_image = "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487-v1.1.0"
+docker_image = "ai-infra-bench/vllm-runner-v2-selection:base-c7560af42487-v1.1.1"
 network_mode = "no-network"
 build_timeout_sec = 14400.0
 accelerator = "A100"

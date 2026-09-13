@@ -86,7 +86,24 @@ RUN set -eux; \
     chown -R agent:agent /workspace; \
     rm -f /home/agent/.bash_history
 
-ENV PYTHONPATH=/workspace/repo \
+# Developer tools live in the AGENTS.md-prescribed venv. Runtime packages
+# remain supplied by the pinned image; only test/lint tooling is added.
+COPY lock/dev-tools.txt lock/hook-constraints.txt lock/hook-revisions.json lock/toolchains.json lock/markdownlint-npm-shrinkwrap.json /tmp/dev-tools/lock/
+COPY prepare-dev-tools.py /tmp/dev-tools/prepare-dev-tools.py
+RUN set -eux; \
+    uv venv --system-site-packages /workspace/repo/.venv; \
+    uv pip install --python /workspace/repo/.venv/bin/python --require-hashes --no-deps -r /tmp/dev-tools/lock/dev-tools.txt; \
+    chown -R agent:agent /workspace/repo/.venv; \
+    /workspace/repo/.venv/bin/python /tmp/dev-tools/prepare-dev-tools.py; \
+    rm -rf /tmp/dev-tools /root/.cache/uv; \
+    test -z "$(runuser -u agent -- git -C /workspace/repo status --porcelain)"
+
+RUN ln -s /usr/local/go/bin/go /usr/local/bin/go && ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+
+ENV PATH=/workspace/repo/.venv/bin:/usr/local/go/bin:${PATH} \
+    VIRTUAL_ENV=/workspace/repo/.venv \
+    PRE_COMMIT_HOME=/home/agent/.cache/pre-commit \
+    PYTHONPATH=/workspace/repo \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1
 

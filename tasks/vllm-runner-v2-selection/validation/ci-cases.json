@@ -1,6 +1,6 @@
 {
   "schema_version": "ai_infra_bench_validation_cases.v1",
-  "status": "local-docker-validated; Harbor pending",
+  "status": "Historical full matrix at ff71f0d; current image regressions are recorded in e2e-evidence.json",
   "cases": [
     {
       "name": "alternative-agent-implementation",
