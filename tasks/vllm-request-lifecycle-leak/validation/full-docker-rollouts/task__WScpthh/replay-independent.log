@@ -1,0 +1,13 @@
+INFO 09-13 05:29:06 [importing.py:44] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-13 05:29:06 [importing.py:68] Triton not installed or not compatible; certain GPU-related functions will not be available.
+INFO 09-13 05:29:11 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:11 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:11 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+Traceback (most recent call last):
+  File "/probe.py", line 48, in <module>
+    if __name__=='__main__':run()
+                            ^^^^^
+  File "/probe.py", line 39, in run
+    assert actual==expected_hit,(turn,expected_hit,actual)
+           ^^^^^^^^^^^^^^^^^^^^
+AssertionError: (0, 12, 8)

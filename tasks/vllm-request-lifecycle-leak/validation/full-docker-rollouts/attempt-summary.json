@@ -1,0 +1,81 @@
+[
+  {
+    "trial": "task__WScpthh",
+    "reward": {
+      "rewards": {
+        "reward": 0.0
+      }
+    },
+    "exception": null,
+    "agent_steps": 24,
+    "tool_calls": 23,
+    "final_changes": [
+      "103\t2\ttests/v1/streaming_input/test_scheduler_streaming.py",
+      "60\t1\ttests/v1/test_request.py",
+      "1\t2\tvllm/v1/core/sched/scheduler.py",
+      "10\t7\tvllm/v1/request.py"
+    ],
+    "untracked": [],
+    "checksums": {
+      "head.txt": true,
+      "repo.tar.gz": true,
+      "status.txt": true,
+      "tracked.patch": true,
+      "untracked.list": true,
+      "untracked.tar.gz": true
+    },
+    "metrics": {
+      "n_input_tokens": 805774,
+      "n_cache_tokens": 752640,
+      "n_output_tokens": 5960,
+      "cost_usd": 1.5819799999999997,
+      "rollout_details": null,
+      "metadata": null
+    },
+    "total_seconds": 386.416587,
+    "environment_setup_seconds": 4.648179,
+    "agent_setup_seconds": 1.741916,
+    "agent_execution_seconds": 329.995567,
+    "verifier_seconds": 31.100807
+  },
+  {
+    "trial": "task__iK5A7YN",
+    "reward": {
+      "rewards": {
+        "reward": 1.0
+      }
+    },
+    "exception": null,
+    "agent_steps": 27,
+    "tool_calls": 26,
+    "final_changes": [
+      "93\t4\ttests/v1/streaming_input/test_scheduler_streaming.py",
+      "69\t1\ttests/v1/test_request.py",
+      "8\t5\tvllm/v1/core/kv_cache_utils.py",
+      "4\t2\tvllm/v1/core/sched/scheduler.py",
+      "10\t7\tvllm/v1/request.py"
+    ],
+    "untracked": [],
+    "checksums": {
+      "head.txt": true,
+      "repo.tar.gz": true,
+      "status.txt": true,
+      "tracked.patch": true,
+      "untracked.list": true,
+      "untracked.tar.gz": true
+    },
+    "metrics": {
+      "n_input_tokens": 1007935,
+      "n_cache_tokens": 956160,
+      "n_output_tokens": 7133,
+      "cost_usd": 1.8305599999999997,
+      "rollout_details": null,
+      "metadata": null
+    },
+    "total_seconds": 447.990116,
+    "environment_setup_seconds": 4.605374,
+    "agent_setup_seconds": 1.681788,
+    "agent_execution_seconds": 395.304775,
+    "verifier_seconds": 31.500779
+  }
+]

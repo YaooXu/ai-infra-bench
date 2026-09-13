@@ -14,7 +14,7 @@ track = "representative"
 source_ids = ["vllm__pr__34183"]
 repository = "vllm-project/vllm"
 base_commit = "e94ec597334d9a3e9b0d04bc17152e2747c83d51"
-image_digest = "sha256:54855559d9fbf17b05f2e8eaad9f5e07778c8f293c9e22f151cf1869dc013a8b"
+image_digest = "sha256:7f6d77e4040061600c355d38a9c16f775405dc721473f1a2c39594396009cd51"
 oracle_commit = "8a5e0e2b2bb925d162328927b7565514fa355da1"
 workload_type = "bug_fix"
 subsystems = ["request_lifecycle", "memory", "multimodal"]
@@ -36,7 +36,7 @@ user = "root"
 network_mode = "no-network"
 
 [environment]
-docker_image = "ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d-pytest"
+docker_image = "ai-infra-bench/vllm-request-lifecycle-leak:base-e94ec597334d-pytest-full"
 network_mode = "no-network"
 build_timeout_sec = 14400.0
 accelerator = "CPU"

@@ -1,0 +1,10 @@
+[
+  {
+    "case": "oracle",
+    "exit_code": 0
+  },
+  {
+    "case": "alternative",
+    "exit_code": 0
+  }
+]

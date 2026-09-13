@@ -1,0 +1,17 @@
+{
+  "task_commit": "232d709046f473e515db88ee73f4cc93dece0183",
+  "mode": "Oracle-based",
+  "rollout_count": 2,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "network_gateway": "172.17.0.1:18755; CONNECT only chatgpt.com, auth.openai.com, api.openai.com port 443",
+  "collector_unchanged": true,
+  "network_setup_change": "apply prior verified sidecar nft exemption before model invocation; smoke before inference",
+  "hashes": {
+    "/data/pr55-final-two-rollouts/rollout_adapter.py": "0385add089add8a5b255a6a15479bfb952e44b2bb3200cbc8b2cd0c7150297d9",
+    "/data/pr55-final-two-rollouts/model_proxy.py": "b4b8d8dd8aacb7bdfd5907fab527ef087643bbe31997ce2be9e1f3e50256c616",
+    "/data/pr55-final-two-rollouts/independent_probe.py": "7eec537b963b977745fd3dacdfb888c4f96131a249ba64f999b0525148bdebf7",
+    "/root/ai-infra-bench-worksapce/ai-infra-bench/.agents/skills/ai-infra-bench-task-review/SKILL.md": "290cba688d869a08b494f40104d20b3cc39c38a737887c4b2a9c035a5dd21915",
+    "/root/ai-infra-bench-worksapce/ai-infra-bench/.agents/skills/ai-infra-bench-task-review/references/review-rubric.md": "71ac1af37abf18ee2963c0df09ddb6337bcfbf8dea4144c06d0446ba8e0ce8a7"
+  }
+}

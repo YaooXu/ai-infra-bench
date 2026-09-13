@@ -1,0 +1,327 @@
+diff --git a/tests/v1/streaming_input/test_scheduler_streaming.py b/tests/v1/streaming_input/test_scheduler_streaming.py
+index f8d8c3cb..05c0c4ef 100644
+--- a/tests/v1/streaming_input/test_scheduler_streaming.py
++++ b/tests/v1/streaming_input/test_scheduler_streaming.py
+@@ -1,11 +1,16 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import gc
+ import unittest
++import weakref
+ from unittest.mock import MagicMock
+ 
++import pytest
+ import torch
+ 
++from tests.v1.test_request import make_mm_request
++
+ from vllm.config import DeviceConfig, VllmConfig
+ from vllm.multimodal.inputs import (
+     MultiModalFeatureSpec,
+@@ -13,6 +18,8 @@ from vllm.multimodal.inputs import (
+     PlaceholderRange,
+ )
+ from vllm.sampling_params import SamplingParams
++from vllm.utils.hashing import sha256
++from vllm.v1.core.kv_cache_utils import init_none_hash
+ from vllm.v1.core.sched.scheduler import Scheduler
+ from vllm.v1.engine import FinishReason
+ from vllm.v1.kv_cache_interface import (
+@@ -49,16 +56,19 @@ class DummyRequest(Request):
+         )
+ 
+ 
+-def create_scheduler() -> Scheduler:
++def create_scheduler(
++    enable_prefix_caching: bool = False, block_size: int = 16
++) -> Scheduler:
+     vllm_config = VllmConfig(device_config=DeviceConfig("cpu"))
+     vllm_config.model_config = MagicMock()
+     vllm_config.model_config.skip_tokenizer_init = True
+     vllm_config.model_config.is_multimodal_model = False
++    vllm_config.model_config.is_encoder_decoder = False
+     vllm_config.model_config.max_model_len = 1024
+     vllm_config.model_config.enable_return_routed_experts = False
+     vllm_config.cache_config = MagicMock()
+     vllm_config.cache_config.num_gpu_blocks = 1000
+-    vllm_config.cache_config.enable_prefix_caching = False
++    vllm_config.cache_config.enable_prefix_caching = enable_prefix_caching
+     kv_cache_config = KVCacheConfig(
+         num_blocks=1000,
+         kv_cache_tensors=[],
+@@ -66,7 +76,7 @@ def create_scheduler() -> Scheduler:
+             KVCacheGroupSpec(
+                 ["layer"],
+                 FullAttentionSpec(
+-                    block_size=16, num_kv_heads=1, head_size=1, dtype=torch.float32
++                    block_size=block_size, num_kv_heads=1, head_size=1, dtype=torch.float32
+                 ),
+             )
+         ],
+@@ -76,7 +86,7 @@ def create_scheduler() -> Scheduler:
+         kv_cache_config=kv_cache_config,
+         log_stats=True,
+         structured_output_manager=StructuredOutputManager(vllm_config),
+-        block_size=16,
++        block_size=block_size,
+     )
+ 
+ 
+@@ -573,3 +583,82 @@ class TestStreamingScheduler(unittest.TestCase):
+             cached_state_cycle1["prompt_token_ids"]
+             is not cached_state_cycle3["prompt_token_ids"]
+         ), "Cached states from different cycles should be independent objects."
++
++
++@pytest.mark.parametrize(
++    "ending", ["stop", "abort", "abort_running", "stream_end", "queued_end"]
++)
++def test_multimodal_request_lifecycle_without_cyclic_gc(ending):
++    scheduler = create_scheduler(enable_prefix_caching=True, block_size=4)
++    init_none_hash(sha256)
++    was_enabled = gc.isenabled()
++    gc.disable()
++    try:
++        request = make_mm_request()
++        request.resumable = ending in ("stream_end", "queued_end")
++        scheduler.add_request(request)
++        if ending == "abort_running":
++            scheduler.running.append(scheduler.waiting.pop_request())
++            request.status = RequestStatus.RUNNING
++        request_ref = weakref.ref(request)
++        payload_ref = weakref.ref(request.mm_features[0].data["dummy"].data)
++        del request
++        assert request_ref() is scheduler.requests["mm"]
++        assert payload_ref() is not None
++
++        if ending in ("abort", "abort_running"):
++            scheduler.finish_requests("mm", RequestStatus.FINISHED_ABORTED)
++        else:
++            request = scheduler.waiting.pop_request()
++            request.status = RequestStatus.FINISHED_STOPPED
++            if ending == "queued_end":
++                scheduler.add_request(DummyRequest("mm", resumable=False))
++            finished = scheduler._handle_stopped_request(request)
++            if finished:
++                scheduler._free_request(request)
++            del request
++            if ending == "stream_end":
++                assert not finished
++                assert request_ref().status == RequestStatus.WAITING_FOR_STREAMING_REQ
++                assert payload_ref() is not None
++                scheduler.add_request(DummyRequest("mm", resumable=False))
++            else:
++                assert finished
++
++        assert "mm" not in scheduler.requests
++        assert not scheduler.waiting
++        assert not scheduler.running
++        assert request_ref() is None
++        assert payload_ref() is None
++    finally:
++        if was_enabled:
++            gc.enable()
++
++
++def test_streaming_prefix_hashes():
++    scheduler = create_scheduler(enable_prefix_caching=True, block_size=4)
++    init_none_hash(sha256)
++    session = make_mm_request()
++    session.append_output_token_ids(100)
++    session.num_computed_tokens = 7
++    update_request = make_mm_request()
++    update_request.resumable = True
++    update_request.mm_features.append(
++        MultiModalFeatureSpec(
++            data=MultiModalKwargsItem.dummy(),
++            modality="image",
++            identifier="second-image",
++            mm_position=PlaceholderRange(offset=6, length=1),
++        )
++    )
++    scheduler._update_request_as_session(
++        session, StreamingUpdate.from_request(update_request)
++    )
++    expected = make_mm_request()
++    expected._all_token_ids[:] = list(session.all_token_ids)
++    expected.mm_features = session.mm_features
++    expected.block_hashes = []
++    assert session.block_hashes == expected.get_hash_new_full_blocks()
++    session.append_output_token_ids([101, 102])
++    expected._all_token_ids[:] = list(session.all_token_ids)
++    assert session.block_hashes == expected.get_hash_new_full_blocks()
+diff --git a/tests/v1/test_request.py b/tests/v1/test_request.py
+index e22809d2..80af33cf 100644
+--- a/tests/v1/test_request.py
++++ b/tests/v1/test_request.py
+@@ -1,6 +1,21 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+-from vllm.v1.request import RequestStatus
++import gc
++import weakref
++
++import pytest
++
++from vllm.multimodal.inputs import (
++    MultiModalFeatureSpec,
++    MultiModalKwargsItem,
++    PlaceholderRange,
++)
++from vllm.sampling_params import SamplingParams
++from vllm.utils.hashing import sha256
++from vllm.v1.core.kv_cache_utils import get_request_block_hasher, init_none_hash
++from vllm.v1.request import Request, RequestStatus
++
++pytestmark = pytest.mark.cpu_test
+ 
+ 
+ def test_request_status_fmt_str():
+@@ -15,3 +30,56 @@ def test_request_status_fmt_str():
+     assert f"{RequestStatus.FINISHED_LENGTH_CAPPED}" == "FINISHED_LENGTH_CAPPED"
+     assert f"{RequestStatus.FINISHED_ABORTED}" == "FINISHED_ABORTED"
+     assert f"{RequestStatus.FINISHED_IGNORED}" == "FINISHED_IGNORED"
++
++
++@pytest.mark.parametrize("prefix_caching", [False, True])
++def test_request_reclaimed_without_cyclic_gc(prefix_caching):
++    init_none_hash(sha256)
++    was_enabled = gc.isenabled()
++    gc.disable()
++    try:
++        request = make_mm_request(prefix_caching)
++        request_ref = weakref.ref(request)
++        payload_ref = weakref.ref(request.mm_features[0].data["dummy"].data)
++        assert payload_ref() is not None
++        del request
++        assert request_ref() is None
++        assert payload_ref() is None
++    finally:
++        if was_enabled:
++            gc.enable()
++
++
++def make_mm_request(prefix_caching=True):
++    return Request(
++        request_id="mm",
++        prompt_token_ids=list(range(7)),
++        sampling_params=SamplingParams(max_tokens=16),
++        pooling_params=None,
++        eos_token_id=None,
++        mm_features=[
++            MultiModalFeatureSpec(
++                data=MultiModalKwargsItem.dummy(1024 * 1024),
++                modality="image",
++                identifier="image-hash",
++                mm_position=PlaceholderRange(offset=1, length=5),
++            )
++        ],
++        block_hasher=get_request_block_hasher(4, sha256) if prefix_caching else None,
++    )
++
++
++@pytest.mark.parametrize("prefix_caching", [False, True])
++def test_request_incremental_hashes(prefix_caching):
++    init_none_hash(sha256)
++    request = make_mm_request(prefix_caching)
++    initial_hashes = request.block_hashes.copy()
++    assert len(initial_hashes) == (1 if prefix_caching else 0)
++    for tokens in (7, [8, 9], [10, 11, 12]):
++        request.append_output_token_ids(tokens)
++        expected = make_mm_request(prefix_caching)
++        expected._all_token_ids[:] = list(request.all_token_ids)
++        expected.block_hashes = []
++        assert request.block_hashes == expected.get_hash_new_full_blocks()
++        assert request.block_hashes[: len(initial_hashes)] == initial_hashes
++    assert request.get_hash_new_full_blocks() == []
+diff --git a/vllm/v1/core/kv_cache_utils.py b/vllm/v1/core/kv_cache_utils.py
+index fd12dfe0..a44e11b1 100644
+--- a/vllm/v1/core/kv_cache_utils.py
++++ b/vllm/v1/core/kv_cache_utils.py
+@@ -569,11 +569,14 @@ def get_request_block_hasher(
+             return []
+ 
+         curr_mm_idx = 0
+-        if start_token_idx > 0:
+-            # Set curr_mm_idx = -1 to indicate the last mm input.
+-            # Note that since we reach to this branch only when the block is
+-            # completed with generated tokens, we only need to consider the
+-            # last mm input.
++        if (
++            start_token_idx > 0
++            and request.mm_features
++            and start_token_idx >= request.mm_features[-1].mm_position.offset
++        ):
++            # Decode normally only needs the last MM input. A streaming update
++            # can append several inputs, so skip earlier ones only when the
++            # new block starts at or beyond the last input.
+             curr_mm_idx = -1
+ 
+         prev_block_hash_value = (
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 90ca5844..3aadd990 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -967,6 +967,9 @@ class Scheduler(SchedulerInterface):
+             session.num_prompt_tokens : num_computed_tokens
+         ]
+         del session._all_token_ids[num_computed_tokens:]
++        # The discarded sampled token may have completed a hashed block.
++        # Only hashes for blocks of retained tokens remain valid.
++        del session.block_hashes[num_computed_tokens // self.block_size :]
+         session._output_token_ids.clear()
+         assert session.prompt_token_ids is not None
+         # Extend prompt with kept output tokens.
+@@ -984,8 +987,7 @@ class Scheduler(SchedulerInterface):
+         session.prompt_token_ids.extend(update.prompt_token_ids or ())
+         # Update block hashes for the new tokens
+         # (mirrors Request.append_output_token_ids)
+-        if session.get_hash_new_full_blocks is not None:
+-            session.block_hashes.extend(session.get_hash_new_full_blocks())
++        session.block_hashes.extend(session.get_hash_new_full_blocks())
+         session.num_prompt_tokens = len(session.prompt_token_ids)
+         session.arrival_time = update.arrival_time
+         session.sampling_params = update.sampling_params
+diff --git a/vllm/v1/request.py b/vllm/v1/request.py
+index 3b829875..cdf4acc9 100644
+--- a/vllm/v1/request.py
++++ b/vllm/v1/request.py
+@@ -6,7 +6,6 @@ import time
+ from collections import deque
+ from collections.abc import Callable, Mapping
+ from dataclasses import dataclass
+-from functools import partial
+ from typing import TYPE_CHECKING, Any
+ 
+ import torch
+@@ -164,10 +163,10 @@ class Request:
+         self.num_external_computed_tokens = 0
+ 
+         self.block_hashes: list[BlockHash] = []
+-        self.get_hash_new_full_blocks: Callable[[], list[BlockHash]] | None = None
+-        if block_hasher is not None:
+-            self.get_hash_new_full_blocks = partial(block_hasher, self)
+-            self.block_hashes = self.get_hash_new_full_blocks()
++        # Keep the hasher unbound: storing a callback that captures self creates
++        # a cycle that retains the request and its multimodal payload until GC.
++        self._block_hasher = block_hasher
++        self.block_hashes = self.get_hash_new_full_blocks()
+ 
+         self.skip_reading_prefix_cache = self.get_skip_reading_prefix_cache()
+ 
+@@ -212,8 +211,12 @@ class Request:
+             self._output_token_ids.extend(token_ids)
+             self._all_token_ids.extend(token_ids)
+ 
+-        if self.get_hash_new_full_blocks is not None:
+-            self.block_hashes.extend(self.get_hash_new_full_blocks())
++        self.block_hashes.extend(self.get_hash_new_full_blocks())
++
++    def get_hash_new_full_blocks(self) -> list["BlockHash"]:
++        if self._block_hasher is None:
++            return []
++        return self._block_hasher(self)
+ 
+     @property
+     def use_structured_output(self) -> bool:

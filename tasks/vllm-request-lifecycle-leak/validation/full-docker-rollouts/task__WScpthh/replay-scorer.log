@@ -1,0 +1,25 @@
+INFO 09-13 05:29:18 [importing.py:44] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-13 05:29:18 [importing.py:68] Triton not installed or not compatible; certain GPU-related functions will not be available.
+INFO 09-13 05:29:22 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+INFO 09-13 05:29:23 [scheduler.py:224] Chunked prefill is enabled with max_num_batched_tokens=512.
+Traceback (most recent call last):
+  File "/tmp/retention-verifier.MjH4eM9H/verify_retention.py", line 221, in <module>
+    main()
+  File "/tmp/retention-verifier.MjH4eM9H/verify_retention.py", line 212, in main
+    cache_cases()
+  File "/tmp/retention-verifier.MjH4eM9H/verify_retention.py", line 157, in cache_cases
+    assert cached_hits(manager, same) == expected, f'{stage}: same prefix not reused'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: stream: same prefix not reused
+FAIL: RuntimeError: worker did not complete all behavior and memory phases
