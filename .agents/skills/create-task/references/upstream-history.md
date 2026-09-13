@@ -32,7 +32,7 @@ If a finding would materially expand the scope, present that change before adopt
 
 ## Turn applicable findings into behavioral checks
 
-Apply the [fixture reachability requirements](../../ai-infra-bench-task-review/references/review-rubric.md#fixture-reachability) when adapting upstream cases. A merged fix, upstream unit test, or failing internal probe does not by itself establish that the triggering state is reachable in the task’s supported product workflow.
+Apply the [fixture reachability requirements](../../ai-infra-bench-task-review/references/review-rubric.md#8-verify-fixture-reachability) when adapting upstream cases. A merged fix, upstream unit test, or failing internal probe does not by itself establish that the triggering state is reachable in the task’s supported product workflow.
 
 Construct a legal reproducer from the failure mechanism and task contract. Exercise the component and lifecycle that determine the behavior, including important transitions or combinations that isolated happy-path cases miss. Upstream tests can inform the scenario, but inspect their assumptions before adapting them to Base.
 
