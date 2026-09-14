@@ -43,6 +43,7 @@ if (( gpu_count > 0 )); then
   image_ref="ai-infra-bench-task-envs:${TASK_NAME}-${environment_key}"
 else
   : "${GHCR_REPOSITORY:=ghcr.io/${GITHUB_REPOSITORY_OWNER}/ai-infra-bench-task-envs}"
+  GHCR_REPOSITORY="$(printf '%s' "$GHCR_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
   image_ref="${GHCR_REPOSITORY}:${TASK_NAME}-${environment_key}"
   if docker pull "$image_ref"; then
     cache_hit=true

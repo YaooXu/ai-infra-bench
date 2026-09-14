@@ -136,7 +136,8 @@ class ValidationImageTests(unittest.TestCase):
                 "MOCK_REGISTRY": REGISTRY, "MOCK_DIGEST": DIGEST,
             })
             if not gpus:
-                env["GITHUB_REPOSITORY_OWNER"] = "test-owner"
+                # GitHub owner names may contain capitals; registry paths may not.
+                env["GITHUB_REPOSITORY_OWNER"] = "Test-Owner"
             result = subprocess.run(
                 ["bash", str(scripts / "run_task_validation.sh")],
                 cwd=root, env=env, capture_output=True, text=True, timeout=20,
