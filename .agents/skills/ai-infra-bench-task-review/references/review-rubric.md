@@ -146,6 +146,8 @@ For retention or cleanup, execute creation and use, the applicable completion/ca
 
 Checkpoint: the test executes the necessary lifecycle and observes the actual behavior without depending on a particular internal representation. Check the reachability of constructed states in step 8.
 
+For resource-cleanup contracts, observe the resources that must be released. Service unreachability does not establish cleanup: an HTTP timeout or failed health probe cannot prove that a listening socket closed or a process exited. Check listener state and relevant process identities separately when both are required. Retain identities before shutdown so reparented children remain observable. Include an applicable incorrect control that stops responding while retaining resources. Record direct resource-state observations, and confirm that verifier teardown removes test resources after both successful and failing checks; cleanup performed by verifier teardown must not be mistaken for candidate cleanup success. Apply these checks only to resources within the task contract.
+
 ## 8. Verify fixture reachability
 
 Hidden tests must be concrete consequences of the public task contract under supported inputs and lifecycle transitions at the frozen Base. Deliberately chosen rare edge cases are valid; impossible internal states and unstated defensive requirements are not. Invalid external inputs may be tested when rejection or recovery is part of the contract, through the boundary that accepts those inputs rather than by bypassing its validation. An agent missing a case does not make it unfair, and many agents failing it does not make it valid.
