@@ -117,6 +117,8 @@ Install verifier dependencies at image build time too, including in a separate v
 
 ## Step 4: Decide how to verify
 
+Before making a case affect reward, establish that it follows from the task contract and can arise through supported inputs and lifecycle transitions at the frozen Base. Follow the [fixture reachability requirements](../ai-infra-bench-task-review/references/review-rubric.md#8-verify-fixture-reachability). During construction, provide the evidence; independent review must check it. An internal object that can be instantiated is not sufficient evidence of a reachable product state.
+
 **This is the most important decision.** Ask the user: *"How do you want to grade this
 task?"* Then help them pick:
 
