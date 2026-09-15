@@ -146,6 +146,8 @@ For retention or cleanup, execute creation and use, the applicable completion/ca
 
 Checkpoint: the test executes the necessary lifecycle and observes the actual behavior without depending on a particular internal representation. Check the reachability of constructed states in step 8.
 
+For resource-cleanup contracts, observe the resources that must be released. Service unreachability does not establish cleanup: an HTTP timeout or failed health probe cannot prove that a listening socket closed or a process exited. Check listener state and relevant process identities separately when both are required. Retain identities before shutdown so reparented children remain observable. Include an applicable incorrect control that stops responding while retaining resources. Record direct resource-state observations, and confirm that verifier teardown removes test resources after both successful and failing checks; cleanup performed by verifier teardown must not be mistaken for candidate cleanup success. Apply these checks only to resources within the task contract.
+
 ## 8. Verify fixture reachability
 
 Hidden tests must be concrete consequences of the public task contract under supported inputs and lifecycle transitions at the frozen Base. Deliberately chosen rare edge cases are valid; impossible internal states and unstated defensive requirements are not. Invalid external inputs may be tested when rejection or recovery is part of the contract, through the boundary that accepts those inputs rather than by bypassing its validation. An agent missing a case does not make it unfair, and many agents failing it does not make it valid.
@@ -173,6 +175,8 @@ Checkpoint: evidence demonstrates the required causal relationship at the releva
 ## 10. Trace scoring trust and completion integrity
 
 Identify which processes load candidate code, produce expected results, write reports, and decide reward, together with their read/write access. A candidate-written success flag, digest, nonce, or zero exit status cannot independently establish that required behavior occurred.
+
+Check verifier permissions under the actual host and container identities. Candidate code must not modify trusted grading scripts or final rewards, but Harbor must be able to traverse/read the collected output paths. A non-root owner on a trusted read-only harness mount is not by itself a trust failure; root ownership alone is not proof of effective isolation. If files are staged, verify their trusted origin and protection before candidate execution. Record relevant owners, modes, and mount restrictions for failures. Separate permission/setup/collection failures from behavioral reward 0, and require collection evidence with the intended non-root host when applicable. Root-only local success does not establish non-root CI compatibility. Do not remove completion safeguards to make collection pass.
 
 When candidate code can terminate a process participating in verification, require early-success-exit controls at reachable boundaries, including both `SystemExit(0)` and `os._exit(0)` for Python when applicable. Catching the former does not protect against the latter. Confirm the scoring parent rejects incomplete checks. A root-owned script or independent container is not by itself sufficient when it executes candidate code.
 
